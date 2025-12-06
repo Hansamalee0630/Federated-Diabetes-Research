@@ -49,7 +49,7 @@ class FederatedClient:
             raise ValueError("Model not set!")
         
         optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
-        criterion = torch.nn.BCELoss() # Binary Cross Entropy for prediction
+        criterion = torch.nn.BCELoss() # Binary Cross Entropy
         
         self.model.train()
         for epoch in range(epochs):
@@ -73,7 +73,10 @@ class FederatedClient:
                 else:
                     # --- GENERIC LOGIC FOR OTHER COMPONENTS ---
                     outputs = self.model(batch_X)
-                    loss = criterion(outputs, batch_y)
+                    
+                    # === THE FIX IS HERE ===
+                    # Reshape batch_y from [32] to [32, 1] to match outputs
+                    loss = criterion(outputs, batch_y.view(-1, 1))
 
                 loss.backward()
                 optimizer.step()
