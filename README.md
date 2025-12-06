@@ -1,28 +1,37 @@
 # Federated-Diabetes-Research
 
 ```
-/Diabetes-Federated-MultiTask-Research
+Federated-Diabetes-Research/
 │
-├── /data_loaders        # Scripts to load and preprocess data
-│   ├── load_130US.py    # Shared by Comp 2 & 4
-│   ├── load_retina.py   # For Comp 3 (Images)
-│   └── load_iot.py      # For Comp 1 & 4
+├── fl_core/                     # Shared FL engine (everyone uses this)
+│   ├── server.py
+│   ├── client.py
+│   ├── aggregator.py
+│   ├── base_model.py
+│   ├── utils.py
+│   ├── fedavg.py
+│   └── ...
 │
-├── /models              # Deep Learning Architectures
-│   ├── causal_graph.py  # Comp 2
-│   ├── multimodal_net.py# Comp 3 (CNN + MLP)
-│   └── multitask_net.py # Comp 4 (Shared layers + specific heads)
+├── components/
+│   ├── component_1/             # Complication risk prediction (MTL optional)
+│   ├── component_2/             # Causal discovery + FL explainability
+│   ├── component_3/             # Multimodal FL model (CNN+MLP)
+│   ├── component_4/             # YOUR MTFL comorbidity model
 │
-├── /strategies          # FL Aggregation Logic
-│   ├── fed_avg.py       # Standard
-│   ├── fed_prox.py      # For Non-IID (Comp 4)
-│   └── secure_agg.py    # For Privacy/DP (Comp 1)
+├── datasets/
+│   ├── diabetes_130/            # You + component 2
+│   ├── complication_dataset/    # Component 1
+│   ├── multimodal_dataset/      # Component 3
 │
-├── /experiments         # The main execution scripts
-│   ├── run_comp1_privacy.py
-│   ├── run_comp2_causal.py
-│   ├── run_comp3_multimodal.py
-│   └── run_comp4_personalization.py
+├── experiments/
+│   ├── comp1_experiments/
+│   ├── comp2_experiments/
+│   ├── comp3_experiments/
+│   ├── comp4_experiments/
 │
-└── requirements.txt
+├── results/
+│   └── ...
+│
+└── README.md                    # Top-level description of project
+
 ```
