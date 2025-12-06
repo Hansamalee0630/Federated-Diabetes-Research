@@ -1,3 +1,4 @@
+from copy import copy
 import torch
 from fl_core.server import FederatedServer
 from fl_core.client import FederatedClient

@@ -1,0 +1,7 @@
+numpy
+pandas
+scikit-learn
+torch
+flwr   # or 'syft' depending on what framework you use, let's assume standard logic for now
+matplotlib
+tqdm
