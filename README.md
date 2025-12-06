@@ -26,7 +26,7 @@ Federated-Diabetes-Research/
 │   ├── component_4/             # YOUR MTFL comorbidity model
 │
 ├── datasets/
-│   ├── diabetes_130/            # You + component 2
+│   ├── diabetes_130/            # Component 4 + Component 2
 │   ├── complication_dataset/    # Component 1
 │   ├── multimodal_dataset/      # Component 3
 │
