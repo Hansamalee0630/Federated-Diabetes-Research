@@ -1,3 +1,4 @@
+# fl_core/client.py (UPDATED VERSION)
 import pandas as pd
 import torch
 from torch.utils.data import DataLoader, TensorDataset
@@ -13,9 +14,13 @@ class FederatedClient:
     def load_data(self):
         """Loads data specific to the assigned component task."""
         print(f"Client {self.client_id}: Loading data...")
-        X = pd.read_csv(f"{self.data_path}_X.csv").values
-        y = pd.read_csv(f"{self.data_path}_y.csv")
-        
+        try:
+            X = pd.read_csv(f"{self.data_path}_X.csv").values
+            y = pd.read_csv(f"{self.data_path}_y.csv")
+        except FileNotFoundError:
+            print(f"Error: Data file not found at {self.data_path}_X.csv")
+            return
+
         # SELECT TARGET BASED ON COMPONENT
         if self.component == "comp2_readmission":
             # Component 2 only cares about Readmission (Column 0)
@@ -50,8 +55,26 @@ class FederatedClient:
         for epoch in range(epochs):
             for batch_X, batch_y in self.train_loader:
                 optimizer.zero_grad()
-                outputs = self.model(batch_X)
-                loss = criterion(outputs, batch_y)
+                
+                # --- NEW LOGIC FOR MULTI-TASK LEARNING ---
+                if self.component == "comp4_multitask":
+                    # The model returns TWO outputs (Hypertension, Heart Failure)
+                    pred_htn, pred_hf = self.model(batch_X)
+                    
+                    # The target batch also has two columns
+                    target_htn = batch_y[:, 0].unsqueeze(1)
+                    target_hf = batch_y[:, 1].unsqueeze(1)
+                    
+                    # Calculate loss for both tasks and add them together
+                    loss_htn = criterion(pred_htn, target_htn)
+                    loss_hf = criterion(pred_hf, target_hf)
+                    loss = loss_htn + loss_hf
+                    
+                else:
+                    # --- GENERIC LOGIC FOR OTHER COMPONENTS ---
+                    outputs = self.model(batch_X)
+                    loss = criterion(outputs, batch_y)
+
                 loss.backward()
                 optimizer.step()
         
