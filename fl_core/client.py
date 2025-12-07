@@ -72,7 +72,7 @@ class FederatedClient:
                     
                 else:
                     # --- GENERIC LOGIC FOR OTHER COMPONENTS ---
-                    outputs = self.model(batch_X)
+                    outputs = self.model(batch_X) # Shape: [32, 1]
                     
                     # === THE FIX IS HERE ===
                     # Reshape batch_y from [32] to [32, 1] to match outputs
