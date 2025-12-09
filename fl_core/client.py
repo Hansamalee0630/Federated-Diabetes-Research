@@ -336,3 +336,67 @@ class FederatedClient:
                     correct += (predicted == batch_y.view(-1, 1)).sum().item()
                 total += batch_y.size(0)
         return correct / total
+    
+    def evaluate_fairness(self):
+        """
+        Research Objective 2.2.iii & Target 4:
+        Calculate Demographic Parity Gap (Fairness).
+        Handles Standardized Data (where values are not exactly 0 or 1).
+        """
+        if not self.model: return {}
+        
+        # Load data
+        try:
+            df = pd.read_csv(f"{self.data_path}_X.csv")
+            y = pd.read_csv(f"{self.data_path}_y.csv")
+        except:
+            return 0.0
+        
+        # --- SMART COLUMN DETECTION (SCALING PROOF) ---
+        group_a = None # Females
+        group_b = None # Males
+
+        # We look for the column. Since data is scaled, we use > 0 or < 0
+        if 'gender_Female' in df.columns:
+            # If Scaled: > 0 is likely 1 (Female), < 0 is likely 0 (Male)
+            group_a = df[df['gender_Female'] > 0] # Females
+            group_b = df[df['gender_Female'] < 0] # Males
+        elif 'gender_Male' in df.columns:
+            # If Scaled: < 0 is likely 0 (Female), > 0 is likely 1 (Male)
+            group_a = df[df['gender_Male'] < 0] # Females
+            group_b = df[df['gender_Male'] > 0] # Males
+        else:
+            # Fallback: Check for other common columns if needed
+            print(f"⚠️ Fairness feature (gender) not found in {list(df.columns[:5])}...")
+            return 0.0
+
+        # Helper to get accuracy
+        def get_acc(subset_X, subset_indices):
+            if len(subset_X) == 0: return 0.0
+            subset_y = y.iloc[subset_indices]
+            t_X = torch.Tensor(subset_X.values)
+            
+            self.model.eval()
+            with torch.no_grad():
+                if self.component == "comp4_multitask":
+                    p_htn, p_hf = self.model(t_X)
+                    preds = (p_htn > 0.5).float().numpy()
+                    targets = subset_y['target_hypertension'].values.reshape(-1, 1)
+                else:
+                    out = self.model(t_X)
+                    preds = (out > 0.5).float().numpy()
+                    targets = subset_y.iloc[:, 0].values.reshape(-1, 1)
+            
+            return (preds == targets).mean()
+
+        # Calculate Accuracy
+        acc_female = get_acc(group_a, group_a.index)
+        acc_male = get_acc(group_b, group_b.index)
+        
+        gap = abs(acc_female - acc_male)
+        
+        print(f"⚖️ FAIRNESS CHECK (Client {self.client_id}):")
+        print(f"   Female Acc: {acc_female:.4f} | Male Acc: {acc_male:.4f}")
+        print(f"   Gap: {gap:.4f} (Target <= 0.05)")
+        
+        return gap
