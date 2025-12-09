@@ -278,6 +278,8 @@ class FederatedClient:
         Research Objective 2.1 & 2.2:
         Fine-tunes the global model on local data to measure Personalization Gain.
         Returns: Accuracy BEFORE fine-tuning vs. Accuracy AFTER fine-tuning.
+        Research Objective 2.1: Adaptive Parameter Sharing.
+        Freezes the 'Shared Body' and only fine-tunes the 'Task Heads'.
         """
         if not self.model:
             return 0.0, 0.0
@@ -288,9 +290,21 @@ class FederatedClient:
         # 2. Personalization Step (Fine-Tuning)
         # Create a COPY so we don't mess up the main training loop
         personalized_model = copy.deepcopy(self.model)
+        
+        # === THE "ADAPTIVE" LOGIC ===
+        # We iterate through layers. If it's a "shared" layer, we freeze it.
+        # If it's a "head" layer, we let it learn.
+        for name, param in personalized_model.named_parameters():
+            if "shared" in name or "bn" in name: # Freeze Body & Batch Norm
+                param.requires_grad = False
+            else: # Train Heads
+                param.requires_grad = True
+        
+        # Only optimize parameters that require gradient
         optimizer = torch.optim.Adam(personalized_model.parameters(), lr=0.001)
         criterion = torch.nn.BCELoss()
         
+        # 3. Training Loop (Standard)
         personalized_model.train()
         for epoch in range(epochs):
             for batch_X, batch_y in self.train_loader:
@@ -307,7 +321,7 @@ class FederatedClient:
                 loss.backward()
                 optimizer.step()
                 
-        # 3. Measure Personalized Performance
+        # 4. Measure Personalized Performance
         # Swap models temporarily
         temp_model = self.model 
         self.model = personalized_model 
