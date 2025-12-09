@@ -237,7 +237,11 @@ def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"
             round_global_acc += g_acc
             round_pers_acc += p_acc
             
-            # 3. Standard FL Training (for the next round)
+            # 3. MEASURE FAIRNESS (Objective 2.2.iii)
+            # We run this check to see if the model is biased
+            client.evaluate_fairness()
+            
+            # 4. Standard FL Training
             client_weights = client.train(epochs=1)
             collected_weights.append(client_weights)
         
