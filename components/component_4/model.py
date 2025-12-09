@@ -87,3 +87,27 @@ class MultiTaskNet(nn.Module):
         
         # Heads
         return self.head_htn(x), self.head_hf(x)
+
+
+# MTFL vs. Single-Task (Objective 2.2.ii)
+class SingleTaskNet(nn.Module):
+    def __init__(self, input_dim): 
+        super(SingleTaskNet, self).__init__()
+        
+        # Similar body to MultiTask, but simpler
+        self.fc1 = nn.Linear(input_dim, 128)
+        self.bn1 = nn.BatchNorm1d(128)
+        self.dropout1 = nn.Dropout(0.3)
+        self.fc2 = nn.Linear(128, 64)
+        
+        # ONLY ONE HEAD (Single Output)
+        self.head = nn.Sequential(
+            nn.Linear(64, 1),
+            nn.Sigmoid()
+        )
+
+    def forward(self, x):
+        x = F.relu(self.bn1(self.fc1(x)))
+        x = self.dropout1(x)
+        x = F.relu(self.fc2(x))
+        return self.head(x)

@@ -23,7 +23,7 @@ class FederatedClient:
 
         # --- OPTION A: Your Group (Diabetes 130 Dataset) ---
         # Used by Component 2 (Readmission) & Component 4 (Multi-Task)
-        if self.component in ["comp2_readmission", "comp4_multitask"]:
+        if self.component in ["comp2_readmission", "comp4_multitask", "comp4_singletask"]:
             try:
                 # Check if files exist
                 if not os.path.exists(f"{self.data_path}_X.csv"):
@@ -38,6 +38,9 @@ class FederatedClient:
                 if self.component == "comp2_readmission":
                     # Component 2 only cares about Readmission (Column 0)
                     y_target = y['target_readmission'].values
+                elif self.component == "comp4_singletask":
+                 # Control Experiment: Only predict Hypertension (Column 0)
+                 y_target = y['target_hypertension'].values
                 else:
                     # Component 4 uses the first two columns (Hypertension, Heart Failure)
                     y_target = y[['target_hypertension', 'target_heart_failure']].values
@@ -108,7 +111,7 @@ class FederatedClient:
                     loss_hf = criterion(pred_hf, target_hf)
                     loss = loss_htn + loss_hf
                     
-                # --- LOGIC FOR GENERIC COMPONENTS (Comp 1 & 2) ---
+                # --- LOGIC FOR GENERIC COMPONENTS (Comp 1, 2 & 4 Single-Task) ---
                 else:
                     outputs = self.model(batch_X)
                     # Reshape batch_y from [32] to [32, 1] to match outputs

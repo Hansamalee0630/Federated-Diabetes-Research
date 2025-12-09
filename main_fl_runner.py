@@ -49,6 +49,11 @@ def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"
         from components.component_4.model import MultiTaskNet
         global_model = MultiTaskNet(input_dim=input_dim)
         print("Loaded Multi-Task Model (Component 4)")
+
+    elif component_type == "comp4_singletask":
+        from components.component_4.model import SingleTaskNet
+        global_model = SingleTaskNet(input_dim=input_dim)
+        print("Loaded Single-Task Control Model (Component 4)")
     
     # # === MEMBER 1 ADDS THIS BLOCK ===
     # elif component_type == "comp1_multimodal":
@@ -124,4 +129,7 @@ def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"
 
 if __name__ == "__main__":
     # You can change this to "comp2_readmission" to test Member 2's code
-    run_simulation(component_type="comp4_multitask")
+    run_simulation(componet_type="comp4_multitask")
+
+# if __name__ == "__main__":
+#     run_simulation(component_type="comp4_singletask")
