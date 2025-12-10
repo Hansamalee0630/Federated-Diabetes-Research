@@ -151,7 +151,14 @@ class FederatedClient:
                 param.requires_grad = True
         
         # Only optimize parameters that require gradient
-        optimizer = torch.optim.Adam(personalized_model.parameters(), lr=0.001)
+        # optimizer = torch.optim.Adam(personalized_model.parameters(), lr=0.001)
+        
+        # Add L2 Regularization (Weight Decay) to prevent overfitting during personalization
+        optimizer = torch.optim.Adam(
+            filter(lambda p: p.requires_grad, personalized_model.parameters()), 
+            lr=0.001, 
+            weight_decay=1e-5  # <--- THIS ADDS L2 REGULARIZATION
+        )
         criterion = torch.nn.BCELoss()
         
         # 3. Training Loop (Standard)

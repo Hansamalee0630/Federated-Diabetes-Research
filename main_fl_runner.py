@@ -21,6 +21,7 @@ class SimpleModel(nn.Module):
         return x
 
 # --- 2. MAIN SIMULATION LOOP ---
+# Scalability (Test Case 8) -> You can easily verify this right now. Open main_fl_runner.py and change the default to num_clients=10.
 def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"):
     print(f"--- Starting FL Simulation for {component_type} ---")
 
@@ -129,7 +130,7 @@ def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"
 
 if __name__ == "__main__":
     # You can change this to "comp2_readmission" to test Member 2's code
-    run_simulation(componet_type="comp4_multitask")
+    run_simulation(component_type="comp4_multitask")
 
 # if __name__ == "__main__":
 #     run_simulation(component_type="comp4_singletask")
