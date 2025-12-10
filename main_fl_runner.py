@@ -130,7 +130,7 @@ def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"
 
 if __name__ == "__main__":
     # You can change this to "comp2_readmission" to test Member 2's code
-    run_simulation(componet_type="comp4_multitask")
+    run_simulation(component_type="comp4_multitask")
 
 # if __name__ == "__main__":
 #     run_simulation(component_type="comp4_singletask")
