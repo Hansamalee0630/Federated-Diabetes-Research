@@ -1,3 +1,4 @@
+import json
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -87,12 +88,17 @@ def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"
     # D. TRAINING LOOP (With Personalization Tracking)
     print("\n--- Training & Personalization Analysis ---")
     
+    # === NEW: LOGGING LIST ===
+    history = []
+
     for round_num in range(1, num_rounds + 1):
         print(f"\n=== ROUND {round_num} ===")
         collected_weights = []
         
         round_global_acc = 0
         round_pers_acc = 0
+        round_fairness_gap = 0
+
         
         for client in clients:
             # 1. Update Client with Global Model
@@ -106,8 +112,9 @@ def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"
             
             # 3. MEASURE FAIRNESS (Objective 2.2.iii)
             # We run this check to see if the model is biased
-            client.evaluate_fairness()
-            
+            gap = client.evaluate_fairness()
+            round_fairness_gap += gap
+
             # 4. Standard FL Training
             client_weights = client.train(epochs=1)
             collected_weights.append(client_weights)
@@ -115,17 +122,37 @@ def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"
         # Calculate Averages
         avg_global = round_global_acc / num_clients
         avg_pers = round_pers_acc / num_clients
+        avg_gap = round_fairness_gap / num_clients
         gain = (avg_pers - avg_global) * 100
         
-        print(f"📊 ROUND {round_num} METRICS:")
+        print(f"\n📊 ROUND {round_num} METRICS:")
         print(f"   Global Model Accuracy: {avg_global:.4f}")
         print(f"   Personalized Accuracy: {avg_pers:.4f}")
         print(f"   🚀 Personalization Gain: +{gain:.2f}%")
+        print(f"   Gap: {avg_gap:.4f}")
+
+        # === NEW: SAVE TO HISTORY ===
+        history.append({
+            "round": round_num,
+            "global_accuracy": avg_global,
+            "personalized_accuracy": avg_pers,
+            "personalization_gain": gain,
+            "fairness_gap": avg_gap
+        })
         
+        # === NEW: DUMP TO FILE INSTANTLY ===
+        with open("results/comp4_results/fl_results.json", "w") as f:
+            json.dump(history, f)
+
+
         # 4. Aggregation
         avg_weights = server.aggregate_weights(collected_weights)
         server.update_global_model(avg_weights)
         
+    # === NEW: SAVE THE ACTUAL MODEL WEIGHTS ===
+    torch.save(server.global_model.state_dict(), "experiments/comp4_experiments/final_multitask_model.pth")
+    print("💾 Model weights saved to 'experiments/comp4_experiments/final_multitask_model.pth'")
+    
     print("\n--- Federated Learning Complete ---")
 
 if __name__ == "__main__":
