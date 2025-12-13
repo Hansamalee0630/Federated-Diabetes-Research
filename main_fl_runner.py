@@ -125,7 +125,7 @@ def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"
         avg_gap = round_fairness_gap / num_clients
         gain = (avg_pers - avg_global) * 100
         
-        print(f"📊 ROUND {round_num} METRICS:")
+        print(f"\n📊 ROUND {round_num} METRICS:")
         print(f"   Global Model Accuracy: {avg_global:.4f}")
         print(f"   Personalized Accuracy: {avg_pers:.4f}")
         print(f"   🚀 Personalization Gain: +{gain:.2f}%")
