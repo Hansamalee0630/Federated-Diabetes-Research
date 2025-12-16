@@ -235,7 +235,8 @@ with col1:
         </p>
     """, unsafe_allow_html=True)
 with col2:
-    st.image("https://cdn-icons-png.flaticon.com/512/3063/3063822.png", width=80) 
+    # st.image("https://cdn-icons-png.flaticon.com/512/3063/3063822.png", width=80) 
+    st.image("assets/logo.svg", width=80)
 
 st.markdown("<br>", unsafe_allow_html=True)
 
