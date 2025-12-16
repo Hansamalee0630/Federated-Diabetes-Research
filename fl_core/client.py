@@ -13,26 +13,41 @@ class FederatedClient:
         self.model = None
         self.train_loader = None
         
-    def load_data(self):
+    def load_data(self, data_client_id=None):
         """
         Loads data dynamically based on the component type.
         This function acts as a 'Switch' to handle different team members' datasets.
+        
+        :param data_client_id: If provided, loads data from this ID instead of self.client_id.
+                               Useful for scalability testing (reusing data).
         """
-        print(f"Client {self.client_id}: Loading data for {self.component}...")
+        # Determine which file to load. 
+        # If data_client_id is passed (e.g. 0), we load client_0 data even if self.client_id is 5.
+        file_id = data_client_id if data_client_id is not None else self.client_id
+        
+        # Update path to point to the correct file
+        target_data_path = f"datasets/diabetes_130/processed/client_{file_id}"
+        
+        # Update self.data_path so fairness checks look at the right file too
+        self.data_path = target_data_path
+
+        print(f"Client {self.client_id}: Loading data for {self.component} (Source: Client {file_id})...")
         dataset = None
 
-        # --- OPTION A: Your Group (Diabetes 130 Dataset) ---
+        # --- OPTION A: Member 1 & 4 -> Diabetes 130 Dataset ---
         # Used by Component 2 (Readmission) & Component 4 (Multi-Task)
         if self.component in ["comp2_readmission", "comp4_multitask", "comp4_singletask"]:
             try:
                 # Check if files exist
-                if not os.path.exists(f"{self.data_path}_X.csv"):
-                    print(f"❌ Error: Data file not found: {self.data_path}_X.csv")
-                    print("   -> Did you run 'python datasets/diabetes_130/preprocess.py'?")
+                if not os.path.exists(f"{target_data_path}_X.csv"):
+                    print(f"❌ Error: Data file not found: {target_data_path}_X.csv")
+                    print("   -> Run 'python datasets/diabetes_130/preprocess.py'?")
+                    # Initialize empty so we don't crash, but won't train
+                    self.train_loader = []
                     return
 
-                X = pd.read_csv(f"{self.data_path}_X.csv").values
-                y = pd.read_csv(f"{self.data_path}_y.csv")
+                X = pd.read_csv(f"{target_data_path}_X.csv").values
+                y = pd.read_csv(f"{target_data_path}_y.csv")
                 
                 # Select Targets based on Component
                 if self.component == "comp2_readmission":
@@ -52,13 +67,11 @@ class FederatedClient:
                 
             except Exception as e:
                 print(f"❌ Error loading Diabetes 130 data: {e}")
+                self.train_loader = []
                 return
 
         # --- OPTION B: Member 3 (Images/Multimodal) ---
         elif self.component == "comp3_multimodal":
-            # [INSTRUCTION FOR MEMBER 3]
-            # Write your image loading logic here.
-            # Example:
             # from components.component_3.dataset import ImageDataset
             # dataset = ImageDataset(root_dir="datasets/multimodal/images", client_id=self.client_id)
             print("⚠️ Client needs to implement ImageDataset loading logic in fl_core/client.py")
@@ -66,7 +79,6 @@ class FederatedClient:
 
         # --- OPTION C: Member 1 (Privacy/Complications) ---
         elif self.component == "comp1_privacy":
-            # [INSTRUCTION FOR MEMBER 1]
             # If using a different dataset, load it here.
             print("⚠️ Client needs to implement Privacy Dataset loading logic in fl_core/client.py")
             return
@@ -78,7 +90,9 @@ class FederatedClient:
         # Finalize the Loader
         if dataset:
             self.train_loader = DataLoader(dataset, batch_size=32, shuffle=True)
-            print(f"Client {self.client_id}: Data loaded successfully. ({len(dataset)} samples)")
+            print(f"   -> Data loaded successfully. ({len(dataset)} samples)")
+        else:
+            self.train_loader = [] # Safety fallback
 
     def set_model(self, model):
         """Receives the global model from the server."""
@@ -89,6 +103,11 @@ class FederatedClient:
         if not self.model:
             raise ValueError("Model not set!")
         
+        # Check if we have data
+        if not self.train_loader or len(self.train_loader) == 0:
+            # print(f"Client {self.client_id}: No data to train on. Skipping.")
+            return self.model.state_dict() # Return unchanged weights
+
         optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
         criterion = torch.nn.BCELoss() # Binary Cross Entropy
         
@@ -97,7 +116,7 @@ class FederatedClient:
             for batch_X, batch_y in self.train_loader:
                 optimizer.zero_grad()
                 
-                # --- LOGIC FOR MULTI-TASK LEARNING (Component 4) ---
+                # --- MULTI-TASK LEARNING (Component 4) ---
                 if self.component == "comp4_multitask":
                     # The model returns TWO outputs
                     pred_htn, pred_hf = self.model(batch_X)
@@ -111,7 +130,7 @@ class FederatedClient:
                     loss_hf = criterion(pred_hf, target_hf)
                     loss = loss_htn + loss_hf
                     
-                # --- LOGIC FOR GENERIC COMPONENTS (Comp 1, 2 & 4 Single-Task) ---
+                # --- GENERIC COMPONENTS (Comp 1, 2 & 4 Single-Task) ---
                 else:
                     outputs = self.model(batch_X)
                     # Reshape batch_y from [32] to [32, 1] to match outputs
@@ -120,7 +139,7 @@ class FederatedClient:
                 loss.backward()
                 optimizer.step()
         
-        print(f"Client {self.client_id}: Training complete.")
+        # print(f"Client {self.client_id}: Training complete.")
         return self.model.state_dict() # Return weights to server
 
     def evaluate_personalization(self, epochs=10):
@@ -133,7 +152,11 @@ class FederatedClient:
         """
         if not self.model:
             return 0.0, 0.0
-            
+        
+        # Check for data
+        if not self.train_loader or len(self.train_loader) == 0:
+            return 0.0, 0.0
+
         # 1. Measure Baseline (Global Model Performance)
         baseline_acc = self._calculate_accuracy()
         
@@ -151,8 +174,6 @@ class FederatedClient:
                 param.requires_grad = True
         
         # Only optimize parameters that require gradient
-        # optimizer = torch.optim.Adam(personalized_model.parameters(), lr=0.001)
-        
         # Add L2 Regularization (Weight Decay) to prevent overfitting during personalization
         optimizer = torch.optim.Adam(
             filter(lambda p: p.requires_grad, personalized_model.parameters()), 
@@ -185,11 +206,14 @@ class FederatedClient:
         personalized_acc = self._calculate_accuracy()
         self.model = temp_model # Swap back
         
-        print(f"Client {self.client_id} Personalization Gain: {personalized_acc - baseline_acc:.4f}")
+        # print(f"Client {self.client_id} Personalization Gain: {personalized_acc - baseline_acc:.4f}")
         return baseline_acc, personalized_acc
 
     def _calculate_accuracy(self):
         """Helper to calculate accuracy on local data."""
+        if not self.train_loader or len(self.train_loader) == 0:
+            return 0.0
+
         correct = 0
         total = 0
         self.model.eval()
@@ -206,6 +230,8 @@ class FederatedClient:
                     predicted = (outputs > 0.5).float()
                     correct += (predicted == batch_y.view(-1, 1)).sum().item()
                 total += batch_y.size(0)
+        
+        if total == 0: return 0.0
         return correct / total
     
     def evaluate_fairness(self):
@@ -214,12 +240,15 @@ class FederatedClient:
         Calculate Demographic Parity Gap (Fairness).
         Handles Standardized Data (where values are not exactly 0 or 1).
         """
-        if not self.model: return {}
+        if not self.model: return 0.0
         
-        # Load data
         try:
-            df = pd.read_csv(f"{self.data_path}_X.csv")
-            y = pd.read_csv(f"{self.data_path}_y.csv")
+             # We try to read the file currently assigned to this client.
+             if not os.path.exists(f"{self.data_path}_X.csv"):
+                 return 0.0
+             else:
+                df = pd.read_csv(f"{self.data_path}_X.csv")
+                y = pd.read_csv(f"{self.data_path}_y.csv")
         except:
             return 0.0
         
@@ -237,8 +266,6 @@ class FederatedClient:
             group_a = df[df['gender_Male'] < 0] # Females
             group_b = df[df['gender_Male'] > 0] # Males
         else:
-            # Fallback: Check for other common columns if needed
-            print(f"⚠️ Fairness feature (gender) not found in {list(df.columns[:5])}...")
             return 0.0
 
         # Helper to get accuracy
@@ -265,9 +292,5 @@ class FederatedClient:
         acc_male = get_acc(group_b, group_b.index)
         
         gap = abs(acc_female - acc_male)
-        
-        print(f"⚖️ FAIRNESS CHECK (Client {self.client_id}):")
-        print(f"   Female Acc: {acc_female:.4f} | Male Acc: {acc_male:.4f}")
-        print(f"   Gap: {gap:.4f} (Target <= 0.05)")
         
         return gap
