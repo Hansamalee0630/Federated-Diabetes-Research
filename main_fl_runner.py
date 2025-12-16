@@ -39,7 +39,7 @@ def get_model_size_mb(model):
     return size_all_mb
 
 # --- 2. MAIN SIMULATION LOOP ---
-# Scalability (Test Case 8) -> You can easily verify this right now. Open main_fl_runner.py and change the default to num_clients=10.
+# Scalability (Test Case 8) -> Verify by opening main_fl_runner.py and change the default to num_clients=10.
 def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"):
     print(f"--- Starting FL Simulation for {component_type} ---")
 
@@ -109,7 +109,7 @@ def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"
         # We override the default data loading to allow reuse
         # (Assuming FederatedClient code handles loading "client_{data_id}_X.csv")
         # For now, we rely on the client class default behavior. 
-        # If your client class hardcodes file loading, ensure it handles i > 2 correctly.
+        # If the client class hardcodes file loading, ensure it handles i > 2 correctly.
         # Simple fix: Update client.py or preprocess more data. 
         # For this simulation, reusing partitions is acceptable for scalability testing.
         
