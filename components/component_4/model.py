@@ -33,6 +33,13 @@ class MultiTaskNet(nn.Module):
             nn.Sigmoid()
         )
 
+        # --- HEAD 3: Comorbidity Cluster (Multi-Class: 3 Classes) ---
+        # 0=Metabolic, 1=Circulatory, 2=Complex
+        self.head_cluster = nn.Sequential(
+            nn.Linear(64, 32), nn.ReLU(),
+            nn.Linear(32, 3) # Output size 3 (Logits)
+        )
+
     def forward(self, x):
         # Body
         x = F.relu(self.bn1(self.shared_fc1(x)))
@@ -41,7 +48,7 @@ class MultiTaskNet(nn.Module):
         x = self.dropout2(x)
         
         # Heads
-        return self.head_htn(x), self.head_hf(x)
+        return self.head_htn(x), self.head_hf(x), self.head_cluster(x)
 
 
 # MTFL vs. Single-Task (Objective 2.2.ii)
@@ -65,4 +72,5 @@ class SingleTaskNet(nn.Module):
         x = F.relu(self.bn1(self.fc1(x)))
         x = self.dropout1(x)
         x = F.relu(self.fc2(x))
+        
         return self.head(x)
