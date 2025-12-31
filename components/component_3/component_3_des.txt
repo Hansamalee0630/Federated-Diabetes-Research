@@ -1,1 +1,0 @@
-# Multimodal FL model (CNN+MLP)
