@@ -105,8 +105,8 @@ def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"
         # Simple fix: Update client.py or preprocess more data. 
         # For this simulation, reusing partitions is acceptable for scalability testing.
         
-        # --- THE FIX IS HERE ---
-        # We explicitly pass 'data_id' to load_data so it knows which file to read.
+
+        # Explicitly pass 'data_id' to load_data so it knows which file to read.
         client.load_data(data_client_id=data_id)
         
         # Only add client if data loaded successfully
@@ -126,7 +126,6 @@ def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"
 
         collected_weights = []
         
-        # Store lists of metric dicts
         round_global_metrics_list = []
         round_pers_metrics_list = []
         round_fairness_gap = 0
@@ -146,7 +145,12 @@ def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"
             round_fairness_gap += gap
 
             # 4. Standard FL Training
-            client_weights = client.train(epochs=10) # Keep 1 epoch for efficiency
+            if args.privacy:
+                print(f"Client {client.client_id}: Training with DP (epsilon=2.0)...")
+                client_weights = client.train_with_privacy(epochs=10, epsilon=2.0)
+            else:
+                client_weights = client.train(epochs=10)
+
             collected_weights.append(client_weights)
         
         round_duration = time.time() - round_start_time
@@ -222,7 +226,7 @@ def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"
         "training_time",
     ]
 
-    # [FIX] Filter to only include columns that ACTUALLY exist in the dataframe
+    # Filter to only include columns that ACTUALLY exist in the dataframe
     # This prevents the crash when running Single-Task experiments
     display_cols = [col for col in desired_cols if col in final_df.columns]
 
@@ -244,6 +248,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Run Federated Learning Simulation")
     parser.add_argument("--clients", type=int, default=3, help="Number of clients (hospitals/devices)")
     parser.add_argument("--rounds", type=int, default=3, help="Number of federated rounds")
+    parser.add_argument("--privacy", action="store_true", help="Enable Differential Privacy simulation")
+    
     parser.add_argument(
         "--component",
         type=str,

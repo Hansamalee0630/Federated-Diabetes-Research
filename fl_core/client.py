@@ -4,13 +4,11 @@ import torch
 from torch.utils.data import DataLoader, TensorDataset
 import copy
 import os
-
 from sklearn.metrics import (
     roc_auc_score, average_precision_score, f1_score, 
     recall_score, precision_score, confusion_matrix, accuracy_score
 )
 import warnings
-# Suppress UndefinedMetricWarning for rare classes in small batches
 from sklearn.exceptions import UndefinedMetricWarning
 warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
 
@@ -30,26 +28,22 @@ class FederatedClient:
         :param data_client_id: If provided, loads data from this ID instead of self.client_id.
                                Useful for scalability testing (reusing data).
         """
-        # Determine which file to load. 
         # If data_client_id is passed (e.g. 0), we load client_0 data even if self.client_id is 5.
         file_id = data_client_id if data_client_id is not None else self.client_id
         
-        # Update path to point to the correct file
         target_data_path = f"datasets/diabetes_130/processed/client_{file_id}"
-        
-        # Update self.data_path so fairness checks look at the right file too
         self.data_path = target_data_path
 
         print(f"Client {self.client_id}: Loading data for {self.component} (Source: Client {file_id})...")
         dataset = None
 
-        # --- Diabetes 130 Dataset --- Used by Component 4 (Multi-Task)
+
         if self.component in ["comp4_multitask", "comp4_singletask_htn", "comp4_singletask_hf"]:
             try:
                 if not os.path.exists(f"{target_data_path}_X.csv"):
                     print(f"❌ Error: Data file not found: {target_data_path}_X.csv")
                     print("   -> Run 'python datasets/diabetes_130/preprocess.py'?")
-                    # Initialize empty so we don't crash, but won't train
+
                     self.train_loader = []
                     return
 
@@ -68,7 +62,7 @@ class FederatedClient:
                 else:
                     y_target = y[['target_hypertension', 'target_heart_failure', 'target_cluster']].values
 
-                # Create PyTorch Tensors
+                # Convert to Tensors for DataLoader
                 tensor_x = torch.Tensor(X)
                 tensor_y = torch.Tensor(y_target)
                 
@@ -90,8 +84,9 @@ class FederatedClient:
         else:
             self.train_loader = [] # Safety fallback
 
+    
+    # Receives the global model from the server.
     def set_model(self, model):
-        """Receives the global model from the server."""
         self.model = model
 
     def train(self, epochs=1):
@@ -99,22 +94,23 @@ class FederatedClient:
         if not self.model:
             raise ValueError("Model not set!")
         
-        # Check if we have data
+
         if not self.train_loader or len(self.train_loader) == 0:
             return self.model.state_dict() # Return unchanged weights
 
         optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
         
-        # Two Loss Functions
+        # Loss Functions
         criterion_binary = torch.nn.BCELoss()           # For Disease (0/1)
         criterion_multi  = torch.nn.CrossEntropyLoss()  # For Cluster (0,1,2)
         
         self.model.train()
+
         for epoch in range(epochs):
             for batch_X, batch_y in self.train_loader:
                 optimizer.zero_grad()
                 
-                # --- MULTI-TASK LEARNING (Component 4) ---
+                # --- MULTI-TASK LEARNING ---
                 if self.component == "comp4_multitask":
                     # The model returns 3 outputs
                     pred_htn, pred_hf, pred_cluster = self.model(batch_X)
@@ -122,12 +118,11 @@ class FederatedClient:
                     # The target batch also has 3 columns
                     target_htn = batch_y[:, 0].unsqueeze(1)
                     target_hf = batch_y[:, 1].unsqueeze(1)
-                    target_cluster = batch_y[:, 2].long()       # Multi-Class (Must be Long/Integer)
+                    target_cluster = batch_y[:, 2].long()
 
                     # 3. Calculate loss for all three tasks and add them together
                     loss_htn = criterion_binary(pred_htn, target_htn)
                     loss_hf = criterion_binary(pred_hf, target_hf)
-                    loss = loss_htn + loss_hf
                     loss_cluster = criterion_multi(pred_cluster, target_cluster)
                     
                     # 4. Total Loss (Sum them up)
@@ -136,13 +131,80 @@ class FederatedClient:
                 # --- GENERIC COMPONENT (Single-Task) ---
                 else:
                     outputs = self.model(batch_X)
-                    # Reshape batch_y from [32] to [32, 1] to match outputs
                     loss = criterion_binary(outputs, batch_y.view(-1, 1))
 
                 loss.backward()
                 optimizer.step()
         
         return self.model.state_dict() # Return weights to server
+
+    def train_with_privacy(self, epochs=1, epsilon=1.0, max_grad_norm=1.0):
+        """
+        Local training loop. Simulates Differential Privacy by clipping gradients and adding noise.
+        This fulfills the "Privacy-Preserving" requirement of the architecture.
+        Returns the updated model weights after training.
+        """
+        if not self.model:
+            raise ValueError("Model not set!")
+        
+
+        if not self.train_loader or len(self.train_loader) == 0:
+            return self.model.state_dict() # Return unchanged weights
+
+        optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
+        
+        # Loss Functions
+        criterion_binary = torch.nn.BCELoss()           # For Disease (0/1)
+        criterion_multi  = torch.nn.CrossEntropyLoss()  # For Cluster (0,1,2)
+        
+        self.model.train()
+
+        # --- 1. TRAINING LOOP (With Gradient Clipping) ---
+        for epoch in range(epochs):
+            for batch_X, batch_y in self.train_loader:
+                optimizer.zero_grad()
+                
+                # --- MULTI-TASK LEARNING ---
+                if self.component == "comp4_multitask":
+                    pred_htn, pred_hf, pred_cluster = self.model(batch_X)
+                    
+                    target_htn = batch_y[:, 0].unsqueeze(1)
+                    target_hf = batch_y[:, 1].unsqueeze(1)
+                    target_cluster = batch_y[:, 2].long()
+
+                    loss_htn = criterion_binary(pred_htn, target_htn)
+                    loss_hf = criterion_binary(pred_hf, target_hf)
+                    loss_cluster = criterion_multi(pred_cluster, target_cluster)
+                    
+                    loss = loss_htn + loss_hf + loss_cluster
+
+                # --- GENERIC COMPONENT (Single-Task) ---
+                else:
+                    outputs = self.model(batch_X)
+                    loss = criterion_binary(outputs, batch_y.view(-1, 1))
+
+                loss.backward()
+
+                # --- PRIVACY STEP 1: CLIP GRADIENTS ---
+                # This limits the influence of any single data point for every batch
+                torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_grad_norm)
+
+                optimizer.step()
+
+        # --- PRIVACY STEP 2: ADD NOISE TO WEIGHTS (Local DP Simulation) ---
+        # Get the state dict (weights)
+        model_state = self.model.state_dict()
+        noise_multiplier = 1.0 / epsilon # Simplistic mapping for simulation
+
+        # Clone to avoid modifying the model for the next round of local training
+        noisy_state = {k: v.clone() for k, v in model_state.items()}
+
+        for key in noisy_state.keys():
+            if 'float' in str(noisy_state[key].dtype): # Only add noise to float parameters
+                noise = torch.normal(0, 0.01 * noise_multiplier, size=noisy_state[key].shape)
+                noisy_state[key] += noise
+
+        return noisy_state # Return the NOISY weights to server
 
     def _evaluate_metrics(self, model_to_test):
         """
@@ -154,7 +216,6 @@ class FederatedClient:
         model_to_test.eval()
         
         # Containers to store ALL predictions and targets for the whole dataset
-        # (Needed for valid AUROC calculation)
         all_preds_htn = []
         all_targets_htn = []
         all_preds_hf = []
@@ -272,7 +333,6 @@ class FederatedClient:
         baseline_metrics = self._evaluate_metrics(self.model)
 
         # 2. Personalization Step (Fine-Tuning)
-        # Create a COPY so we don't mess up the main training loop
         personalized_model = copy.deepcopy(self.model)
         
         # === THE "ADAPTIVE" LOGIC ===
@@ -289,7 +349,7 @@ class FederatedClient:
         optimizer = torch.optim.Adam(
             filter(lambda p: p.requires_grad, personalized_model.parameters()), 
             lr=0.001, 
-            weight_decay=1e-5  # <--- THIS ADDS L2 REGULARIZATION
+            weight_decay = 1e-5  # ADDS L2 REGULARIZATION
         )
         criterion_binary = torch.nn.BCELoss()
         criterion_multi  = torch.nn.CrossEntropyLoss()
@@ -313,14 +373,12 @@ class FederatedClient:
                 loss.backward()
                 optimizer.step()
                 
-        # 4. Measure Personalized Performance
-        # Swap models temporarily
+        # 4. Measure Personalized Performance. Swap models temporarily
         temp_model = self.model 
         self.model = personalized_model 
         personalized_metrics = self._evaluate_metrics(personalized_model)
         self.model = temp_model # Swap back
         
-        # print(f"Client {self.client_id} Personalization Gain: {personalized_acc - baseline_acc:.4f}")
         return baseline_metrics, personalized_metrics
 
     def _calculate_accuracy(self):
@@ -365,7 +423,7 @@ class FederatedClient:
         if not self.model: return 0.0
         
         try:
-             # We try to read the file currently assigned to this client.
+             # Read the file currently assigned to this client.
              if not os.path.exists(f"{self.data_path}_X.csv"):
                  return 0.0
              else:
