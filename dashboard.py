@@ -5,6 +5,31 @@ import time
 import os
 import plotly.graph_objects as go
 import numpy as np
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+
+# --- MODEL DEFINITION ---
+class MultiTaskNet(nn.Module):
+    def __init__(self, input_dim): 
+        super(MultiTaskNet, self).__init__()
+        self.shared_fc1 = nn.Linear(input_dim, 128)
+        self.bn1 = nn.BatchNorm1d(128)
+        self.dropout1 = nn.Dropout(0.3)
+        self.shared_fc2 = nn.Linear(128, 64)
+        self.bn2 = nn.BatchNorm1d(64)
+        self.dropout2 = nn.Dropout(0.3)
+        
+        self.head_htn = nn.Sequential(nn.Linear(64, 32), nn.ReLU(), nn.Linear(32, 1), nn.Sigmoid())
+        self.head_hf = nn.Sequential(nn.Linear(64, 32), nn.ReLU(), nn.Linear(32, 1), nn.Sigmoid())
+        self.head_cluster = nn.Sequential(nn.Linear(64, 32), nn.ReLU(), nn.Linear(32, 3))
+
+    def forward(self, x):
+        x = F.relu(self.bn1(self.shared_fc1(x)))
+        x = self.dropout1(x)
+        x = F.relu(self.bn2(self.shared_fc2(x)))
+        x = self.dropout2(x)
+        return self.head_htn(x), self.head_hf(x), self.head_cluster(x)
 
 # --- PAGE CONFIG ---
 st.set_page_config(
@@ -36,6 +61,70 @@ def load_comp4_data():
         except:
             return get_dummy_fl_data()
     return get_dummy_fl_data()
+
+@st.cache_resource
+def load_trained_model():
+    """Load the trained FL model for inference"""
+    model_path = "experiments/comp4_experiments/final_multitask_model.pth"
+    sample_data_path = "datasets/diabetes_130/processed/client_0_X.csv"
+    
+    if not os.path.exists(model_path):
+        return None, "Model not found. Run 'python main_fl_runner.py' first."
+    
+    if not os.path.exists(sample_data_path):
+        return None, "Sample data not found. Run preprocessing first."
+    
+    try:
+        # Detect input dimension from sample data
+        sample_data = pd.read_csv(sample_data_path)
+        input_dim = sample_data.shape[1]
+        
+        # Initialize and load model
+        model = MultiTaskNet(input_dim=input_dim)
+        model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
+        model.eval()
+        
+        # Get feature names for mapping
+        feature_names = list(sample_data.columns)
+        
+        return model, feature_names
+    except Exception as e:
+        return None, f"Error loading model: {str(e)}"
+
+def prepare_input_features(age, gender, meds, hba1c, bmi, feature_names):
+    """Prepare input tensor from dashboard inputs matching training data format"""
+    # Create a feature dictionary with zeros
+    features = {name: 0.0 for name in feature_names}
+    
+    # Map dashboard inputs to feature names
+    # Numeric features (need to match preprocessing - scaled values)
+    age_idx = int((age - 10) / 10)  # Convert age to age bracket index (0-9)
+    features['age'] = (age_idx - 5) / 2.5  # Rough standardization
+    features['num_medications'] = (meds - 15) / 10  # Rough standardization
+    features['time_in_hospital'] = 0.0  # Default
+    features['num_lab_procedures'] = 0.5  # Default average
+    features['num_procedures'] = 0.0  # Default
+    features['number_diagnoses'] = 0.5  # Default average
+    
+    # One-hot encoded features
+    if 'gender_Male' in features and gender == "Male":
+        features['gender_Male'] = 1
+    
+    # HbA1c encoding
+    if hba1c > 8:
+        if 'A1Cresult_>8' in features:
+            features['A1Cresult_>8'] = 1
+    elif hba1c > 7:
+        if 'A1Cresult_>7' in features:
+            features['A1Cresult_>7'] = 1
+    
+    # Insulin usage (assume yes for higher HbA1c)
+    if hba1c > 7.5 and 'insulin_Up' in features:
+        features['insulin_Up'] = 1
+    
+    # Convert to tensor
+    feature_vector = [features[name] for name in feature_names]
+    return torch.tensor([feature_vector], dtype=torch.float32)
 
 # --- CSS STYLING (THE WOW FACTOR) ---
 st.markdown("""
@@ -466,54 +555,74 @@ with tabs[3]:
 
     # 2. OUTPUTS (THE COOL GAUGES)
     if submit:
-        # Pause refresh so user can see result
-        st.session_state.pause_refresh = True
-        
         with st.spinner("Processing federated inference..."):
-            time.sleep(0.8) # UI effect
+            time.sleep(0.3) # UI effect
         
-        # --- ENHANCED SIMULATION LOGIC ---
+        # Calculate normalized values for explainability (used in both paths)
         norm_age = age / 100
         norm_meds = meds / 40
         norm_hba1c = (hba1c - 4) / 11 
-        norm_bmi = (bmi - 15) / 35      
+        norm_bmi = (bmi - 15) / 35
         
-        # Gender Logic
-        gender_risk = 0.10 if gender == "Male" else 0.00
-            
-        # Base Risk Calculation
-        base_risk = 0.3
+        # --- LOAD TRAINED MODEL ---
+        model, model_info = load_trained_model()
         
-        # Task 1: Hypertension Risk
-        prob_htn = base_risk + (norm_age*0.2) + (norm_hba1c*0.3) + (norm_bmi*0.25) + (norm_meds*0.15) + gender_risk
-        
-        # Task 2: Heart Failure Risk
-        prob_hf = base_risk + (norm_age*0.3) + (norm_hba1c*0.25) + (norm_bmi*0.2) + (norm_meds*0.1) + (gender_risk * 0.5)
-
-        # --- HOSPITAL CONTEXT MODIFIERS (Non-IID Simulation) ---
-        if hospital_type == "Hospital B (Rural - Geriatric)":
-            # Rural/Older populations might have slightly higher underlying risk
-            prob_htn += 0.05
-            prob_hf += 0.08
-        elif hospital_type == "Hospital C (Specialized - Cardiac)":
-            # Cardiac centers might see more severe cases (bias)
-            prob_hf += 0.10
-
-        # --- PERSONALIZATION BOOST ---
-        if model_mode == "Personalized Model":
-            # Personalization "calibrates" the model, usually reducing false positives or refining risk
-            # For demo, we simulate a 'cleaner' prediction (closer to extremes)
-            if prob_htn > 0.5: prob_htn += 0.05
-            else: prob_htn -= 0.05
+        if model is None:
+            st.error(f"❌ {model_info}")
+            st.info("💡 Falling back to simulation mode...")
             
-            if prob_hf > 0.5: prob_hf += 0.05
-            else: prob_hf -= 0.05
+            # FALLBACK: Use dummy logic
+            gender_risk = 0.10 if gender == "Male" else 0.00
+            base_risk = 0.3
+            prob_htn = base_risk + (norm_age*0.2) + (norm_hba1c*0.3) + (norm_bmi*0.25) + (norm_meds*0.15) + gender_risk
+            prob_hf = base_risk + (norm_age*0.3) + (norm_hba1c*0.25) + (norm_bmi*0.2) + (norm_meds*0.1) + (gender_risk * 0.5)
             
-            st.toast("⚡ Personalized model applied: Adjusted for local patient demographics.")
-
-        # --- ADD NOISE (Realism) ---
-        prob_htn = np.clip(prob_htn + np.random.normal(0, 0.02), 0.05, 0.98)
-        prob_hf = np.clip(prob_hf + np.random.normal(0, 0.02), 0.05, 0.95)
+            if hospital_type == "Hospital B (Rural - Geriatric)":
+                prob_htn += 0.05
+                prob_hf += 0.08
+            elif hospital_type == "Hospital C (Specialized - Cardiac)":
+                prob_hf += 0.10
+                
+            if model_mode == "Personalized Model":
+                if prob_htn > 0.5: prob_htn += 0.05
+                else: prob_htn -= 0.05
+                if prob_hf > 0.5: prob_hf += 0.05
+                else: prob_hf -= 0.05
+                st.toast("⚡ Personalized model applied: Adjusted for local patient demographics.")
+                
+            prob_htn = np.clip(prob_htn + np.random.normal(0, 0.02), 0.05, 0.98)
+            prob_hf = np.clip(prob_hf + np.random.normal(0, 0.02), 0.05, 0.95)
+        else:
+            # --- REAL MODEL INFERENCE ---
+            st.success("✅ Using trained FL model for prediction")
+            
+            # Prepare input features
+            feature_names = model_info
+            input_tensor = prepare_input_features(age, gender, meds, hba1c, bmi, feature_names)
+            
+            # Run inference
+            with torch.no_grad():
+                htn_out, hf_out, cluster_out = model(input_tensor)
+                prob_htn = htn_out.item()
+                prob_hf = hf_out.item()
+            
+            # --- HOSPITAL CONTEXT MODIFIERS ---
+            if hospital_type == "Hospital B (Rural - Geriatric)":
+                prob_htn = min(prob_htn + 0.05, 0.98)
+                prob_hf = min(prob_hf + 0.08, 0.98)
+            elif hospital_type == "Hospital C (Specialized - Cardiac)":
+                prob_hf = min(prob_hf + 0.10, 0.98)
+            
+            # --- PERSONALIZATION BOOST ---
+            if model_mode == "Personalized Model":
+                # Simulate local fine-tuning effect
+                if prob_htn > 0.5: prob_htn = min(prob_htn + 0.03, 0.98)
+                else: prob_htn = max(prob_htn - 0.03, 0.02)
+                
+                if prob_hf > 0.5: prob_hf = min(prob_hf + 0.03, 0.98)
+                else: prob_hf = max(prob_hf - 0.03, 0.02)
+                
+                st.toast("⚡ Personalized model applied: Adjusted for local patient demographics.")
         
         # --- DISPLAY RESULTS ---
         col_out1, col_out2 = st.columns(2)
