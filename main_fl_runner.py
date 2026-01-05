@@ -41,18 +41,17 @@ def aggregate_metrics(metric_list):
     return avg_metrics
 
 # --- 2. MAIN SIMULATION LOOP ---
-# Scalability (Test Case 8) -> Verify by opening main_fl_runner.py and change the default to num_clients=10.
+# Scalability (Test Case 8)
 def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"):
     print(f"--- Starting FL Simulation for {component_type} ---")
 
     # A. AUTO-DETECT INPUT SIZE
     try:
-        # We try to load Client 0's data to check the shape 
+        # Load Client 0's data to check the shape 
         sample_path = "datasets/diabetes_130/processed/client_0_X.csv"
         
-        # Fallback check if data exists
         if not os.path.exists(sample_path):
-             print(f"❌ Error: Data file not found at {sample_path}")
+             print(f"Error: Data file not found at {sample_path}")
              print("   -> Run 'python datasets/diabetes_130/preprocess.py' first!")
              return
              
@@ -70,14 +69,12 @@ def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"
         global_model = MultiTaskNet(input_dim=input_dim)
         print("Loaded Multi-Task Model (Component 4)")
 
-    # [MODIFIED]: Check if "singletask" is in the name (covers both _htn and _hf)
     elif "singletask" in component_type:
         from components.component_4.model import SingleTaskNet
         global_model = SingleTaskNet(input_dim=input_dim)
         print(f"Loaded Single-Task Control Model for {component_type}")
 
     else:
-        # Fallback for comp2 or others
         from components.component_4.model import SingleTaskNet 
         global_model = SingleTaskNet(input_dim=input_dim)
         print("Loaded Simple Model")
@@ -88,32 +85,22 @@ def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"
 
     # Calculate Communication Cost (Model Size)
     model_size_mb = get_model_size_mb(global_model)
-    print(f"📦 Model Size (Communication Cost per Client): {model_size_mb:.2f} MB")
+    print(f"   Model Size (Communication Cost per Client): {model_size_mb:.2f} MB")
 
     # C. INITIALIZE CLIENTS
     clients = []
-    # Note: We cycle through available data partitions if num_clients > 3
-    # This simulates having more clients by reusing the 3 datasets we prepared
 
     for i in range(num_clients):
-        data_id = i % 3  # Reuse dataset 0, 1, 2 if we ask for 10 clients
+        data_id = i % 3  # Reuse dataset 0, 1, 2
         client = FederatedClient(client_id=i, component_type=component_type)
-        # We override the default data loading to allow reuse
-        # (Assuming FederatedClient code handles loading "client_{data_id}_X.csv")
-        # For now, we rely on the client class default behavior. 
-        # If the client class hardcodes file loading, ensure it handles i > 2 correctly.
-        # Simple fix: Update client.py or preprocess more data. 
-        # For this simulation, reusing partitions is acceptable for scalability testing.
-        
 
         # Explicitly pass 'data_id' to load_data so it knows which file to read.
         client.load_data(data_client_id=data_id)
         
-        # Only add client if data loaded successfully
         if hasattr(client, 'train_loader') and client.train_loader is not None and len(client.train_loader) > 0:
             clients.append(client)
         else:
-            print(f"⚠️ Warning: Client {i} failed to load data. Skipping.")
+            print(f"   Warning: Client {i} failed to load data. Skipping.")
 
     # D. TRAINING LOOP (With Personalization Tracking)
     print("\n--- Training & Personalization Analysis ---")
@@ -134,8 +121,8 @@ def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"
             # 1. Update Client with Global Model
             client.set_model(copy.deepcopy(server.global_model))
             
-            # 2. MEASURE METRICS (Returns Dictionaries now)
-            g_metrics, p_metrics = client.evaluate_personalization(epochs=10)
+            # 2. MEASURE METRICS (Global Vs. Personalized)
+            g_metrics, p_metrics = client.evaluate_personalization(epochs=20)
             
             round_global_metrics_list.append(g_metrics)
             round_pers_metrics_list.append(p_metrics)
@@ -167,10 +154,10 @@ def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"
                     / avg_global_metrics['overall_acc']) * 100
 
         # PRINT DETAILED REPORT
-        print(f"📊 ROUND {round_num} SUMMARY:")
+        print(f"   ROUND {round_num} SUMMARY:")
         print(f"   [Global] Overall Acc: {avg_global_metrics.get('overall_acc',0):.4f} | HTN AUROC: {avg_global_metrics.get('htn_auroc',0):.4f} | HF AUROC: {avg_global_metrics.get('hf_auroc',0):.4f}")
         print(f"   [Pers.]  Overall Acc: {avg_pers_metrics.get('overall_acc',0):.4f} | HTN AUROC: {avg_pers_metrics.get('htn_auroc',0):.4f} | HF AUROC: {avg_pers_metrics.get('hf_auroc',0):.4f}")
-        print(f"   🚀 Gain: +{gain:.2f}% | ⚖️ Fairness Gap: {avg_gap:.4f}")
+        print(f"       Gain: +{gain:.2f}% | ⚖️ Fairness Gap: {avg_gap:.4f}")
 
         # SAVE TO HISTORY (Flatten dictionary for JSON)
         record = {
@@ -197,11 +184,11 @@ def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"
     # Save Final Model
     os.makedirs("experiments/comp4_experiments", exist_ok=True)
     torch.save(server.global_model.state_dict(), "experiments/comp4_experiments/final_multitask_model.pth")
-    print("💾 Model weights saved to 'experiments/comp4_experiments/final_multitask_model.pth'")
+    print("   Model weights saved to 'experiments/comp4_experiments/final_multitask_model.pth'")
 
     # === E. FINAL SUMMARY REPORT (Best Practice) ===
     print("\n" + "="*80)
-    print("🏁 FINAL SIMULATION REPORT")
+    print("   FINAL SIMULATION REPORT")
     print("="*80)
     
     # Convert history to DataFrame for pretty printing
@@ -234,8 +221,8 @@ def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"
     if not final_df.empty:
         print(final_df[display_cols].to_string(index=False))
         print("-" * 80)
-        print(f"🏆 Best Personalization Gain: {final_df['gain_pct'].max():.2f}%")
-        print(f"⚖️  Average Fairness Gap:      {final_df['fairness_gap'].mean():.4f}")
+        print(f"    Best Personalization Gain: {final_df['gain_pct'].max():.2f}%")
+        print(f"    Average Fairness Gap:      {final_df['fairness_gap'].mean():.4f}")
     else:
         print("No results generated.")
         

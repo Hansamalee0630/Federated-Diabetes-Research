@@ -8,28 +8,30 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from components.component_4.model import MultiTaskNet
+
 
 # --- MODEL DEFINITION ---
-class MultiTaskNet(nn.Module):
-    def __init__(self, input_dim): 
-        super(MultiTaskNet, self).__init__()
-        self.shared_fc1 = nn.Linear(input_dim, 128)
-        self.bn1 = nn.BatchNorm1d(128)
-        self.dropout1 = nn.Dropout(0.3)
-        self.shared_fc2 = nn.Linear(128, 64)
-        self.bn2 = nn.BatchNorm1d(64)
-        self.dropout2 = nn.Dropout(0.3)
+# class MultiTaskNet(nn.Module):
+#     def __init__(self, input_dim): 
+#         super(MultiTaskNet, self).__init__()
+#         self.shared_fc1 = nn.Linear(input_dim, 128)
+#         self.bn1 = nn.BatchNorm1d(128)
+#         self.dropout1 = nn.Dropout(0.3)
+#         self.shared_fc2 = nn.Linear(128, 64)
+#         self.bn2 = nn.BatchNorm1d(64)
+#         self.dropout2 = nn.Dropout(0.3)
         
-        self.head_htn = nn.Sequential(nn.Linear(64, 32), nn.ReLU(), nn.Linear(32, 1), nn.Sigmoid())
-        self.head_hf = nn.Sequential(nn.Linear(64, 32), nn.ReLU(), nn.Linear(32, 1), nn.Sigmoid())
-        self.head_cluster = nn.Sequential(nn.Linear(64, 32), nn.ReLU(), nn.Linear(32, 3))
+#         self.head_htn = nn.Sequential(nn.Linear(64, 32), nn.ReLU(), nn.Linear(32, 1), nn.Sigmoid())
+#         self.head_hf = nn.Sequential(nn.Linear(64, 32), nn.ReLU(), nn.Linear(32, 1), nn.Sigmoid())
+#         self.head_cluster = nn.Sequential(nn.Linear(64, 32), nn.ReLU(), nn.Linear(32, 3))
 
-    def forward(self, x):
-        x = F.relu(self.bn1(self.shared_fc1(x)))
-        x = self.dropout1(x)
-        x = F.relu(self.bn2(self.shared_fc2(x)))
-        x = self.dropout2(x)
-        return self.head_htn(x), self.head_hf(x), self.head_cluster(x)
+#     def forward(self, x):
+#         x = F.relu(self.bn1(self.shared_fc1(x)))
+#         x = self.dropout1(x)
+#         x = F.relu(self.bn2(self.shared_fc2(x)))
+#         x = self.dropout2(x)
+#         return self.head_htn(x), self.head_hf(x), self.head_cluster(x)
 
 # --- PAGE CONFIG ---
 st.set_page_config(
@@ -47,9 +49,9 @@ def get_dummy_fl_data():
     fairness = [max(0, 0.15 - (i * 0.007)) for i in rounds]
     return pd.DataFrame({
         'round': rounds,
-        'global_accuracy': global_acc,
-        'personalized_accuracy': pers_acc,
-        'personalization_gain': [(p - g)*100 for p, g in zip(pers_acc, global_acc)],
+        'global_overall_acc': global_acc,
+        'pers_overall_acc': pers_acc,
+        'gain_pct': [(p - g)*100 for p, g in zip(pers_acc, global_acc)],
         'fairness_gap': fairness
     })
 
@@ -91,40 +93,90 @@ def load_trained_model():
     except Exception as e:
         return None, f"Error loading model: {str(e)}"
 
+
 def prepare_input_features(age, gender, meds, hba1c, bmi, feature_names):
-    """Prepare input tensor from dashboard inputs matching training data format"""
-    # Create a feature dictionary with zeros
+    """Prepare input tensor with dynamic scaling AND intelligent defaults"""
+    
+    # 1. LOAD STATS (Dynamic but Cached logic would be better, doing it here for safety)
+    try:
+        # Try to load real training data stats
+        sample_path = "datasets/diabetes_130/processed/client_0_X.csv"
+        if os.path.exists(sample_path):
+            df = pd.read_csv(sample_path)
+            # Calculate actual stats from your data
+            stats = {
+                'age': (df['age'].mean(), df['age'].std()),
+                'num_medications': (df['num_medications'].mean(), df['num_medications'].std()),
+                'time_in_hospital': (df['time_in_hospital'].mean(), df['time_in_hospital'].std()),
+                'num_lab_procedures': (df['num_lab_procedures'].mean(), df['num_lab_procedures'].std()),
+                'num_procedures': (df['num_procedures'].mean(), df['num_procedures'].std()),
+                'number_diagnoses': (df['number_diagnoses'].mean(), df['number_diagnoses'].std())
+            }
+        else:
+            raise Exception("File not found")
+    except:
+        # Fallback to rough Diabetes 130-US dataset averages
+        stats = {
+            'age': (5.0, 2.5), 'num_medications': (15.0, 8.0),
+            'time_in_hospital': (4.3, 3.0), 'num_lab_procedures': (43.0, 20.0),
+            'num_procedures': (1.3, 1.7), 'number_diagnoses': (7.4, 2.0)
+        }
+
+    # 2. INTELLIGENT DEFAULTS (The Critical Fix)
+    # If inputs are high, assume hidden features are also high
+    if meds > 20 or hba1c > 9.0:
+        hidden_hospital = stats['time_in_hospital'][0] + stats['time_in_hospital'][1] # Mean + 1 Std
+        hidden_labs = stats['num_lab_procedures'][0] + stats['num_lab_procedures'][1]
+        hidden_procs = stats['num_procedures'][0] + 0.5
+        hidden_diag = stats['number_diagnoses'][0] + 1.0
+    else:
+        # Average patient
+        hidden_hospital = stats['time_in_hospital'][0]
+        hidden_labs = stats['num_lab_procedures'][0]
+        hidden_procs = stats['num_procedures'][0]
+        hidden_diag = stats['number_diagnoses'][0]
+
+    # 3. NORMALIZE & MAP FEATURES
     features = {name: 0.0 for name in feature_names}
     
-    # Map dashboard inputs to feature names
-    # Numeric features (need to match preprocessing - scaled values)
-    age_idx = int((age - 10) / 10)  # Convert age to age bracket index (0-9)
-    features['age'] = (age_idx - 5) / 2.5  # Rough standardization
-    features['num_medications'] = (meds - 15) / 10  # Rough standardization
-    features['time_in_hospital'] = 0.0  # Default
-    features['num_lab_procedures'] = 0.5  # Default average
-    features['num_procedures'] = 0.0  # Default
-    features['number_diagnoses'] = 0.5  # Default average
-    
-    # One-hot encoded features
+    # Age Mapping (Dataset uses decades: [0-10)=0 ... [60-70)=6)
+    age_idx = int(age / 10) # 65 -> 6
+    if 'age' in features:
+        features['age'] = (age_idx - stats['age'][0]) / stats['age'][1]
+
+    # Meds
+    if 'num_medications' in features:
+        features['num_medications'] = (meds - stats['num_medications'][0]) / stats['num_medications'][1]
+        
+    # Hidden Features (Using our calculated defaults)
+    if 'time_in_hospital' in features:
+        features['time_in_hospital'] = (hidden_hospital - stats['time_in_hospital'][0]) / stats['time_in_hospital'][1]
+    if 'num_lab_procedures' in features:
+        features['num_lab_procedures'] = (hidden_labs - stats['num_lab_procedures'][0]) / stats['num_lab_procedures'][1]
+    if 'num_procedures' in features:
+        features['num_procedures'] = (hidden_procs - stats['num_procedures'][0]) / stats['num_procedures'][1]
+    if 'number_diagnoses' in features:
+        features['number_diagnoses'] = (hidden_diag - stats['number_diagnoses'][0]) / stats['number_diagnoses'][1]
+
+    # 4. CATEGORICAL ENCODING
     if 'gender_Male' in features and gender == "Male":
         features['gender_Male'] = 1
-    
-    # HbA1c encoding
-    if hba1c > 8:
-        if 'A1Cresult_>8' in features:
-            features['A1Cresult_>8'] = 1
-    elif hba1c > 7:
-        if 'A1Cresult_>7' in features:
-            features['A1Cresult_>7'] = 1
-    
-    # Insulin usage (assume yes for higher HbA1c)
-    if hba1c > 7.5 and 'insulin_Up' in features:
-        features['insulin_Up'] = 1
-    
-    # Convert to tensor
+        
+    # HbA1c Smart Logic
+    if hba1c > 8.0:
+        # Try to find the specific column names for >8
+        for f in feature_names:
+            if 'A1Cresult' in f and '>8' in f: features[f] = 1
+            if 'insulin' in f and 'Up' in f: features[f] = 1       # High A1c -> Likely Insulin Up
+            if 'change' in f and 'Ch' in f: features[f] = 1        # High A1c -> Likely Med Change
+    elif hba1c > 7.0:
+        for f in feature_names:
+            if 'A1Cresult' in f and '>7' in f: features[f] = 1
+
+    # 5. CONVERT TO TENSOR
     feature_vector = [features[name] for name in feature_names]
     return torch.tensor([feature_vector], dtype=torch.float32)
+
 
 # --- CSS STYLING (THE WOW FACTOR) ---
 st.markdown("""
@@ -474,8 +526,9 @@ with tabs[2]:
         st.markdown('</div>', unsafe_allow_html=True)
 
 # ------------------------------------------------------------------------------
-# TAB 4: PERSONALIZATION (Enhanced Version)
+# TAB 4: PERSONALIZATION
 # ------------------------------------------------------------------------------
+
 with tabs[3]:
     # --- SECTION 1: RESEARCH MONITOR ---
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
@@ -488,10 +541,17 @@ with tabs[3]:
     else:
         # TOP METRICS ROW
         curr = df.iloc[-1]
+        
+        # Calculate Absolute Gain (Percentage Points) for the badge
+        # We calculate this dynamically: (0.71 - 0.41) * 100 = ~30.0%
+        abs_gain = (curr['pers_overall_acc'] - curr['global_overall_acc']) * 100
+        
         c1, c2, c3, c4 = st.columns(4)
         with c1: stat_card("Current Round", int(curr['round']))
-        with c2: stat_card("Global Acc", f"{curr['global_accuracy']:.2%}")
-        with c3: stat_card("Personalized", f"{curr['personalized_accuracy']:.2%}", f"+{curr['personalization_gain']:.2f}%")
+        # FIX: Using 'global_overall_acc' from your JSON
+        with c2: stat_card("Global Acc", f"{curr['global_overall_acc']:.1%}")
+        # FIX: Using 'pers_overall_acc' from your JSON
+        with c3: stat_card("Personalized", f"{curr['pers_overall_acc']:.1%}", f"+{abs_gain:.2f}%")
         
         # Fairness Gap Color Logic
         gap_val = curr['fairness_gap']
@@ -505,14 +565,16 @@ with tabs[3]:
         with g1:
             st.markdown("#### 📈 Accuracy Evolution")
             fig = go.Figure()
-            fig.add_trace(go.Scatter(x=df['round'], y=df['global_accuracy'], name='Global', line=dict(color='#64748b', width=2, dash='dash')))
-            fig.add_trace(go.Scatter(x=df['round'], y=df['personalized_accuracy'], name='Personalized', line=dict(color='#06b6d4', width=4)))
+            # FIX: Updated y-axis keys to match JSON
+            fig.add_trace(go.Scatter(x=df['round'], y=df['global_overall_acc'], name='Global', line=dict(color='#64748b', width=2, dash='dash')))
+            fig.add_trace(go.Scatter(x=df['round'], y=df['pers_overall_acc'], name='Personalized', line=dict(color='#06b6d4', width=4)))
             fig.update_layout(**dark_chart_layout(), height=300, xaxis_title="Round", yaxis_title="Accuracy")
             st.plotly_chart(fig, use_container_width=True)
             
         with g2:
             st.markdown("#### ⚖️ Fairness Monitoring")
             fig = go.Figure()
+            # Fairness gap key is consistent
             fig.add_trace(go.Scatter(x=df['round'], y=df['fairness_gap'], fill='tozeroy', line=dict(color='#f43f5e', width=2)))
             fig.add_hline(y=0.05, line_dash="dash", line_color="#4ade80", annotation_text="Target")
             fig.update_layout(**dark_chart_layout(), height=300, xaxis_title="Round", yaxis_title="Gap")
@@ -544,9 +606,9 @@ with tabs[3]:
         h1, h2 = st.columns(2)
         with h1:
             hospital_type = st.selectbox("Select Hospital Context (Non-IID)", 
-                                       ["Hospital A (Urban - General)", 
-                                        "Hospital B (Rural - Geriatric)", 
-                                        "Hospital C (Specialized - Cardiac)"])
+                                                ["Hospital A (Urban - General)", 
+                                                 "Hospital B (Rural - Geriatric)", 
+                                                 "Hospital C (Specialized - Cardiac)"])
         with h2:
             model_mode = st.radio("Model Inference Mode", ["Global Model", "Personalized Model"], horizontal=True)
             
@@ -600,11 +662,21 @@ with tabs[3]:
             feature_names = model_info
             input_tensor = prepare_input_features(age, gender, meds, hba1c, bmi, feature_names)
             
+            # DEBUG: Show which features are being used
+            with st.expander("🔧 Debug: Model Input Features"):
+                feature_df = pd.DataFrame({
+                    'Feature': feature_names,
+                    'Value': input_tensor.squeeze().numpy()
+                })
+                st.dataframe(feature_df, use_container_width=True)
+                st.caption(f"Total features: {len(feature_names)}")
+            
             # Run inference
             with torch.no_grad():
                 htn_out, hf_out, cluster_out = model(input_tensor)
                 prob_htn = htn_out.item()
                 prob_hf = hf_out.item()
+                st.info(f"📊 Raw Model Output: HTN={prob_htn:.4f}, HF={prob_hf:.4f}")
             
             # --- HOSPITAL CONTEXT MODIFIERS ---
             if hospital_type == "Hospital B (Rural - Geriatric)":
