@@ -10,6 +10,37 @@ import os
 import time
 import sys
 import argparse
+import pickle
+from sklearn.preprocessing import StandardScaler
+
+def save_preprocessing_artifacts(X_train, scaler):
+    """
+    Save preprocessing artifacts (training data statistics and scaler) for later use.
+    
+    Args:
+        X_train: Training data (numpy array or DataFrame)
+        scaler: Fitted StandardScaler object
+    """
+    os.makedirs("experiments/comp4_experiments", exist_ok=True)
+    
+    # Save the scaler object
+    scaler_path = "experiments/comp4_experiments/scaler.pkl"
+    with open(scaler_path, "wb") as f:
+        pickle.dump(scaler, f)
+    print(f"   Scaler saved to {scaler_path}")
+    
+    # Save training data statistics
+    stats = {
+        "mean": scaler.mean_.tolist(),
+        "std": scaler.scale_.tolist(),
+        "X_train_shape": X_train.shape,
+        "n_features": X_train.shape[1] if len(X_train.shape) > 1 else 1
+    }
+    
+    stats_path = "experiments/comp4_experiments/preprocessing_stats.json"
+    with open(stats_path, "w") as f:
+        json.dump(stats, f, indent=4)
+    print(f"   Preprocessing statistics saved to {stats_path}")
 
 def get_model_size_mb(model):
     """Calculates the size of the model parameters in Megabytes"""
@@ -157,7 +188,7 @@ def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"
         print(f"   ROUND {round_num} SUMMARY:")
         print(f"   [Global] Overall Acc: {avg_global_metrics.get('overall_acc',0):.4f} | HTN AUROC: {avg_global_metrics.get('htn_auroc',0):.4f} | HF AUROC: {avg_global_metrics.get('hf_auroc',0):.4f}")
         print(f"   [Pers.]  Overall Acc: {avg_pers_metrics.get('overall_acc',0):.4f} | HTN AUROC: {avg_pers_metrics.get('htn_auroc',0):.4f} | HF AUROC: {avg_pers_metrics.get('hf_auroc',0):.4f}")
-        print(f"       Gain: +{gain:.2f}% | ⚖️ Fairness Gap: {avg_gap:.4f}")
+        print(f"       Gain: +{gain:.2f}% |  Fairness Gap: {avg_gap:.4f}")
 
         # SAVE TO HISTORY (Flatten dictionary for JSON)
         record = {
@@ -185,6 +216,26 @@ def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"
     os.makedirs("experiments/comp4_experiments", exist_ok=True)
     torch.save(server.global_model.state_dict(), "experiments/comp4_experiments/final_multitask_model.pth")
     print("   Model weights saved to 'experiments/comp4_experiments/final_multitask_model.pth'")
+
+    # --- PREPROCESSING ARTIFACTS SAVING (Critical!) ---
+    print("\n--- Saving Preprocessing Artifacts ---")
+    try:
+        # Load training data to fit scaler (using first client's data as representative)
+        sample_path = "datasets/diabetes_130/processed/client_0_X.csv"
+        if os.path.exists(sample_path):
+            X_train = pd.read_csv(sample_path).values
+            
+            # Initialize and fit StandardScaler
+            scaler = StandardScaler()
+            X_train_scaled = scaler.fit_transform(X_train)
+            
+            # Save preprocessing artifacts
+            save_preprocessing_artifacts(X_train, scaler)
+            print(f"   Data scaling statistics: mean={scaler.mean_[:3]}, std={scaler.scale_[:3]}")
+        else:
+            print(f"   Warning: Could not load training data from {sample_path}")
+    except Exception as e:
+        print(f"   Error saving preprocessing artifacts: {e}")
 
     # === E. FINAL SUMMARY REPORT (Best Practice) ===
     print("\n" + "="*80)

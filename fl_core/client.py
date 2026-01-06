@@ -490,7 +490,7 @@ from sklearn.metrics import (
 import warnings
 from sklearn.exceptions import UndefinedMetricWarning
 warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
-DECISION_THRESHOLD = 0.4
+DECISION_THRESHOLD = 0.5
 
 class FederatedClient:
     def __init__(self, client_id, component_type="generic"):
@@ -552,8 +552,8 @@ class FederatedClient:
                         
                     num_pos_htn = np.sum(htn_col)
                     num_neg_htn = num_samples - num_pos_htn
-                    # Weight = Negatives / Positives (Capped at 10.0 to prevent explosion)
-                    self.htn_weight = min(float(num_neg_htn / (num_pos_htn + 1e-6)), 10.0)
+                    # Weight = Negatives / Positives (Capped at 8.0 to prevent explosion)
+                    self.htn_weight = min(float(num_neg_htn / (num_pos_htn + 1e-6)), 8.0)
                     print(f"     HTN Imbalance: {num_pos_htn} pos / {num_neg_htn} neg -> Weight: {self.htn_weight:.2f}")
                 
                 # 2. Heart Failure Weight Calculation
@@ -565,7 +565,7 @@ class FederatedClient:
 
                     num_pos_hf = np.sum(hf_col)
                     num_neg_hf = num_samples - num_pos_hf
-                    self.hf_weight = min(float(num_neg_hf / (num_pos_hf + 1e-6)), 10.0)
+                    self.hf_weight = min(float(num_neg_hf / (num_pos_hf + 1e-6)), 8.0)
                     print(f"     HF Imbalance:  {num_pos_hf} pos / {num_neg_hf} neg -> Weight: {self.hf_weight:.2f}")
 
                 # Convert to Tensors
