@@ -1143,11 +1143,11 @@ with tabs[3]:
                 if prob_hf > 0.5: prob_hf = min(prob_hf + 0.03, 0.98)
                 else: prob_hf = max(prob_hf - 0.03, 0.02)
                 
-                st.toast("⚡ Personalized model applied: Adjusted for local patient demographics.")
+                st.toast("Personalized model applied: Adjusted for local patient demographics.")
         
         # COMPARISON
         if model_mode == "Personalized Model" and prob_htn_global is not None:
-            st.markdown("#### Global vs ⚡ Personalized Comparison")
+            st.markdown("#### Global vs Personalized Comparison")
             comp_cols = st.columns(4)
             with comp_cols[0]: st.metric("Global HTN", f"{prob_htn_global:.1%}")
             with comp_cols[1]: st.metric("Personalized HTN", f"{prob_htn:.1%}", delta=f"{(prob_htn - prob_htn_global)*100:+.1f}%")
@@ -1167,9 +1167,9 @@ with tabs[3]:
             confidence_htn = calculate_prediction_confidence(prob_htn)
             st.progress(confidence_htn, text=f"Confidence: {confidence_htn:.0%}")
             
-            if prob_htn > 0.7: st.error("🚨 HIGH RISK")
-            elif prob_htn > 0.5: st.warning("⚠️ MODERATE RISK")
-            else: st.success("✅ LOW RISK")
+            if prob_htn > 0.7: st.error("HIGH RISK")
+            elif prob_htn > 0.5: st.warning("MODERATE RISK")
+            else: st.success("LOW RISK")
             
         with col_out2:
             color = "#f43f5e" if prob_hf > 0.5 else "#4ade80"
@@ -1179,12 +1179,12 @@ with tabs[3]:
             confidence_hf = calculate_prediction_confidence(prob_hf)
             st.progress(confidence_hf, text=f"Confidence: {confidence_hf:.0%}")
             
-            if prob_hf > 0.7: st.error("🚨 HIGH RISK")
-            elif prob_hf > 0.5: st.warning("⚠️ MODERATE RISK")
+            if prob_hf > 0.7: st.error("HIGH RISK")
+            elif prob_hf > 0.5: st.warning("MODERATE RISK")
             else: st.success("✅ LOW RISK")
 
         # DYNAMIC SIMILARITY
-        st.markdown("#### 👥 Similar Patient Cohorts")
+        st.markdown("#### Similar Patient Cohorts")
         avg_risk = (prob_htn + prob_hf) / 2
         if avg_risk > 0.7:
             num_similar = np.random.randint(5, 15)  # Rare case
@@ -1234,7 +1234,7 @@ with tabs[3]:
         st.markdown("<br>", unsafe_allow_html=True)
 
         # DRIVERS
-        with st.expander("Key Risk Drivers (Explainability)"):
+        with st.expander("Key Risk Drivers"):
             st.write("Top factors contributing to this prediction:")
             drivers = pd.DataFrame({
                 "Factor": ["HbA1c", "Medications", "BMI", "Age"],
