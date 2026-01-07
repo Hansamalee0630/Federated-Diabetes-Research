@@ -9,3 +9,8 @@ __pycache__/
 
 # Ignore Mac system files
 .DS_Store
+
+# Ignore Virtual Environments (CRITICAL)
+venv/
+env/
+.env

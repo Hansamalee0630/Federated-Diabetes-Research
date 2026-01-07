@@ -1,0 +1,38 @@
+{
+  "local_hospitals": {
+    "1": {
+      "hospital_name": "Circulatory (Heart/Stroke)",
+      "n_samples": 1351,
+      "positive_rate": 0.5136935710906982,
+      "top_feature": "number_inpatient"
+    },
+    "2": {
+      "hospital_name": "Metabolic (Diabetes/Kidney)",
+      "n_samples": 639,
+      "positive_rate": 0.5289514660835266,
+      "top_feature": "number_inpatient"
+    },
+    "3": {
+      "hospital_name": "Other (Respiratory/Digestive)",
+      "n_samples": 2485,
+      "positive_rate": 0.49577465653419495,
+      "top_feature": "number_inpatient"
+    }
+  },
+  "instance_patients": {
+    "1": 15,
+    "2": 15,
+    "3": 15
+  },
+  "fairness_groups": {
+    "gender": [
+      "Female",
+      "Male"
+    ],
+    "race": [
+      "AfricanAmerican",
+      "Caucasian",
+      "Unknown"
+    ]
+  }
+}
