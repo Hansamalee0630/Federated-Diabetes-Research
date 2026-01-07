@@ -272,7 +272,7 @@ st.markdown("<br>", unsafe_allow_html=True)
 # st.markdown("<br>", unsafe_allow_html=True)
 
 # --- MAIN TABS ---
-tab_titles = ["🔒 Privacy Shield", "🔍 Causal Nexus", "👁️ Multimodal Vision", "⚡ Personalization Engine"]
+tab_titles = ["🔒 Privacy Shield", "Readmission Analysis", "👁️ Multimodal Vision", "⚡ Personalization Engine"]
 tabs = st.tabs(tab_titles)
 
 # ------------------------------------------------------------------------------
@@ -282,7 +282,7 @@ with tabs[0]:
     col1, col2 = st.columns([1, 2])
     with col1:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.markdown("### 🛡️ Privacy Configuration")
+        st.markdown("### �️ Privacy Configuration")
         st.markdown("Differential Privacy settings for gradient encryption.")
         
         eps = st.slider("Privacy Budget (ε)", 0.1, 10.0, 1.0)
@@ -318,7 +318,7 @@ with tabs[0]:
         st.markdown('</div>', unsafe_allow_html=True)
 
 # ------------------------------------------------------------------------------
-# TAB 2: CAUSALITY
+# TAB 2: Readmission 
 # ------------------------------------------------------------------------------
 with tabs[1]:
     c1, c2 = st.columns([3, 2])

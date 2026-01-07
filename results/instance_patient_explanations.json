@@ -1,0 +1,3698 @@
+{
+  "1": [
+    {
+      "patient_id": "H1_P001",
+      "hospital_id": 1,
+      "predicted_risk": 0.5207278728485107,
+      "predicted_risk_pct": "52.1%",
+      "base_risk": 0.5035933697223663,
+      "base_risk_pct": "50.4%",
+      "net_adjustment": 0.017134487628936768,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "number_inpatient",
+          "contribution": 0.010118349498743991,
+          "feature_value": 1.7465537786483765,
+          "direction": "increases"
+        },
+        {
+          "rank": 2,
+          "feature": "age_[50-60)",
+          "contribution": 0.00380951302051921,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 3,
+          "feature": "race_AfricanAmerican",
+          "contribution": -0.002749814742639628,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "change_No",
+          "contribution": 0.0025268291570332614,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 5,
+          "feature": "insulin_No",
+          "contribution": 0.002417737364821369,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 6,
+          "feature": "num_procedures",
+          "contribution": 0.0016227039587474556,
+          "feature_value": -0.8583513498306274,
+          "direction": "increases"
+        },
+        {
+          "rank": 7,
+          "feature": "change_Ch",
+          "contribution": 0.0012719632855308874,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 8,
+          "feature": "pioglitazone_Steady",
+          "contribution": -0.001225727928728282,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "discharge_disposition_id_1",
+          "contribution": -0.0012031403191786715,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "diag_2_Diabetes",
+          "contribution": 0.0005460898312947986,
+          "feature_value": 0.0,
+          "direction": "increases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H1_P002",
+      "hospital_id": 1,
+      "predicted_risk": 0.48755747079849243,
+      "predicted_risk_pct": "48.8%",
+      "base_risk": 0.5035933697223663,
+      "base_risk_pct": "50.4%",
+      "net_adjustment": -0.016035914421081543,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "diabetesMed_No",
+          "contribution": -0.004548991219986377,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 2,
+          "feature": "discharge_disposition_id_18",
+          "contribution": -0.003151129370025795,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "number_inpatient",
+          "contribution": -0.0025046128171296966,
+          "feature_value": -0.5460633039474487,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "admission_source_id_1",
+          "contribution": -0.0015940448833168812,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "time_in_hospital",
+          "contribution": -0.001274900845157914,
+          "feature_value": -0.14077018201351166,
+          "direction": "decreases"
+        },
+        {
+          "rank": 6,
+          "feature": "number_emergency",
+          "contribution": -0.0011040700623478573,
+          "feature_value": -0.2741578221321106,
+          "direction": "decreases"
+        },
+        {
+          "rank": 7,
+          "feature": "discharge_disposition_id_1",
+          "contribution": -0.0009370376654991108,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "diag_3_Circulatory",
+          "contribution": -0.00044006506784248554,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "number_outpatient",
+          "contribution": -0.000335106654178172,
+          "feature_value": -0.30542847514152527,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "diag_3_Genitourinary",
+          "contribution": -0.00014594033838962253,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H1_P003",
+      "hospital_id": 1,
+      "predicted_risk": 0.49687787890434265,
+      "predicted_risk_pct": "49.7%",
+      "base_risk": 0.5035933697223663,
+      "base_risk_pct": "50.4%",
+      "net_adjustment": -0.006715506315231323,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "number_inpatient",
+          "contribution": -0.005075060813671142,
+          "feature_value": -0.5460633039474487,
+          "direction": "decreases"
+        },
+        {
+          "rank": 2,
+          "feature": "A1Cresult_Missing",
+          "contribution": -0.00361992226525216,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "rosiglitazone_No",
+          "contribution": -0.003562388922426357,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "discharge_disposition_id_1",
+          "contribution": 0.0033684034398080145,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 5,
+          "feature": "diag_2_Neoplasms",
+          "contribution": 0.0018515664149511186,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 6,
+          "feature": "admission_type_id_5",
+          "contribution": 0.0018231617704082125,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 7,
+          "feature": "discharge_disposition_id_22",
+          "contribution": -0.0010677133884951966,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "admission_type_id_2",
+          "contribution": -0.0005064138138250533,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "race_Other",
+          "contribution": 0.00015097692556155875,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 10,
+          "feature": "diag_3_Genitourinary",
+          "contribution": -7.81001650826899e-05,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H1_P004",
+      "hospital_id": 1,
+      "predicted_risk": 0.5103705525398254,
+      "predicted_risk_pct": "51.0%",
+      "base_risk": 0.5035933697223663,
+      "base_risk_pct": "50.4%",
+      "net_adjustment": 0.006777167320251465,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "metformin_Steady",
+          "contribution": 0.004067512905640091,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 2,
+          "feature": "number_inpatient",
+          "contribution": -0.003822479094627254,
+          "feature_value": -0.5460633039474487,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "admission_type_id_3",
+          "contribution": 0.002755540059141711,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 4,
+          "feature": "max_glu_serum_>300",
+          "contribution": 0.0027473102880789155,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 5,
+          "feature": "glimepiride_No",
+          "contribution": 0.001643246280657116,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 6,
+          "feature": "discharge_disposition_id_1",
+          "contribution": 0.0007678781973085312,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 7,
+          "feature": "diabetesMed_No",
+          "contribution": -0.0007049151654414412,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "age_[40-50)",
+          "contribution": -0.0006030392710591573,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "age_[70-80)",
+          "contribution": -0.0006016736015039139,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "metformin_No",
+          "contribution": 0.0005278022192644924,
+          "feature_value": 1.0,
+          "direction": "increases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H1_P005",
+      "hospital_id": 1,
+      "predicted_risk": 0.47958269715309143,
+      "predicted_risk_pct": "48.0%",
+      "base_risk": 0.5035933697223663,
+      "base_risk_pct": "50.4%",
+      "net_adjustment": -0.024010688066482544,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "glyburide_Down",
+          "contribution": -0.010349569444707355,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 2,
+          "feature": "metformin_Up",
+          "contribution": -0.004521743922043698,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "number_diagnoses",
+          "contribution": -0.0026241777684898105,
+          "feature_value": -0.94243985414505,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "discharge_disposition_id_7",
+          "contribution": -0.0021187549079994873,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "metformin_No",
+          "contribution": -0.002024228576743592,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 6,
+          "feature": "glimepiride_No",
+          "contribution": -0.0013007037981226882,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 7,
+          "feature": "glipizide_Steady",
+          "contribution": -0.0009913650135577859,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "admission_type_id_1",
+          "contribution": 0.0006940385975678191,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 9,
+          "feature": "discharge_disposition_id_18",
+          "contribution": -0.0005928308388283828,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "gender_Female",
+          "contribution": -0.00018133689634992938,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H1_P006",
+      "hospital_id": 1,
+      "predicted_risk": 0.523523211479187,
+      "predicted_risk_pct": "52.4%",
+      "base_risk": 0.5035933697223663,
+      "base_risk_pct": "50.4%",
+      "net_adjustment": 0.019929826259613037,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "number_inpatient",
+          "contribution": 0.013685085386195103,
+          "feature_value": 1.7465537786483765,
+          "direction": "increases"
+        },
+        {
+          "rank": 2,
+          "feature": "number_emergency",
+          "contribution": 0.0060509661044482865,
+          "feature_value": 1.3114959001541138,
+          "direction": "increases"
+        },
+        {
+          "rank": 3,
+          "feature": "glyburide_Up",
+          "contribution": 0.002440753281902844,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 4,
+          "feature": "rosiglitazone_Steady",
+          "contribution": -0.0015224333233285897,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "admission_type_id_2",
+          "contribution": 0.0014984319034698427,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 6,
+          "feature": "race_Hispanic",
+          "contribution": -0.001107693876786094,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 7,
+          "feature": "max_glu_serum_Missing",
+          "contribution": 0.0010919180567474439,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 8,
+          "feature": "A1Cresult_>8",
+          "contribution": -0.000945936658845128,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "discharge_disposition_id_22",
+          "contribution": -0.0008925546104170525,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "glyburide-metformin_No",
+          "contribution": -0.00036869450656599036,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H1_P007",
+      "hospital_id": 1,
+      "predicted_risk": 0.5068624019622803,
+      "predicted_risk_pct": "50.7%",
+      "base_risk": 0.5035933697223663,
+      "base_risk_pct": "50.4%",
+      "net_adjustment": 0.003269016742706299,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "diabetesMed_Yes",
+          "contribution": -0.002412028462845271,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 2,
+          "feature": "discharge_disposition_id_1",
+          "contribution": 0.00211525426177914,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 3,
+          "feature": "diag_3_Diabetes",
+          "contribution": 0.001731919171612303,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 4,
+          "feature": "diag_2_Other",
+          "contribution": 0.00110708615149289,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 5,
+          "feature": "age_[40-50)",
+          "contribution": 0.000922721498376081,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 6,
+          "feature": "race_Hispanic",
+          "contribution": -0.0009106956681231688,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 7,
+          "feature": "admission_type_id_1",
+          "contribution": 0.0006573596826851703,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 8,
+          "feature": "glimepiride_No",
+          "contribution": 0.0004855137165909212,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 9,
+          "feature": "diag_2_Genitourinary",
+          "contribution": -0.0004280981116541383,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "glyburide-metformin_Steady",
+          "contribution": 0.0,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H1_P008",
+      "hospital_id": 1,
+      "predicted_risk": 0.5167756080627441,
+      "predicted_risk_pct": "51.7%",
+      "base_risk": 0.5035933697223663,
+      "base_risk_pct": "50.4%",
+      "net_adjustment": 0.013182222843170166,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "number_inpatient",
+          "contribution": 0.007958867996931462,
+          "feature_value": 0.9823480844497681,
+          "direction": "increases"
+        },
+        {
+          "rank": 2,
+          "feature": "num_procedures",
+          "contribution": 0.00476269604144048,
+          "feature_value": -0.8583513498306274,
+          "direction": "increases"
+        },
+        {
+          "rank": 3,
+          "feature": "diag_2_Respiratory",
+          "contribution": -0.0032133615792407366,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "num_lab_procedures",
+          "contribution": 0.0012332975286606972,
+          "feature_value": 0.8282271027565002,
+          "direction": "increases"
+        },
+        {
+          "rank": 5,
+          "feature": "pioglitazone_Steady",
+          "contribution": 0.001067023348747477,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 6,
+          "feature": "A1Cresult_Missing",
+          "contribution": 0.0008093452757717949,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 7,
+          "feature": "race_Other",
+          "contribution": 0.0005113851537510147,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 8,
+          "feature": "race_Unknown",
+          "contribution": 0.00041881234518135373,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 9,
+          "feature": "age_[60-70)",
+          "contribution": -0.00036582777086575,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "glyburide-metformin_Up",
+          "contribution": 0.0,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H1_P009",
+      "hospital_id": 1,
+      "predicted_risk": 0.49586331844329834,
+      "predicted_risk_pct": "49.6%",
+      "base_risk": 0.5035933697223663,
+      "base_risk_pct": "50.4%",
+      "net_adjustment": -0.007730066776275635,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "diag_2_Other",
+          "contribution": -0.006856849016737911,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 2,
+          "feature": "change_Ch",
+          "contribution": 0.0037769531498054567,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 3,
+          "feature": "admission_source_id_6",
+          "contribution": -0.003669125562080152,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "discharge_disposition_id_1",
+          "contribution": -0.003484074060192781,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "admission_source_id_17",
+          "contribution": 0.0031912755153004606,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 6,
+          "feature": "age_[80-90)",
+          "contribution": 0.0017400092769975085,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 7,
+          "feature": "num_procedures",
+          "contribution": -0.0016470505994198613,
+          "feature_value": 1.4905918836593628,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "glimepiride_No",
+          "contribution": -0.0013864822751688925,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "admission_type_id_3",
+          "contribution": 0.0009072988263048128,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 10,
+          "feature": "number_outpatient",
+          "contribution": -0.00030200653387664863,
+          "feature_value": -0.30542847514152527,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H1_P010",
+      "hospital_id": 1,
+      "predicted_risk": 0.4986473619937897,
+      "predicted_risk_pct": "49.9%",
+      "base_risk": 0.5035933697223663,
+      "base_risk_pct": "50.4%",
+      "net_adjustment": -0.004946023225784302,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "discharge_disposition_id_1",
+          "contribution": 0.005235318870780636,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 2,
+          "feature": "admission_source_id_1",
+          "contribution": -0.0050800876883501335,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "admission_source_id_6",
+          "contribution": -0.0041311830765197784,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "admission_source_id_5",
+          "contribution": -0.003980813043980222,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "change_Ch",
+          "contribution": 0.0037970006372709695,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 6,
+          "feature": "race_Other",
+          "contribution": 0.00332993811049392,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 7,
+          "feature": "age_[90-100)",
+          "contribution": -0.002612624847724558,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "max_glu_serum_Norm",
+          "contribution": -0.0018309063163596917,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "discharge_disposition_id_2",
+          "contribution": 0.0003273496258121842,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 10,
+          "feature": "glyburide-metformin_No",
+          "contribution": 0.0,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H1_P011",
+      "hospital_id": 1,
+      "predicted_risk": 0.48579683899879456,
+      "predicted_risk_pct": "48.6%",
+      "base_risk": 0.5035933697223663,
+      "base_risk_pct": "50.4%",
+      "net_adjustment": -0.01779654622077942,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "number_inpatient",
+          "contribution": -0.007413611271938719,
+          "feature_value": -0.5460633039474487,
+          "direction": "decreases"
+        },
+        {
+          "rank": 2,
+          "feature": "discharge_disposition_id_1",
+          "contribution": 0.007404039549534346,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 3,
+          "feature": "admission_type_id_3",
+          "contribution": -0.004937588933560765,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "diag_2_Musculoskeletal",
+          "contribution": -0.004632726672730437,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "admission_type_id_2",
+          "contribution": -0.0020055130358227033,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 6,
+          "feature": "gender_Female",
+          "contribution": -0.0019087754033881323,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 7,
+          "feature": "glimepiride_No",
+          "contribution": -0.001837053971791523,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "glyburide_No",
+          "contribution": -0.0012814723611721689,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "num_medications",
+          "contribution": -0.0012279111436787828,
+          "feature_value": -1.310083031654358,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "diag_2_Neoplasms",
+          "contribution": 4.408252097709189e-05,
+          "feature_value": 0.0,
+          "direction": "increases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H1_P012",
+      "hospital_id": 1,
+      "predicted_risk": 0.4712265431880951,
+      "predicted_risk_pct": "47.1%",
+      "base_risk": 0.5035933697223663,
+      "base_risk_pct": "50.4%",
+      "net_adjustment": -0.03236684203147888,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "number_inpatient",
+          "contribution": -0.010204885975731959,
+          "feature_value": -0.5460633039474487,
+          "direction": "decreases"
+        },
+        {
+          "rank": 2,
+          "feature": "age_[50-60)",
+          "contribution": -0.003986849049437999,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "diag_2_Diabetes",
+          "contribution": -0.0037993532641034168,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "diabetesMed_No",
+          "contribution": -0.0029319168636907354,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "number_diagnoses",
+          "contribution": -0.00261455781155029,
+          "feature_value": -2.0862412452697754,
+          "direction": "decreases"
+        },
+        {
+          "rank": 6,
+          "feature": "admission_source_id_5",
+          "contribution": -0.0024900445139524174,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 7,
+          "feature": "discharge_disposition_id_22",
+          "contribution": -0.0022150271373851645,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "diag_3_Digestive",
+          "contribution": -0.001535215658952385,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "glyburide-metformin_Steady",
+          "contribution": -0.0014546801685129326,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "diag_2_Circulatory",
+          "contribution": -0.0011342960909539485,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H1_P013",
+      "hospital_id": 1,
+      "predicted_risk": 0.4776846766471863,
+      "predicted_risk_pct": "47.8%",
+      "base_risk": 0.5035933697223663,
+      "base_risk_pct": "50.4%",
+      "net_adjustment": -0.025908708572387695,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "number_inpatient",
+          "contribution": -0.00865882551367562,
+          "feature_value": -0.5460633039474487,
+          "direction": "decreases"
+        },
+        {
+          "rank": 2,
+          "feature": "discharge_disposition_id_1",
+          "contribution": -0.005081772334369292,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "glyburide_Down",
+          "contribution": -0.003813568692290298,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "number_diagnoses",
+          "contribution": -0.0026951538876147166,
+          "feature_value": -1.5143405199050903,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "A1Cresult_>7",
+          "contribution": -0.002121259659696783,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 6,
+          "feature": "discharge_disposition_id_22",
+          "contribution": -0.0015172766728287768,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 7,
+          "feature": "age_[30-40)",
+          "contribution": -0.0010578402676300936,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "insulin_Down",
+          "contribution": -0.0008113223050997173,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "glipizide_Down",
+          "contribution": -0.00018524065966651557,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "diag_3_Diabetes",
+          "contribution": 3.356691769174545e-05,
+          "feature_value": 0.0,
+          "direction": "increases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H1_P014",
+      "hospital_id": 1,
+      "predicted_risk": 0.5160090923309326,
+      "predicted_risk_pct": "51.6%",
+      "base_risk": 0.5035933697223663,
+      "base_risk_pct": "50.4%",
+      "net_adjustment": 0.012415707111358643,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "number_inpatient",
+          "contribution": 0.0024433099617292603,
+          "feature_value": 0.9823480844497681,
+          "direction": "increases"
+        },
+        {
+          "rank": 2,
+          "feature": "number_outpatient",
+          "contribution": 0.0021123701630852538,
+          "feature_value": 16.124637603759766,
+          "direction": "increases"
+        },
+        {
+          "rank": 3,
+          "feature": "diag_3_Diabetes",
+          "contribution": 0.0017284983005186395,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 4,
+          "feature": "admission_type_id_5",
+          "contribution": 0.0017048040313352238,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 5,
+          "feature": "glipizide_No",
+          "contribution": 0.0012564912057083486,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 6,
+          "feature": "gender_Female",
+          "contribution": 0.0007906908897305063,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 7,
+          "feature": "discharge_disposition_id_25",
+          "contribution": 0.0007771230553403552,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 8,
+          "feature": "glyburide_Steady",
+          "contribution": 0.0006531859176728116,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 9,
+          "feature": "discharge_disposition_id_3",
+          "contribution": 0.00058098752457143,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 10,
+          "feature": "glimepiride_Steady",
+          "contribution": 0.0003682615588744431,
+          "feature_value": 0.0,
+          "direction": "increases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H1_P015",
+      "hospital_id": 1,
+      "predicted_risk": 0.5017528533935547,
+      "predicted_risk_pct": "50.2%",
+      "base_risk": 0.5035933697223663,
+      "base_risk_pct": "50.4%",
+      "net_adjustment": -0.0018405318260192871,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "discharge_disposition_id_1",
+          "contribution": -0.003078524630757321,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 2,
+          "feature": "glyburide_Down",
+          "contribution": -0.001825267769276245,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "diag_3_Respiratory",
+          "contribution": 0.0012031510904912605,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 4,
+          "feature": "admission_type_id_1",
+          "contribution": 0.0007410324719402475,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 5,
+          "feature": "admission_type_id_3",
+          "contribution": 0.0005752551471513983,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 6,
+          "feature": "num_procedures",
+          "contribution": 0.000519287639688116,
+          "feature_value": -0.38856270909309387,
+          "direction": "increases"
+        },
+        {
+          "rank": 7,
+          "feature": "number_emergency",
+          "contribution": -0.0003478915430601591,
+          "feature_value": -0.2741578221321106,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "glipizide_No",
+          "contribution": 0.00022401255405259842,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 9,
+          "feature": "A1Cresult_>8",
+          "contribution": 0.00015737818674202214,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 10,
+          "feature": "change_No",
+          "contribution": -8.949475783576052e-06,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    }
+  ],
+  "2": [
+    {
+      "patient_id": "H2_P001",
+      "hospital_id": 2,
+      "predicted_risk": 0.4939349889755249,
+      "predicted_risk_pct": "49.4%",
+      "base_risk": 0.4995090913772584,
+      "base_risk_pct": "50.0%",
+      "net_adjustment": -0.0055741071701049805,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "age_[60-70)",
+          "contribution": -0.005747912290848605,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 2,
+          "feature": "num_medications",
+          "contribution": 0.003950967639684661,
+          "feature_value": 1.2480628490447998,
+          "direction": "increases"
+        },
+        {
+          "rank": 3,
+          "feature": "discharge_disposition_id_1",
+          "contribution": -0.0013353546277472413,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "race_Other",
+          "contribution": -0.0007301717369181417,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "gender_Male",
+          "contribution": -0.0004953701558866392,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 6,
+          "feature": "diag_2_Neoplasms",
+          "contribution": -0.00046581400852472454,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 7,
+          "feature": "admission_source_id_1",
+          "contribution": -0.0003046277165415496,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "glipizide_No",
+          "contribution": -0.00027410798951190855,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "race_Hispanic",
+          "contribution": -0.00010413311029719961,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "glyburide_No",
+          "contribution": -6.757840514215552e-05,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H2_P002",
+      "hospital_id": 2,
+      "predicted_risk": 0.4887019991874695,
+      "predicted_risk_pct": "48.9%",
+      "base_risk": 0.4995090913772584,
+      "base_risk_pct": "50.0%",
+      "net_adjustment": -0.0108070969581604,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "num_procedures",
+          "contribution": -0.0036087871094546975,
+          "feature_value": 3.5195865631103516,
+          "direction": "decreases"
+        },
+        {
+          "rank": 2,
+          "feature": "num_lab_procedures",
+          "contribution": -0.002590621146890964,
+          "feature_value": -1.0726200342178345,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "race_Other",
+          "contribution": -0.0016270142628088463,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "admission_type_id_3",
+          "contribution": -0.0014029131829740905,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "diag_2_Neoplasms",
+          "contribution": -0.0008349537187154983,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 6,
+          "feature": "A1Cresult_Missing",
+          "contribution": -0.0005424713095028427,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 7,
+          "feature": "gender_Female",
+          "contribution": 0.0004588434762428381,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 8,
+          "feature": "number_inpatient",
+          "contribution": -0.00040515394674370964,
+          "feature_value": -0.5595988035202026,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "diag_2_Circulatory",
+          "contribution": -0.00025402098894111437,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "glyburide-metformin_Steady",
+          "contribution": 0.0,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H2_P003",
+      "hospital_id": 2,
+      "predicted_risk": 0.48275619745254517,
+      "predicted_risk_pct": "48.3%",
+      "base_risk": 0.4995090913772584,
+      "base_risk_pct": "50.0%",
+      "net_adjustment": -0.016752898693084717,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "discharge_disposition_id_1",
+          "contribution": -0.004674027846227356,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 2,
+          "feature": "max_glu_serum_>300",
+          "contribution": -0.0025900201302092637,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "insulin_Steady",
+          "contribution": -0.0019580072047806984,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "admission_source_id_7",
+          "contribution": -0.001822198843922954,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "glipizide_No",
+          "contribution": -0.0014780992873667336,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 6,
+          "feature": "race_Other",
+          "contribution": -0.0013729078376223146,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 7,
+          "feature": "change_No",
+          "contribution": -0.0010087248558752586,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "discharge_disposition_id_22",
+          "contribution": -0.0009989295106605774,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "discharge_disposition_id_4",
+          "contribution": -0.0007514008868238403,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "glyburide_No",
+          "contribution": -9.857752122424104e-05,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H2_P004",
+      "hospital_id": 2,
+      "predicted_risk": 0.4918329417705536,
+      "predicted_risk_pct": "49.2%",
+      "base_risk": 0.4995090913772584,
+      "base_risk_pct": "50.0%",
+      "net_adjustment": -0.007676154375076294,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "A1Cresult_>8",
+          "contribution": -0.0027775244201929685,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 2,
+          "feature": "discharge_disposition_id_1",
+          "contribution": -0.0026620613819077037,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "number_inpatient",
+          "contribution": -0.000613899607034117,
+          "feature_value": -0.5595988035202026,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "admission_type_id_5",
+          "contribution": -0.0005622319593315353,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "number_emergency",
+          "contribution": -0.00028785610482815984,
+          "feature_value": -0.31704220175743103,
+          "direction": "decreases"
+        },
+        {
+          "rank": 6,
+          "feature": "admission_source_id_5",
+          "contribution": -0.00026403438477288474,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 7,
+          "feature": "diag_3_Other",
+          "contribution": -0.00024462274142661764,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "number_outpatient",
+          "contribution": -0.00017223052325714554,
+          "feature_value": -0.30651816725730896,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "age_[70-80)",
+          "contribution": -9.804226812880693e-05,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "diag_2_Musculoskeletal",
+          "contribution": 6.353784175120625e-06,
+          "feature_value": 0.0,
+          "direction": "increases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H2_P005",
+      "hospital_id": 2,
+      "predicted_risk": 0.4990637004375458,
+      "predicted_risk_pct": "49.9%",
+      "base_risk": 0.4995090913772584,
+      "base_risk_pct": "50.0%",
+      "net_adjustment": -0.00044539570808410645,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "admission_type_id_2",
+          "contribution": -0.0020645948527462862,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 2,
+          "feature": "diag_3_Circulatory",
+          "contribution": -0.0013428411335249333,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "insulin_Down",
+          "contribution": -0.00114671820791157,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "gender_Female",
+          "contribution": 0.0010803615084264918,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 5,
+          "feature": "metformin_Steady",
+          "contribution": 0.0009368170274474874,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 6,
+          "feature": "diag_3_Respiratory",
+          "contribution": 0.0009240330030434649,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 7,
+          "feature": "A1Cresult_Missing",
+          "contribution": 0.0005474059396648007,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 8,
+          "feature": "glyburide_Up",
+          "contribution": 0.00024304617872113302,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 9,
+          "feature": "age_[60-70)",
+          "contribution": 0.00021342879227159115,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 10,
+          "feature": "rosiglitazone_Steady",
+          "contribution": 0.00016367080489518922,
+          "feature_value": 0.0,
+          "direction": "increases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H2_P006",
+      "hospital_id": 2,
+      "predicted_risk": 0.4924940764904022,
+      "predicted_risk_pct": "49.2%",
+      "base_risk": 0.4995090913772584,
+      "base_risk_pct": "50.0%",
+      "net_adjustment": -0.007015019655227661,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "discharge_disposition_id_1",
+          "contribution": -0.0023786823297877063,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 2,
+          "feature": "number_outpatient",
+          "contribution": 0.001895889644379458,
+          "feature_value": 0.9282569289207458,
+          "direction": "increases"
+        },
+        {
+          "rank": 3,
+          "feature": "diag_2_Musculoskeletal",
+          "contribution": -0.0018408315879224115,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "num_medications",
+          "contribution": -0.001606579137660748,
+          "feature_value": -0.1812746375799179,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "admission_source_id_4",
+          "contribution": -0.0015357422819202897,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 6,
+          "feature": "age_[90-100)",
+          "contribution": -0.0014301843804408697,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 7,
+          "feature": "insulin_Down",
+          "contribution": -0.0012343940815473225,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "glipizide_No",
+          "contribution": 0.001190078401632963,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 9,
+          "feature": "admission_type_id_6",
+          "contribution": -0.0009015595226806294,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "diag_2_Genitourinary",
+          "contribution": 0.0008269903890913722,
+          "feature_value": 1.0,
+          "direction": "increases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H2_P007",
+      "hospital_id": 2,
+      "predicted_risk": 0.4945472776889801,
+      "predicted_risk_pct": "49.5%",
+      "base_risk": 0.4995090913772584,
+      "base_risk_pct": "50.0%",
+      "net_adjustment": -0.00496181845664978,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "diag_2_Genitourinary",
+          "contribution": -0.0018961508572103438,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 2,
+          "feature": "admission_type_id_3",
+          "contribution": -0.0014574775472288523,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "num_medications",
+          "contribution": 0.000738273635506589,
+          "feature_value": 0.4684242308139801,
+          "direction": "increases"
+        },
+        {
+          "rank": 4,
+          "feature": "admission_type_id_6",
+          "contribution": -0.0007159613072867802,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "nateglinide_No",
+          "contribution": -0.0006082266941664533,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 6,
+          "feature": "insulin_Up",
+          "contribution": -0.0004490233957768503,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 7,
+          "feature": "age_[50-60)",
+          "contribution": -0.00036699417978554717,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "age_[70-80)",
+          "contribution": -0.00027975752949685635,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "admission_source_id_1",
+          "contribution": 7.35041871667893e-05,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 10,
+          "feature": "glyburide-metformin_Up",
+          "contribution": 0.0,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H2_P008",
+      "hospital_id": 2,
+      "predicted_risk": 0.513271689414978,
+      "predicted_risk_pct": "51.3%",
+      "base_risk": 0.4995090913772584,
+      "base_risk_pct": "50.0%",
+      "net_adjustment": 0.013762593269348145,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "glipizide_Up",
+          "contribution": 0.007246476500171356,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 2,
+          "feature": "discharge_disposition_id_5",
+          "contribution": -0.003336073231380699,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "glyburide_Up",
+          "contribution": 0.0025493601577734667,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 4,
+          "feature": "diag_2_Respiratory",
+          "contribution": 0.001672584156019245,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 5,
+          "feature": "age_[70-80)",
+          "contribution": 0.0015235340028209898,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 6,
+          "feature": "rosiglitazone_No",
+          "contribution": 0.0014006091440014374,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 7,
+          "feature": "diag_1_Diabetes",
+          "contribution": 0.0010669374996714776,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 8,
+          "feature": "nateglinide_No",
+          "contribution": 0.0009724000940282367,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 9,
+          "feature": "discharge_disposition_id_1",
+          "contribution": 0.0006616304241189324,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 10,
+          "feature": "time_in_hospital",
+          "contribution": 5.139290495176491e-06,
+          "feature_value": 1.1459250450134277,
+          "direction": "increases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H2_P009",
+      "hospital_id": 2,
+      "predicted_risk": 0.5011857748031616,
+      "predicted_risk_pct": "50.1%",
+      "base_risk": 0.4995090913772584,
+      "base_risk_pct": "50.0%",
+      "net_adjustment": 0.0016766786575317383,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "discharge_disposition_id_1",
+          "contribution": -0.00326917811393227,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 2,
+          "feature": "number_inpatient",
+          "contribution": -0.0032384600694794667,
+          "feature_value": -0.5595988035202026,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "glyburide_Steady",
+          "contribution": 0.002808162747700262,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 4,
+          "feature": "glyburide_No",
+          "contribution": 0.002359055727720105,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 5,
+          "feature": "admission_source_id_7",
+          "contribution": 0.0020292317332036847,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 6,
+          "feature": "glipizide_No",
+          "contribution": 0.0011280902462272207,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 7,
+          "feature": "diag_2_Genitourinary",
+          "contribution": 0.001058237871968757,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 8,
+          "feature": "insulin_Up",
+          "contribution": -0.0009314990786556228,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "glimepiride_No",
+          "contribution": -0.00026695763884945637,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "glipizide-metformin_Steady",
+          "contribution": 0.0,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H2_P010",
+      "hospital_id": 2,
+      "predicted_risk": 0.49716654419898987,
+      "predicted_risk_pct": "49.7%",
+      "base_risk": 0.4995090913772584,
+      "base_risk_pct": "50.0%",
+      "net_adjustment": -0.0023425519466400146,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "discharge_disposition_id_1",
+          "contribution": -0.0014152016673676354,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 2,
+          "feature": "discharge_disposition_id_22",
+          "contribution": -0.0012846077044432792,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "repaglinide_No",
+          "contribution": 0.0010771815187064597,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 4,
+          "feature": "number_outpatient",
+          "contribution": 0.0010236005363754568,
+          "feature_value": -0.30651816725730896,
+          "direction": "increases"
+        },
+        {
+          "rank": 5,
+          "feature": "glyburide_Steady",
+          "contribution": -0.0009438068627835507,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 6,
+          "feature": "diag_1_Diabetes",
+          "contribution": -0.000866326683004581,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 7,
+          "feature": "admission_source_id_1",
+          "contribution": 0.0008537477221651165,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 8,
+          "feature": "change_No",
+          "contribution": -0.00082054264858674,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "age_[10-20)",
+          "contribution": 0.000785323915583746,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 10,
+          "feature": "admission_type_id_1",
+          "contribution": -0.0007519153049135318,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H2_P011",
+      "hospital_id": 2,
+      "predicted_risk": 0.5185705423355103,
+      "predicted_risk_pct": "51.9%",
+      "base_risk": 0.4995090913772584,
+      "base_risk_pct": "50.0%",
+      "net_adjustment": 0.01906144618988037,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "discharge_disposition_id_1",
+          "contribution": 0.006999807272844318,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 2,
+          "feature": "discharge_disposition_id_5",
+          "contribution": 0.005378957504523581,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 3,
+          "feature": "race_Hispanic",
+          "contribution": 0.0015939752196054801,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 4,
+          "feature": "glipizide_No",
+          "contribution": 0.0013695634620778257,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 5,
+          "feature": "number_inpatient",
+          "contribution": 0.0012410564051158585,
+          "feature_value": 0.38440075516700745,
+          "direction": "increases"
+        },
+        {
+          "rank": 6,
+          "feature": "race_Other",
+          "contribution": 0.0011011745280402653,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 7,
+          "feature": "age_[30-40)",
+          "contribution": 0.0006370999703660486,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 8,
+          "feature": "diag_2_Neoplasms",
+          "contribution": 0.0004922462315949467,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 9,
+          "feature": "rosiglitazone_No",
+          "contribution": 0.00019869903291484803,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 10,
+          "feature": "diag_2_Circulatory",
+          "contribution": 4.887133116867453e-05,
+          "feature_value": 0.0,
+          "direction": "increases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H2_P012",
+      "hospital_id": 2,
+      "predicted_risk": 0.49522194266319275,
+      "predicted_risk_pct": "49.5%",
+      "base_risk": 0.4995090913772584,
+      "base_risk_pct": "50.0%",
+      "net_adjustment": -0.004287153482437134,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "discharge_disposition_id_1",
+          "contribution": 0.004998889749472067,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 2,
+          "feature": "number_inpatient",
+          "contribution": -0.00414824599509948,
+          "feature_value": -0.5595988035202026,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "discharge_disposition_id_3",
+          "contribution": 0.003366550588240883,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 4,
+          "feature": "metformin_Up",
+          "contribution": -0.003161536801583132,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "age_[70-80)",
+          "contribution": -0.0021329667202065754,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 6,
+          "feature": "glipizide_Steady",
+          "contribution": -0.0013586410462603944,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 7,
+          "feature": "num_lab_procedures",
+          "contribution": -0.0011262323983906495,
+          "feature_value": -1.0226233005523682,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "num_procedures",
+          "contribution": -0.0009997791080935696,
+          "feature_value": 0.6999428868293762,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "admission_type_id_3",
+          "contribution": 0.0006712017511468632,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 10,
+          "feature": "diag_1_Genitourinary",
+          "contribution": -0.00039638873329167176,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H2_P013",
+      "hospital_id": 2,
+      "predicted_risk": 0.485066294670105,
+      "predicted_risk_pct": "48.5%",
+      "base_risk": 0.4995090913772584,
+      "base_risk_pct": "50.0%",
+      "net_adjustment": -0.014442801475524902,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "number_inpatient",
+          "contribution": -0.003901430824223664,
+          "feature_value": -0.5595988035202026,
+          "direction": "decreases"
+        },
+        {
+          "rank": 2,
+          "feature": "number_outpatient",
+          "contribution": -0.0027447758144797923,
+          "feature_value": -0.30651816725730896,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "insulin_Up",
+          "contribution": -0.002177126871697464,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "age_[70-80)",
+          "contribution": -0.0018154909958580099,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "diag_3_Digestive",
+          "contribution": 0.0015300396381335004,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 6,
+          "feature": "change_No",
+          "contribution": -0.0014094278079557268,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 7,
+          "feature": "diag_1_Genitourinary",
+          "contribution": -0.0012265068237731999,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "admission_source_id_2",
+          "contribution": -0.0010988209905732032,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "num_lab_procedures",
+          "contribution": -0.0009439814900911293,
+          "feature_value": 0.47727903723716736,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "diag_3_Respiratory",
+          "contribution": -0.0006552747266347364,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H2_P014",
+      "hospital_id": 2,
+      "predicted_risk": 0.4995868504047394,
+      "predicted_risk_pct": "50.0%",
+      "base_risk": 0.4995090913772584,
+      "base_risk_pct": "50.0%",
+      "net_adjustment": 7.775425910949707e-05,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "insulin_Down",
+          "contribution": 0.003163386477789905,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 2,
+          "feature": "discharge_disposition_id_1",
+          "contribution": -0.002428145781098443,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "discharge_disposition_id_22",
+          "contribution": -0.002026862261836569,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "admission_type_id_3",
+          "contribution": -0.001716313335655932,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "A1Cresult_>7",
+          "contribution": 0.0016757541760553717,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 6,
+          "feature": "diag_2_Diabetes",
+          "contribution": 0.0012807180378735209,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 7,
+          "feature": "metformin_Up",
+          "contribution": 0.0012110248025789464,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 8,
+          "feature": "number_emergency",
+          "contribution": -0.0010475960972196312,
+          "feature_value": -0.31704220175743103,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "glimepiride_Steady",
+          "contribution": -9.671701816025065e-05,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "glipizide_Steady",
+          "contribution": 6.251002715405427e-05,
+          "feature_value": 0.0,
+          "direction": "increases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H2_P015",
+      "hospital_id": 2,
+      "predicted_risk": 0.5264410972595215,
+      "predicted_risk_pct": "52.6%",
+      "base_risk": 0.4995090913772584,
+      "base_risk_pct": "50.0%",
+      "net_adjustment": 0.0269320011138916,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "number_inpatient",
+          "contribution": 0.020718060415136786,
+          "feature_value": 2.27239990234375,
+          "direction": "increases"
+        },
+        {
+          "rank": 2,
+          "feature": "discharge_disposition_id_1",
+          "contribution": 0.005463196585082381,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 3,
+          "feature": "age_[60-70)",
+          "contribution": -0.002358860571286805,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "num_lab_procedures",
+          "contribution": 0.0017042829339005867,
+          "feature_value": 0.8272562623023987,
+          "direction": "increases"
+        },
+        {
+          "rank": 5,
+          "feature": "diag_2_Other",
+          "contribution": 0.0013108018807119265,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 6,
+          "feature": "glyburide_Down",
+          "contribution": 0.0009096890695681816,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 7,
+          "feature": "diag_2_Neoplasms",
+          "contribution": -0.0007380709951502404,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "age_[30-40)",
+          "contribution": 0.0005824099830202783,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 9,
+          "feature": "diag_2_Injury",
+          "contribution": -0.0003482890160874762,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "max_glu_serum_Missing",
+          "contribution": -0.00031121440263254284,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    }
+  ],
+  "3": [
+    {
+      "patient_id": "H3_P001",
+      "hospital_id": 3,
+      "predicted_risk": 0.5055755972862244,
+      "predicted_risk_pct": "50.6%",
+      "base_risk": 0.49924222111701966,
+      "base_risk_pct": "49.9%",
+      "net_adjustment": 0.006333380937576294,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "number_inpatient",
+          "contribution": 0.007994642413405003,
+          "feature_value": 0.6795327067375183,
+          "direction": "increases"
+        },
+        {
+          "rank": 2,
+          "feature": "discharge_disposition_id_2",
+          "contribution": -0.004930989675249501,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "diag_2_Injury",
+          "contribution": 0.002838250863717273,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 4,
+          "feature": "number_outpatient",
+          "contribution": 0.0021488951842676654,
+          "feature_value": 0.5153701901435852,
+          "direction": "increases"
+        },
+        {
+          "rank": 5,
+          "feature": "diag_2_Digestive",
+          "contribution": -0.001781420304494698,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 6,
+          "feature": "admission_type_id_1",
+          "contribution": 0.0014992745272227022,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 7,
+          "feature": "diag_3_Other",
+          "contribution": -0.001301621469866068,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "age_[30-40)",
+          "contribution": -0.00033580765179710824,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "admission_type_id_2",
+          "contribution": 0.00026475976959249286,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 10,
+          "feature": "A1Cresult_>8",
+          "contribution": -6.260748759305359e-05,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H3_P002",
+      "hospital_id": 3,
+      "predicted_risk": 0.504932165145874,
+      "predicted_risk_pct": "50.5%",
+      "base_risk": 0.49924222111701966,
+      "base_risk_pct": "49.9%",
+      "net_adjustment": 0.005689948797225952,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "number_inpatient",
+          "contribution": 0.004380174576577614,
+          "feature_value": 0.6795327067375183,
+          "direction": "increases"
+        },
+        {
+          "rank": 2,
+          "feature": "admission_source_id_2",
+          "contribution": 0.0018776300637288802,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 3,
+          "feature": "age_[70-80)",
+          "contribution": -0.0012159989050016305,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "discharge_disposition_id_8",
+          "contribution": 0.0007679843022563831,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 5,
+          "feature": "age_[80-90)",
+          "contribution": -0.0007363388177130278,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 6,
+          "feature": "age_[60-70)",
+          "contribution": 0.0007063010640013229,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 7,
+          "feature": "diag_2_Diabetes",
+          "contribution": -0.0006000399005780229,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "A1Cresult_Norm",
+          "contribution": 0.00041536498886148645,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 9,
+          "feature": "insulin_Steady",
+          "contribution": 7.17402994634693e-05,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 10,
+          "feature": "number_outpatient",
+          "contribution": 2.3126357257890895e-05,
+          "feature_value": -0.32999685406684875,
+          "direction": "increases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H3_P003",
+      "hospital_id": 3,
+      "predicted_risk": 0.4925916790962219,
+      "predicted_risk_pct": "49.3%",
+      "base_risk": 0.49924222111701966,
+      "base_risk_pct": "49.9%",
+      "net_adjustment": -0.0066505372524261475,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "discharge_disposition_id_1",
+          "contribution": -0.002660574689507612,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 2,
+          "feature": "diag_2_Digestive",
+          "contribution": -0.0016985042020679932,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "diabetesMed_Yes",
+          "contribution": -0.0009935266152024012,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "insulin_Steady",
+          "contribution": -0.0006910782307385178,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "discharge_disposition_id_8",
+          "contribution": -0.00045704402029511144,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 6,
+          "feature": "admission_source_id_20",
+          "contribution": -0.0004409505426883521,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 7,
+          "feature": "diag_1_Digestive",
+          "contribution": 0.00037164174020299333,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 8,
+          "feature": "glyburide_No",
+          "contribution": -0.00017936997115608063,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "pioglitazone_No",
+          "contribution": 9.886451065534098e-05,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 10,
+          "feature": "glipizide-metformin_Steady",
+          "contribution": 0.0,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H3_P004",
+      "hospital_id": 3,
+      "predicted_risk": 0.5015235543251038,
+      "predicted_risk_pct": "50.2%",
+      "base_risk": 0.49924222111701966,
+      "base_risk_pct": "49.9%",
+      "net_adjustment": 0.0022813379764556885,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "discharge_disposition_id_3",
+          "contribution": 0.002376679407387288,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 2,
+          "feature": "gender_Female",
+          "contribution": 0.0015657850537772035,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 3,
+          "feature": "A1Cresult_>8",
+          "contribution": -0.0014634043889967905,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "diag_1_Musculoskeletal",
+          "contribution": 0.0010487468075290405,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 5,
+          "feature": "max_glu_serum_>200",
+          "contribution": -0.0006868880388455675,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 6,
+          "feature": "admission_source_id_7",
+          "contribution": -0.0005588734725206995,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 7,
+          "feature": "number_outpatient",
+          "contribution": 0.0005034924992670664,
+          "feature_value": -0.32999685406684875,
+          "direction": "increases"
+        },
+        {
+          "rank": 8,
+          "feature": "age_[20-30)",
+          "contribution": -0.0004660257847433908,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "glyburide_Up",
+          "contribution": -0.00046235512950194016,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "diag_2_Genitourinary",
+          "contribution": 0.0004241762547318921,
+          "feature_value": 0.0,
+          "direction": "increases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H3_P005",
+      "hospital_id": 3,
+      "predicted_risk": 0.49691590666770935,
+      "predicted_risk_pct": "49.7%",
+      "base_risk": 0.49924222111701966,
+      "base_risk_pct": "49.9%",
+      "net_adjustment": -0.0023263096809387207,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "num_medications",
+          "contribution": -0.002143561374396052,
+          "feature_value": 0.7670007944107056,
+          "direction": "decreases"
+        },
+        {
+          "rank": 2,
+          "feature": "admission_source_id_2",
+          "contribution": 0.0015675657615065312,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 3,
+          "feature": "pioglitazone_Up",
+          "contribution": 0.0012905773380772084,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 4,
+          "feature": "diag_2_Injury",
+          "contribution": -0.0009134477283803511,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "admission_type_id_3",
+          "contribution": -0.0006764221051706486,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 6,
+          "feature": "glyburide_Steady",
+          "contribution": -0.0004928968707101236,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 7,
+          "feature": "discharge_disposition_id_4",
+          "contribution": -0.00043874815106409313,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "diag_2_Other",
+          "contribution": -0.00035143090877686297,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "gender_Male",
+          "contribution": -8.4744412452046e-05,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "diag_2_Circulatory",
+          "contribution": -8.32059979438694e-05,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H3_P006",
+      "hospital_id": 3,
+      "predicted_risk": 0.4808366298675537,
+      "predicted_risk_pct": "48.1%",
+      "base_risk": 0.49924222111701966,
+      "base_risk_pct": "49.9%",
+      "net_adjustment": -0.01840558648109436,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "A1Cresult_>8",
+          "contribution": -0.003889342547199164,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 2,
+          "feature": "diag_1_Musculoskeletal",
+          "contribution": -0.003635102109063276,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "diag_3_Respiratory",
+          "contribution": -0.002852998837504783,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "repaglinide_Up",
+          "contribution": -0.002585386365004127,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "diag_3_Digestive",
+          "contribution": -0.0025547190642227924,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 6,
+          "feature": "diag_2_Neoplasms",
+          "contribution": -0.0014088398240242129,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 7,
+          "feature": "change_Ch",
+          "contribution": -0.0009239385229915974,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "insulin_Steady",
+          "contribution": -0.000630765532551935,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "diabetesMed_Yes",
+          "contribution": 0.00033706050645930714,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 10,
+          "feature": "race_Unknown",
+          "contribution": -0.0002615589533633682,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H3_P007",
+      "hospital_id": 3,
+      "predicted_risk": 0.49490296840667725,
+      "predicted_risk_pct": "49.5%",
+      "base_risk": 0.49924222111701966,
+      "base_risk_pct": "49.9%",
+      "net_adjustment": -0.004339247941970825,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "discharge_disposition_id_1",
+          "contribution": 0.005257436831849067,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 2,
+          "feature": "num_lab_procedures",
+          "contribution": -0.002255440080733602,
+          "feature_value": -1.809513807296753,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "insulin_Down",
+          "contribution": -0.002117733130625419,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "discharge_disposition_id_6",
+          "contribution": -0.0019892339319557335,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "admission_type_id_6",
+          "contribution": -0.0018854354558672237,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 6,
+          "feature": "number_inpatient",
+          "contribution": -0.0015811246569100222,
+          "feature_value": -0.5691989660263062,
+          "direction": "decreases"
+        },
+        {
+          "rank": 7,
+          "feature": "race_AfricanAmerican",
+          "contribution": 0.0009269359956752387,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 8,
+          "feature": "insulin_No",
+          "contribution": -0.0006232601040318363,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "gender_Male",
+          "contribution": -0.0003451348883480938,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "diabetesMed_No",
+          "contribution": 0.0002737367106052133,
+          "feature_value": 0.0,
+          "direction": "increases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H3_P008",
+      "hospital_id": 3,
+      "predicted_risk": 0.4831419289112091,
+      "predicted_risk_pct": "48.3%",
+      "base_risk": 0.49924222111701966,
+      "base_risk_pct": "49.9%",
+      "net_adjustment": -0.016100287437438965,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "discharge_disposition_id_6",
+          "contribution": -0.005653603672981231,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 2,
+          "feature": "admission_type_id_3",
+          "contribution": -0.005488904565572689,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "diabetesMed_Yes",
+          "contribution": -0.0034404160082343775,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "age_[30-40)",
+          "contribution": -0.0029166479408739587,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "age_[60-70)",
+          "contribution": 0.0028516523540016723,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 6,
+          "feature": "diag_2_Injury",
+          "contribution": 0.0015527746081348383,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 7,
+          "feature": "discharge_disposition_id_8",
+          "contribution": -0.0011021766066547647,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "diag_3_Circulatory",
+          "contribution": -0.0009610758721829715,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "age_[70-80)",
+          "contribution": -0.0009496043622490879,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "admission_type_id_6",
+          "contribution": 7.709860802017145e-06,
+          "feature_value": 0.0,
+          "direction": "increases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H3_P009",
+      "hospital_id": 3,
+      "predicted_risk": 0.5042092800140381,
+      "predicted_risk_pct": "50.4%",
+      "base_risk": 0.49924222111701966,
+      "base_risk_pct": "49.9%",
+      "net_adjustment": 0.004967063665390015,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "number_inpatient",
+          "contribution": 0.012541813790917634,
+          "feature_value": 1.303898572921753,
+          "direction": "increases"
+        },
+        {
+          "rank": 2,
+          "feature": "num_medications",
+          "contribution": -0.0019098359045977287,
+          "feature_value": -0.9739053249359131,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "max_glu_serum_Norm",
+          "contribution": -0.001419386386632832,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "repaglinide_Steady",
+          "contribution": -0.0010633910945721952,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "repaglinide_No",
+          "contribution": -0.00098726391812184,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 6,
+          "feature": "discharge_disposition_id_6",
+          "contribution": -0.0008167450545786387,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 7,
+          "feature": "age_[80-90)",
+          "contribution": -0.0005351875006196901,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "number_emergency",
+          "contribution": -0.0004601728197968991,
+          "feature_value": -0.25697061419487,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "admission_type_id_3",
+          "contribution": -0.00037548983268187935,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "insulin_No",
+          "contribution": -7.282382297501939e-06,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H3_P010",
+      "hospital_id": 3,
+      "predicted_risk": 0.4820109009742737,
+      "predicted_risk_pct": "48.2%",
+      "base_risk": 0.49924222111701966,
+      "base_risk_pct": "49.9%",
+      "net_adjustment": -0.01723131537437439,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "discharge_disposition_id_6",
+          "contribution": -0.005654445557031934,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 2,
+          "feature": "race_AfricanAmerican",
+          "contribution": -0.0032659512704643935,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "glimepiride_Steady",
+          "contribution": -0.0024829142672890565,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "metformin_No",
+          "contribution": -0.001998961040429058,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "A1Cresult_Norm",
+          "contribution": -0.0019117408596095798,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 6,
+          "feature": "discharge_disposition_id_2",
+          "contribution": 0.001302642855771968,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 7,
+          "feature": "metformin_Steady",
+          "contribution": -0.0012783630205682427,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "number_outpatient",
+          "contribution": -0.0010679495957232853,
+          "feature_value": 0.5153701901435852,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "number_emergency",
+          "contribution": -0.0008736373874023955,
+          "feature_value": -0.25697061419487,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "glyburide-metformin_Steady",
+          "contribution": 0.0,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H3_P011",
+      "hospital_id": 3,
+      "predicted_risk": 0.5105806589126587,
+      "predicted_risk_pct": "51.1%",
+      "base_risk": 0.49924222111701966,
+      "base_risk_pct": "49.9%",
+      "net_adjustment": 0.01133844256401062,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "discharge_disposition_id_6",
+          "contribution": 0.006828345476463366,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 2,
+          "feature": "discharge_disposition_id_1",
+          "contribution": 0.003601706326007644,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 3,
+          "feature": "admission_source_id_4",
+          "contribution": -0.0032161700570954464,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "gender_Female",
+          "contribution": 0.002280930712260423,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 5,
+          "feature": "number_inpatient",
+          "contribution": 0.0022610369324684285,
+          "feature_value": 0.05516687035560608,
+          "direction": "increases"
+        },
+        {
+          "rank": 6,
+          "feature": "age_[50-60)",
+          "contribution": -0.0016359360361471913,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 7,
+          "feature": "admission_source_id_17",
+          "contribution": 0.0007713764905929461,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 8,
+          "feature": "race_AfricanAmerican",
+          "contribution": 0.0004841448521241188,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 9,
+          "feature": "diag_3_Genitourinary",
+          "contribution": -3.6996901035254894e-05,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "glyburide-metformin_Steady",
+          "contribution": 0.0,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H3_P012",
+      "hospital_id": 3,
+      "predicted_risk": 0.48947635293006897,
+      "predicted_risk_pct": "48.9%",
+      "base_risk": 0.49924222111701966,
+      "base_risk_pct": "49.9%",
+      "net_adjustment": -0.009765863418579102,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "number_inpatient",
+          "contribution": -0.0022814064553440495,
+          "feature_value": -0.5691989660263062,
+          "direction": "decreases"
+        },
+        {
+          "rank": 2,
+          "feature": "diag_3_Respiratory",
+          "contribution": -0.0020179271630962,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "num_medications",
+          "contribution": -0.0011014228757234299,
+          "feature_value": -0.839989423751831,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "diag_1_Other",
+          "contribution": -0.0009885522325196587,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "glyburide_No",
+          "contribution": -0.0009334677291388145,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 6,
+          "feature": "discharge_disposition_id_18",
+          "contribution": -0.0008081550225979957,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 7,
+          "feature": "diag_2_Respiratory",
+          "contribution": -0.0007372000527216992,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "number_outpatient",
+          "contribution": -0.000451166333886175,
+          "feature_value": -0.32999685406684875,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "glipizide_No",
+          "contribution": -0.00039715560745888956,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "gender_Female",
+          "contribution": -4.9414714463776225e-05,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H3_P013",
+      "hospital_id": 3,
+      "predicted_risk": 0.5199328660964966,
+      "predicted_risk_pct": "52.0%",
+      "base_risk": 0.49924222111701966,
+      "base_risk_pct": "49.9%",
+      "net_adjustment": 0.02069064974784851,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "discharge_disposition_id_22",
+          "contribution": 0.005786588484278116,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 2,
+          "feature": "diag_2_Injury",
+          "contribution": 0.005786588484278115,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 3,
+          "feature": "diag_3_Neoplasms",
+          "contribution": 0.004410253086915232,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 4,
+          "feature": "num_lab_procedures",
+          "contribution": 0.0024279780685902146,
+          "feature_value": 0.17510168254375458,
+          "direction": "increases"
+        },
+        {
+          "rank": 5,
+          "feature": "pioglitazone_No",
+          "contribution": 0.0022756073566582782,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 6,
+          "feature": "repaglinide_Steady",
+          "contribution": 0.0011811608305345271,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 7,
+          "feature": "admission_type_id_1",
+          "contribution": -0.0008446452709347833,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "number_outpatient",
+          "contribution": -0.00032245084643364833,
+          "feature_value": -0.32999685406684875,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "admission_source_id_4",
+          "contribution": -1.0435214409129124e-05,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "glyburide-metformin_Up",
+          "contribution": 0.0,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H3_P014",
+      "hospital_id": 3,
+      "predicted_risk": 0.5156986713409424,
+      "predicted_risk_pct": "51.6%",
+      "base_risk": 0.49924222111701966,
+      "base_risk_pct": "49.9%",
+      "net_adjustment": 0.01645645499229431,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "number_inpatient",
+          "contribution": 0.023695285329632023,
+          "feature_value": 3.1769959926605225,
+          "direction": "increases"
+        },
+        {
+          "rank": 2,
+          "feature": "discharge_disposition_id_1",
+          "contribution": -0.0033242461577389763,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 3,
+          "feature": "change_No",
+          "contribution": -0.0012346474381195035,
+          "feature_value": 1.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 4,
+          "feature": "diag_3_Neoplasms",
+          "contribution": -0.001113105506825833,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "diag_2_Circulatory",
+          "contribution": -0.0008683180938948792,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 6,
+          "feature": "admission_type_id_6",
+          "contribution": -0.000571855909109035,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 7,
+          "feature": "age_[30-40)",
+          "contribution": -0.00013365334544998206,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "age_[60-70)",
+          "contribution": 6.80427857775748e-05,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 9,
+          "feature": "A1Cresult_Norm",
+          "contribution": -6.682357883888445e-05,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "age_[20-30)",
+          "contribution": 5.77213849021938e-06,
+          "feature_value": 0.0,
+          "direction": "increases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    },
+    {
+      "patient_id": "H3_P015",
+      "hospital_id": 3,
+      "predicted_risk": 0.5007925033569336,
+      "predicted_risk_pct": "50.1%",
+      "base_risk": 0.49924222111701966,
+      "base_risk_pct": "49.9%",
+      "net_adjustment": 0.0015502870082855225,
+      "top_10_contributions": [
+        {
+          "rank": 1,
+          "feature": "number_inpatient",
+          "contribution": 0.0023760243435958454,
+          "feature_value": 0.05516687035560608,
+          "direction": "increases"
+        },
+        {
+          "rank": 2,
+          "feature": "glyburide_Steady",
+          "contribution": 0.0018667063007639358,
+          "feature_value": 0.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 3,
+          "feature": "insulin_Up",
+          "contribution": 0.0017496706386132298,
+          "feature_value": 1.0,
+          "direction": "increases"
+        },
+        {
+          "rank": 4,
+          "feature": "diag_2_Diabetes",
+          "contribution": -0.0015452149339008634,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 5,
+          "feature": "admission_source_id_1",
+          "contribution": -0.0010806986513330454,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 6,
+          "feature": "num_procedures",
+          "contribution": -0.00082046994924236,
+          "feature_value": 3.574155569076538,
+          "direction": "decreases"
+        },
+        {
+          "rank": 7,
+          "feature": "diag_1_Respiratory",
+          "contribution": -0.0004975640827252502,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 8,
+          "feature": "diag_2_Digestive",
+          "contribution": -0.00036968407632868773,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 9,
+          "feature": "glipizide_Steady",
+          "contribution": -0.00012848734952886865,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        },
+        {
+          "rank": 10,
+          "feature": "glipizide-metformin_Steady",
+          "contribution": 0.0,
+          "feature_value": 0.0,
+          "direction": "decreases"
+        }
+      ],
+      "risk_category": "MODERATE"
+    }
+  ]
+}
