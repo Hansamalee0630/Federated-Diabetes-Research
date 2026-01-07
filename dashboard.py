@@ -312,7 +312,7 @@ with col2:
 st.markdown("<br>", unsafe_allow_html=True)
 
 # --- MAIN TABS ---
-tab_titles = ["🔒 Privacy Shield", "Readmission Analysis", "👁️ Multimodal Vision", "⚡ Personalization Engine"]
+tab_titles = [" Privacy Shield", "Readmission Analysis", "👁️ Multimodal Vision", "⚡ Personalization Engine"]
 tabs = st.tabs(tab_titles)
 
 # ... (Inside TAB 1 code)
@@ -321,14 +321,14 @@ tabs = st.tabs(tab_titles)
 # ------------------------------------------------------------------------------
 with tabs[0]:
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown("### 🫀 Cardiovascular Complication Risk Assessment")
+    st.markdown("###  Cardiovascular Complication Risk Assessment")
     st.markdown("**AI-Assisted CVD Risk Prediction using Federated Learning**")
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
     
     # SECTION A: CVD PATIENT INPUT FORM
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown("### 📋 CVD Risk Profile")
+    st.markdown("###  CVD Risk Profile")
     
     with st.form("cvd_risk_form"):
         # Inputs are in mmol/L (matches preprocessing training data)
@@ -350,7 +350,7 @@ with tabs[0]:
 
         st.markdown("---")
 
-        submit_cvd = st.form_submit_button("🔍 ASSESS CVD RISK", use_container_width=True)
+        submit_cvd = st.form_submit_button(" ASSESS CVD RISK", use_container_width=True)
     
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
@@ -466,10 +466,10 @@ with tabs[0]:
             st.markdown('</div>', unsafe_allow_html=True)
             # SECTION D: CLINICAL RECOMMENDATIONS
             st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-            st.markdown("### 📋 Clinical Recommendations")
+            st.markdown("###  Clinical Recommendations")
             
             if cvd_prob >= 0.60:
-                st.error("🚨 **HIGH CVD RISK - Intensive Management**")
+                st.error(" **HIGH CVD RISK - Intensive Management**")
                 st.markdown("""
                 **Immediate Actions:**
                 - Cardiology referral for advanced assessment
@@ -486,7 +486,7 @@ with tabs[0]:
                 """)
             
             elif cvd_prob >= 0.40:
-                st.warning("⚠️ **MODERATE CVD RISK - Enhanced Prevention**")
+                st.warning(" **MODERATE CVD RISK - Enhanced Prevention**")
                 st.markdown("""
                 **Management Plan:**
                 - Primary care follow-up in 2-4 weeks
@@ -502,7 +502,7 @@ with tabs[0]:
                 """)
                 
             else:
-                st.success("✅ **LOW CVD RISK - Maintenance**")
+                st.success(" **LOW CVD RISK - Maintenance**")
                 st.markdown("""
                 **Standard Care:**
                 - Annual preventive health assessment
@@ -540,7 +540,7 @@ with tabs[1]:
     # SECTION A: CLINICAL CONTEXT & VALIDATION
     # ====================================================================
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown("### 🏥 Hospital Readmission Risk Assessment")
+    st.markdown("###  Hospital Readmission Risk Assessment")
     st.markdown("**AI-Assisted 30-Day Readmission Prediction with Fairness Guarantees**")
     
     # Load fairness verdict
@@ -549,11 +549,11 @@ with tabs[1]:
         verdict_text = verdict.get('verdict', 'UNKNOWN')
         col_badge1, col_badge2, col_badge3 = st.columns(3)
         with col_badge1:
-            st.markdown(f"✅ **{verdict_text}** • Fairness audit passed")
+            st.markdown(f" **{verdict_text}** • Fairness audit passed")
         with col_badge2:
-            st.markdown("✅ **Privacy-Preserving** • Hospital-local model training")
+            st.markdown(" **Privacy-Preserving** • Hospital-local model training")
         with col_badge3:
-            st.markdown("✅ **Evidence-Based** • Validated against clinical literature")
+            st.markdown(" **Evidence-Based** • Validated against clinical literature")
     
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
@@ -562,7 +562,7 @@ with tabs[1]:
     # SECTION B: PATIENT INPUT FORM
     # ====================================================================
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown("### 📋 Patient Clinical Profile")
+    st.markdown("###  Patient Clinical Profile")
     
     with st.form("patient_risk_form"):
         col_demo1, col_demo2, col_demo3 = st.columns(3)
@@ -687,7 +687,7 @@ with tabs[1]:
             risk_emoji = "✅"
         
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.markdown("### 📊 Risk Assessment Result")
+        st.markdown("###  Risk Assessment Result")
         
         col_risk1, col_risk2 = st.columns([2, 1])
         
@@ -695,7 +695,7 @@ with tabs[1]:
             st.markdown(f"""
             <div style='text-align: center; padding: 30px;'>
                 <div style='font-size: 6rem; font-weight: 900; color: {risk_color}; font-family: Rajdhani;'>{pred_prob*100:.0f}%</div>
-                <div style='font-size: 2rem; color: {risk_color}; margin-top: 10px;'>{risk_emoji} {risk_level} RISK</div>
+               <div style='font-size: 2rem; color: {risk_color}; margin-top: 10px;'>{risk_emoji} {risk_level} RISK</div>
                 <div style='font-size: 1rem; color: #94a3b8; margin-top: 20px;'>
                     30-Day Hospital Readmission Probability
                 </div>
