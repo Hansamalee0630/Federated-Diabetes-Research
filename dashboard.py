@@ -345,29 +345,14 @@ with tabs[1]:
     # SECTION A: CLINICAL CONTEXT & VALIDATION
     # ====================================================================
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown("### 🏥 Hospital Readmission Risk Assessment")
+    st.markdown("###  Hospital Readmission Risk Assessment")
     st.markdown("**AI-Assisted 30-Day Readmission Prediction with Fairness Guarantees**")
-    
-    # Load fairness verdict
-    if fairness_metrics:
-        verdict = fairness_metrics.get('gender_fairness_6metrics', {}).get('overall_verdict', {})
-        verdict_text = verdict.get('verdict', 'UNKNOWN')
-        col_badge1, col_badge2, col_badge3 = st.columns(3)
-        with col_badge1:
-            st.markdown(f"✅ **{verdict_text}** • Fairness audit passed")
-        with col_badge2:
-            st.markdown("✅ **Privacy-Preserving** • Hospital-local model training")
-        with col_badge3:
-            st.markdown("✅ **Evidence-Based** • Validated against clinical literature")
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown("<br>", unsafe_allow_html=True)
     
     # ====================================================================
     # SECTION B: PATIENT INPUT FORM
     # ====================================================================
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown("### 📋 Patient Clinical Profile")
+    st.markdown("###  Patient Clinical Profile")
     
     with st.form("patient_risk_form"):
         col_demo1, col_demo2, col_demo3 = st.columns(3)
@@ -410,7 +395,7 @@ with tabs[1]:
         )
         
         st.markdown("<br>", unsafe_allow_html=True)
-        submit_btn = st.form_submit_button("🔍 ASSESS READMISSION RISK", use_container_width=True)
+        submit_btn = st.form_submit_button("Readmission Risk Calculation", use_container_width=True)
     
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
@@ -492,7 +477,7 @@ with tabs[1]:
             risk_emoji = "✅"
         
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.markdown("### 📊 Risk Assessment Result")
+        st.markdown("###  Risk Assessment Result")
         
         col_risk1, col_risk2 = st.columns([2, 1])
         
@@ -522,7 +507,7 @@ with tabs[1]:
         # SECTION D: RISK DRIVER ANALYSIS (from SHAP)
         # ====================================================================
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.markdown("### 🔍 Key Risk Factors (What's Driving This Prediction?)")
+        st.markdown("### Key Risk Factors (What's Driving This Prediction?)")
         st.markdown("_Based on SHAP explainability from federated learning model_")
         
         # Extract risk drivers from clinical inputs
@@ -616,7 +601,7 @@ with tabs[1]:
         # SECTION E: FAIRNESS VERIFICATION
         # ====================================================================
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.markdown("### ⚖️ Fairness Verification (From 6-Metric Audit)")
+        st.markdown("###  Fairness Verification (From 6-Metric Audit)")
         st.markdown("_Ensures prediction is unbiased across gender and race_")
         
         if fairness_metrics:
@@ -679,7 +664,7 @@ with tabs[1]:
         # SECTION F: HOSPITAL CONTEXT & NON-IID PERSONALIZATION
         # ====================================================================
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.markdown("### 🏥 Hospital Context & Non-IID Adaptation")
+        st.markdown("###  Hospital Context & Non-IID Adaptation")
         st.markdown("_Model personalized to YOUR hospital's patient population_")
         
         col_ctx1, col_ctx2 = st.columns(2)
@@ -693,93 +678,22 @@ with tabs[1]:
                 st.markdown(f"""
                 **Composite Non-IID Score:** {composite_score:.3f}  
                 **Severity:** {severity}
-                
-                • Model accounts for differences in patient populations
-                • Local patterns learned from your hospital data
-                • Predictions contextualized to local baseline
                 """)
             else:
                 st.info("Non-IID analysis not available")
         
-        with col_ctx2:
-            st.markdown("#### Why This Matters")
-            st.markdown("""
-            **Federated Learning Benefits:**
-            • Data stays at your hospital (privacy preserved)
-            • Model learns from local patterns only
-            • Personalized to your patient population
-            • Updates without sharing raw data
-            
-            **Result:** More accurate, locally-relevant predictions
-            """)
+        
         
         st.markdown('</div>', unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # ====================================================================
-        # SECTION G: CLINICAL RECOMMENDATIONS
-        # ====================================================================
-        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.markdown("### 📋 Clinical Action Plan")
-        
-        if pred_prob >= 0.60:
-            st.error("🚨 **HIGH RISK - Intensive Discharge Planning**")
-            st.markdown("""
-            **Pre-Discharge (Today):**
-            - Assign case manager/discharge coordinator
-            - Arrange home health assessment
-            - Medication reconciliation with patient
-            - Schedule PCP follow-up ≤3 days
-            
-            **Day 1-2 Post-Discharge:**
-            - Home health first visit
-            - Pharmacy med adherence call
-            
-            **Days 3-7:**
-            - RN follow-up call (vital signs, symptoms)
-            - Monitor for warning signs
-            
-            **Days 8-30:**
-            - Weekly case manager contact
-            - Lab work per protocol
-            - PCP reassessment
-            """)
-        
-        elif pred_prob >= 0.40:
-            st.warning("⚠️ **MODERATE RISK - Enhanced Monitoring**")
-            st.markdown("""
-            **Pre-Discharge:**
-            - Assess home health need
-            - Medication simplification if possible
-            - Schedule PCP within 7-10 days
-            
-            **Post-Discharge:**
-            - Phone call day 3-5
-            - Follow-up with PCP day 7-10
-            - Available for questions 24/7
-            """)
-        
-        else:
-            st.success("✅ **LOW RISK - Standard Discharge**")
-            st.markdown("""
-            **Pre-Discharge:**
-            - Written discharge instructions
-            - Medication list reviewed
-            - PCP appointment within 2-4 weeks
-            
-            **Post-Discharge:**
-            - Standard follow-up appointments
-            - Community resources as needed
-            """)
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
+       
         
         # ====================================================================
         # SECTION H: DISCLAIMER
         # ====================================================================
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.markdown("### ⚖️ Clinical Disclaimer")
+        st.markdown("###  Clinical Disclaimer")
         
         st.warning("""
         **IMPORTANT:** This AI score is a **decision-support tool only**, not a diagnosis.
