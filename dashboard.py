@@ -597,48 +597,6 @@ def render_readmission_tab():
         st.markdown('</div>', unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # ====================================================================
-        # DISPLAY: Fairness Metrics
-        # ====================================================================
-        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.markdown("###  Fairness Audit Results")
-        
-        if fairness_metrics:
-            gender_metrics = fairness_metrics.get('gender_fairness_6metrics', {})
-            overall = gender_metrics.get('overall_verdict', {})
-            
-            col_f1, col_f2, col_f3 = st.columns(3)
-            with col_f1:
-                eo = gender_metrics.get('equal_opportunity', {})
-                gap = eo.get('gap', 0)*100
-                fair = eo.get('fair', False)
-                icon = "✅" if fair else "⚠️"
-                st.markdown(f"**{icon} Equal Opportunity** (Gender)\nSensitivity Gap: {gap:.1f}%\n{'PASS' if fair else 'FAIL'}")
-            
-            with col_f2:
-                pp = gender_metrics.get('predictive_parity', {})
-                gap = pp.get('gap', 0)*100
-                fair = pp.get('fair', False)
-                icon = "✅" if fair else "⚠️"
-                st.markdown(f"**{icon} Predictive Parity** (Gender)\nPrecision Gap: {gap:.1f}%\n{'PASS' if fair else 'FAIL'}")
-            
-            with col_f3:
-                calib = gender_metrics.get('calibration', {})
-                gap = calib.get('gap', 0)*100
-                fair = calib.get('fair', False)
-                icon = "✅" if fair else "⚠️"
-                st.markdown(f"**{icon} Calibration**\nAccuracy Gap: {gap:.1f}%\n{'PASS' if fair else 'FAIL'}")
-            
-            st.markdown("---")
-            verdict = overall.get('verdict', 'UNKNOWN')
-            passing = overall.get('metrics_passing', 0)
-            total = overall.get('total_metrics', 6)
-            st.info(f"**{verdict}** - {passing}/{total} fairness metrics pass")
-        else:
-            st.warning("Fairness metrics unavailable")
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
         
         # ====================================================================
         # DISPLAY: Hospital Context & Non-IID
