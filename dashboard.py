@@ -823,7 +823,7 @@ with tabs[2]:
 with tabs[3]:
     # --- SECTION 1: RESEARCH MONITOR ---
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown("### 📊 Training Monitor")
+    st.markdown("### Training Monitor")
     
     df = load_comp4_data()
     
@@ -848,7 +848,7 @@ with tabs[3]:
         # CHARTS ROW
         g1, g2 = st.columns(2)
         with g1:
-            st.markdown("#### 📈 Accuracy Evolution")
+            st.markdown("#### Accuracy Evolution")
             fig = go.Figure()
             fig.add_trace(go.Scatter(x=df['round'], y=df['global_overall_acc'], name='Global', line=dict(color='#64748b', width=2, dash='dash')))
             fig.add_trace(go.Scatter(x=df['round'], y=df['pers_overall_acc'], name='Personalized', line=dict(color='#06b6d4', width=4)))
@@ -868,7 +868,7 @@ with tabs[3]:
 
     # --- SECTION 2: CLINICIAN PREDICTION TOOL ---
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown("### 🩺 Clinician Prediction Tool")
+    st.markdown("### Clinician Prediction Tool")
     st.caption("Live Multi-Task Prediction: Hypertension & Heart Failure")
     
     with st.form("prediction_form"):
@@ -952,7 +952,7 @@ with tabs[3]:
         
         # COMPARISON
         if model_mode == "Personalized Model" and prob_htn_global is not None:
-            st.markdown("#### 🌍 Global vs ⚡ Personalized Comparison")
+            st.markdown("#### Global vs ⚡ Personalized Comparison")
             comp_cols = st.columns(4)
             with comp_cols[0]: st.metric("Global HTN", f"{prob_htn_global:.1%}")
             with comp_cols[1]: st.metric("Personalized HTN", f"{prob_htn:.1%}", delta=f"{(prob_htn - prob_htn_global)*100:+.1f}%")
@@ -961,7 +961,7 @@ with tabs[3]:
             st.markdown("<br>", unsafe_allow_html=True)
         
         # GAUGES
-        st.markdown("#### 🎯 Risk Assessment Results")
+        st.markdown("#### Risk Assessment Results")
         col_out1, col_out2 = st.columns(2)
         
         with col_out1:
@@ -1001,7 +1001,7 @@ with tabs[3]:
             num_similar = np.random.randint(80, 150) # Very common
             base_sim = 0.75
             
-        st.info(f"📊 This patient profile is most similar to **{num_similar} cases** in your database (similarity: {base_sim:.0%})")
+        st.info(f"This patient profile is most similar to **{num_similar} cases** in your database (similarity: {base_sim:.0%})")
         
         similar_cols = st.columns(3)
         with similar_cols[0]:
@@ -1039,7 +1039,7 @@ with tabs[3]:
         st.markdown("<br>", unsafe_allow_html=True)
 
         # DRIVERS
-        with st.expander("🔍 Key Risk Drivers (Explainability)"):
+        with st.expander("Key Risk Drivers (Explainability)"):
             st.write("Top factors contributing to this prediction:")
             drivers = pd.DataFrame({
                 "Factor": ["HbA1c", "Medications", "BMI", "Age"],
