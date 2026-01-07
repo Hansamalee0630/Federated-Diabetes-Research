@@ -288,7 +288,7 @@ with tabs[0]:
     col1, col2 = st.columns([1, 2])
     with col1:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.markdown("### 🛡️ Privacy Configuration")
+        st.markdown("### �️ Privacy Configuration")
         st.markdown("Differential Privacy settings for gradient encryption.")
         
         eps = st.slider("Privacy Budget (ε)", 0.1, 10.0, 1.0)
