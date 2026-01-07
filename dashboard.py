@@ -312,7 +312,7 @@ with col2:
 st.markdown("<br>", unsafe_allow_html=True)
 
 # --- MAIN TABS ---
-tab_titles = ["🔒 Privacy Shield", "Readmission Analysis", "👁️ Multimodal Vision", "⚡ Personalization Engine"]
+tab_titles = ["🔒 Privacy Shield", "Readmission Analysis", "Multimodal Vision", "Personalization Engine"]
 tabs = st.tabs(tab_titles)
 
 # ... (Inside TAB 1 code)
@@ -1051,7 +1051,7 @@ with tabs[3]:
             st.plotly_chart(fig, use_container_width=True)
             
         with g2:
-            st.markdown("#### ⚖️ Fairness Monitoring")
+            st.markdown("#### Fairness Monitoring")
             fig = go.Figure()
             fig.add_trace(go.Scatter(x=df['round'], y=df['fairness_gap'], fill='tozeroy', line=dict(color='#f43f5e', width=2)))
             fig.add_hline(y=0.05, line_dash="dash", line_color="#4ade80", annotation_text="Target")
