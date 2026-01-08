@@ -992,7 +992,7 @@ with tabs[2]:
         
     with col2:
         st.markdown('<div class="glass-card" style="height: 100%">', unsafe_allow_html=True)
-        st.markdown("#### 2. Clinical Notes (NLP)")
+        st.markdown("#### 2. Clinical Notes (MLP)")
         st.text_area("Physician Notes", "Patient reports blurry vision...", height=150)
         st.button("⚡ FUSE STREAMS", use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
