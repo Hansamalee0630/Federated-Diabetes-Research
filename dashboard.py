@@ -667,16 +667,7 @@ def render_readmission_tab():
                 avg_similar_risk = np.mean(similar_risks)
                 st.write(f"**Average risk in similar patients:** {avg_similar_risk*100:.1f}%")
                 
-                # Histogram
-                fig = go.Figure(data=[go.Histogram(x=[r*100 for r in similar_risks], nbinsx=10)])
-                fig.update_layout(
-                    title="Risk Distribution in Similar Patients",
-                    xaxis_title="Predicted Risk (%)",
-                    yaxis_title="Count",
-                    **dark_chart_layout(),
-                    height=250
-                )
-                st.plotly_chart(fig, use_container_width=True)
+                
             else:
                 st.info("No similar cases found.")
         else:
@@ -689,7 +680,7 @@ def render_readmission_tab():
         # DISPLAY: SHAP Hospital Feature Importance
         # ====================================================================
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.markdown("###  Feature Importance (SHAP) for Your Hospital")
+        st.markdown("###  Feature Importance for Your Hospital")
         
         if shap_analysis:
             hospital_stats = shap_analysis.get('hospital_stats', {})
