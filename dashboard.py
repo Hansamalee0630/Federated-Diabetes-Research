@@ -612,48 +612,6 @@ def render_readmission_tab():
         st.markdown('</div>', unsafe_allow_html=True)
         st.markdown("<br>", unsafe_allow_html=True)
         
-        # ====================================================================
-        # DISPLAY: Fairness Metrics
-        # ====================================================================
-        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.markdown("###  Fairness Audit Results")
-        
-        if fairness_metrics:
-            gender_metrics = fairness_metrics.get('gender_fairness_6metrics', {})
-            overall = gender_metrics.get('overall_verdict', {})
-            
-            col_f1, col_f2, col_f3 = st.columns(3)
-            with col_f1:
-                eo = gender_metrics.get('equal_opportunity', {})
-                gap = eo.get('gap', 0)*100
-                fair = eo.get('fair', False)
-                icon = "✅" if fair else "⚠️"
-                st.markdown(f"**{icon} Equal Opportunity** (Gender)\nSensitivity Gap: {gap:.1f}%\n{'PASS' if fair else 'FAIL'}")
-            
-            with col_f2:
-                pp = gender_metrics.get('predictive_parity', {})
-                gap = pp.get('gap', 0)*100
-                fair = pp.get('fair', False)
-                icon = "✅" if fair else "⚠️"
-                st.markdown(f"**{icon} Predictive Parity** (Gender)\nPrecision Gap: {gap:.1f}%\n{'PASS' if fair else 'FAIL'}")
-            
-            with col_f3:
-                calib = gender_metrics.get('calibration', {})
-                gap = calib.get('gap', 0)*100
-                fair = calib.get('fair', False)
-                icon = "✅" if fair else "⚠️"
-                st.markdown(f"**{icon} Calibration**\nAccuracy Gap: {gap:.1f}%\n{'PASS' if fair else 'FAIL'}")
-            
-            st.markdown("---")
-            verdict = overall.get('verdict', 'UNKNOWN')
-            passing = overall.get('metrics_passing', 0)
-            total = overall.get('total_metrics', 6)
-            st.info(f"**{verdict}** - {passing}/{total} fairness metrics pass")
-        else:
-            st.warning("Fairness metrics unavailable")
-        
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown("<br>", unsafe_allow_html=True)
         
         # ====================================================================
         # DISPLAY: Hospital Context & Non-IID
@@ -709,16 +667,7 @@ def render_readmission_tab():
                 avg_similar_risk = np.mean(similar_risks)
                 st.write(f"**Average risk in similar patients:** {avg_similar_risk*100:.1f}%")
                 
-                # Histogram
-                fig = go.Figure(data=[go.Histogram(x=[r*100 for r in similar_risks], nbinsx=10)])
-                fig.update_layout(
-                    title="Risk Distribution in Similar Patients",
-                    xaxis_title="Predicted Risk (%)",
-                    yaxis_title="Count",
-                    **dark_chart_layout(),
-                    height=250
-                )
-                st.plotly_chart(fig, use_container_width=True)
+                
             else:
                 st.info("No similar cases found.")
         else:
@@ -731,7 +680,7 @@ def render_readmission_tab():
         # DISPLAY: SHAP Hospital Feature Importance
         # ====================================================================
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.markdown("###  Feature Importance (SHAP) for Your Hospital")
+        st.markdown("###  Feature Importance for Your Hospital")
         
         if shap_analysis:
             hospital_stats = shap_analysis.get('hospital_stats', {})
