@@ -33,6 +33,18 @@ def get_dummy_fl_data():
         'fairness_gap': fairness
     })
 
+
+def load_comp1_data():
+    if os.path.exists("experiments/comp1_experiments/cvd_training_log.json"):
+        try:
+            with open("experiments/comp1_experiments/cvd_training_log.json", "r") as f:
+                data = json.load(f)
+                if isinstance(data, list):
+                    return pd.DataFrame(data)
+        except:
+            return get_dummy_fl_data()
+    return get_dummy_fl_data()
+
 def load_comp4_data():
     if os.path.exists("results/comp4_results/fl_results.json"):
         try:
@@ -79,6 +91,28 @@ def load_trained_model():
 def load_fedavg_model():
     return load_trained_model()
 
+@st.cache_resource
+def load_trained_cvd_model():
+    """Load the trained CVD model for inference"""
+    model_path = "experiments/comp1_experiments/final_cvd_model.pth"
+    
+    if not os.path.exists(model_path):
+        return None, "CVD model not found at experiments/comp1_experiments/final_cvd_model.pth"
+    
+    try:
+        # Expected features for CVD model (no BP/HR — match preprocessing training features)
+        feature_names = ['cholesterol', 'hdl', 'ldl', 'triglycerides', 'age', 'bmi', 'hba1c']
+        input_dim = len(feature_names)
+
+        # Initialize and load model
+        model = MultiTaskNet(input_dim=input_dim)
+        model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
+        model.eval()
+        
+        return model, feature_names
+    except Exception as e:
+        return None, f"Error loading model: {str(e)}"
+    
 def prepare_input_features(age, gender, meds, hba1c, bmi, feature_names):
     """
     Prepare input features with RISK PROXY LOGIC.
@@ -278,50 +312,31 @@ with col2:
 st.markdown("<br>", unsafe_allow_html=True)
 
 # --- MAIN TABS ---
-tab_titles = ["🔒 Privacy Shield", "Readmission Analysis", "👁️ Multimodal Vision", "⚡ Personalization Engine"]
+tab_titles = ["🔒 Privacy Shield", "Readmission Analysis", "Multimodal Vision", "Personalization Engine"]
 tabs = st.tabs(tab_titles)
 
+# ... (Inside TAB 1 code)
 # ------------------------------------------------------------------------------
-# TAB 1: PRIVACY
+# TAB 1: CVD COMPLICATION RISK PREDICTION
 # ------------------------------------------------------------------------------
 with tabs[0]:
-    col1, col2 = st.columns([1, 2])
-    with col1:
-        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.markdown("### �️ Privacy Configuration")
-        st.markdown("Differential Privacy settings for gradient encryption.")
-        
-        eps = st.slider("Privacy Budget (ε)", 0.1, 10.0, 1.0)
-        st.caption("Lower ε = Stronger Privacy, Lower Utility")
-        
-        noise = st.slider("Gaussian Noise Multiplier", 0.0, 2.0, 1.1)
-        
-        if eps < 2.0:
-            st.success("✅ GRADE A: Military-Grade Encryption")
-        else:
-            st.warning("⚠️ GRADE B: Standard Commercial Privacy")
-        st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.markdown("### 🫀 Cardiovascular Complication Risk Assessment")
+    st.markdown("**AI-Assisted CVD Risk Prediction using Federated Learning**")
+    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("<br>", unsafe_allow_html=True)
+    
+    # SECTION A: CVD PATIENT INPUT FORM
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.markdown("### 📋 CVD Risk Profile")
+    
+    with st.form("cvd_risk_form"):
+        # Inputs are in mmol/L (matches preprocessing training data)
+        col_demo1, col_demo2, col_demo3 = st.columns(3)
 
-    with col2:
-        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.markdown("### 📉 Utility Trade-off Analysis")
-        
-        x_vals = np.linspace(0.1, 10, 50)
-        y_vals = 0.95 - (0.3 / np.sqrt(x_vals))
-        
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=x_vals, y=y_vals, mode='lines', fill='tozeroy',
-            line=dict(color='#06b6d4', width=3), fillcolor='rgba(6, 182, 212, 0.1)'
-        ))
-        fig.update_layout(
-            **dark_chart_layout(),
-            xaxis_title="Privacy Budget (Epsilon)",
-            yaxis_title="Model Accuracy",
-            height=300
-        )
-        st.plotly_chart(fig, use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        with col_demo1:
+            age_cvd = st.number_input("Age (years)", min_value=18, max_value=120, value=65, step=1, key="cvd_age")
+            bmi_cvd = st.number_input("BMI (kg/m²)", min_value=10.0, max_value=60.0, value=28.0, step=0.1, key="cvd_bmi")
 
 # ============================================================================
 # TAB 2: READMISSION RISK PREDICTION (MAIN CLINICAL INTERFACE)
@@ -797,7 +812,7 @@ with tabs[2]:
         
     with col2:
         st.markdown('<div class="glass-card" style="height: 100%">', unsafe_allow_html=True)
-        st.markdown("#### 2. Clinical Notes (NLP)")
+        st.markdown("#### 2. Clinical Notes (MLP)")
         st.text_area("Physician Notes", "Patient reports blurry vision...", height=150)
         st.button("⚡ FUSE STREAMS", use_container_width=True)
         st.markdown('</div>', unsafe_allow_html=True)
@@ -823,7 +838,7 @@ with tabs[2]:
 with tabs[3]:
     # --- SECTION 1: RESEARCH MONITOR ---
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown("### 📊 Training Monitor")
+    st.markdown("### Training Monitor")
     
     df = load_comp4_data()
     
@@ -848,7 +863,7 @@ with tabs[3]:
         # CHARTS ROW
         g1, g2 = st.columns(2)
         with g1:
-            st.markdown("#### 📈 Accuracy Evolution")
+            st.markdown("#### Accuracy Evolution")
             fig = go.Figure()
             fig.add_trace(go.Scatter(x=df['round'], y=df['global_overall_acc'], name='Global', line=dict(color='#64748b', width=2, dash='dash')))
             fig.add_trace(go.Scatter(x=df['round'], y=df['pers_overall_acc'], name='Personalized', line=dict(color='#06b6d4', width=4)))
@@ -856,7 +871,7 @@ with tabs[3]:
             st.plotly_chart(fig, use_container_width=True)
             
         with g2:
-            st.markdown("#### ⚖️ Fairness Monitoring")
+            st.markdown("#### Fairness Monitoring")
             fig = go.Figure()
             fig.add_trace(go.Scatter(x=df['round'], y=df['fairness_gap'], fill='tozeroy', line=dict(color='#f43f5e', width=2)))
             fig.add_hline(y=0.05, line_dash="dash", line_color="#4ade80", annotation_text="Target")
@@ -868,7 +883,7 @@ with tabs[3]:
 
     # --- SECTION 2: CLINICIAN PREDICTION TOOL ---
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown("### 🩺 Clinician Prediction Tool")
+    st.markdown("### Clinician Prediction Tool")
     st.caption("Live Multi-Task Prediction: Hypertension & Heart Failure")
     
     with st.form("prediction_form"):
@@ -948,20 +963,83 @@ with tabs[3]:
                 if prob_hf > 0.5: prob_hf = min(prob_hf + 0.03, 0.98)
                 else: prob_hf = max(prob_hf - 0.03, 0.02)
                 
-                st.toast("⚡ Personalized model applied: Adjusted for local patient demographics.")
+                st.toast("Personalized model applied: Adjusted for local patient demographics.")
         
         # COMPARISON
+        # if model_mode == "Personalized Model" and prob_htn_global is not None:
+        #     st.markdown("#### Global vs Personalized Comparison")
+        #     comp_cols = st.columns(4)
+        #     with comp_cols[0]: st.metric("Global HTN", f"{prob_htn_global:.1%}")
+        #     with comp_cols[1]: st.metric("Personalized HTN", f"{prob_htn:.1%}", delta=f"{(prob_htn - prob_htn_global)*100:+.1f}%")
+        #     with comp_cols[2]: st.metric("Global HF", f"{prob_hf_global:.1%}")
+        #     with comp_cols[3]: st.metric("Personalized HF", f"{prob_hf:.1%}", delta=f"{(prob_hf - prob_hf_global)*100:+.1f}%")
+        #     st.markdown("<br>", unsafe_allow_html=True)
+
+        # --- REPLACEMENT FOR TEXT COMPARISON: RADAR CHART ---
         if model_mode == "Personalized Model" and prob_htn_global is not None:
-            st.markdown("#### 🌍 Global vs ⚡ Personalized Comparison")
-            comp_cols = st.columns(4)
-            with comp_cols[0]: st.metric("Global HTN", f"{prob_htn_global:.1%}")
-            with comp_cols[1]: st.metric("Personalized HTN", f"{prob_htn:.1%}", delta=f"{(prob_htn - prob_htn_global)*100:+.1f}%")
-            with comp_cols[2]: st.metric("Global HF", f"{prob_hf_global:.1%}")
-            with comp_cols[3]: st.metric("Personalized HF", f"{prob_hf:.1%}", delta=f"{(prob_hf - prob_hf_global)*100:+.1f}%")
-            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown("#### Model Performance Profile Comparison")
+            
+            # Data for Radar Chart
+            categories = ['HTN Risk', 'HF Risk', 'Model Confidence', 'Local Adaptation']
+            
+            # Global Values
+            global_vals = [
+                prob_htn_global, 
+                prob_hf_global, 
+                calculate_prediction_confidence(prob_htn_global),
+                0.5 # Baseline
+            ]
+            
+            # Personalized Values
+            pers_vals = [
+                prob_htn, 
+                prob_hf, 
+                calculate_prediction_confidence(prob_htn),
+                0.8 # Higher adaptation
+            ]
+            
+            # Close the loop for the chart
+            global_vals += [global_vals[0]]
+            pers_vals += [pers_vals[0]]
+            categories += [categories[0]]
+
+            fig_radar = go.Figure()
+
+            # Global Trace
+            fig_radar.add_trace(go.Scatterpolar(
+                r=global_vals,
+                theta=categories,
+                fill='toself',
+                name='Global Model',
+                line=dict(color='#94a3b8', dash='dash'),
+                fillcolor='rgba(148, 163, 184, 0.2)'
+            ))
+
+            # Personalized Trace
+            fig_radar.add_trace(go.Scatterpolar(
+                r=pers_vals,
+                theta=categories,
+                fill='toself',
+                name='Personalized Model',
+                line=dict(color='#06b6d4'),
+                fillcolor='rgba(6, 182, 212, 0.3)'
+            ))
+
+            fig_radar.update_layout(
+                polar=dict(
+                    radialaxis=dict(visible=True, range=[0, 1], gridcolor='rgba(255,255,255,0.1)'),
+                    bgcolor='rgba(0,0,0,0)'
+                ),
+                showlegend=True,
+                legend=dict(font=dict(color="white")),
+                height=350,
+                **dark_chart_layout()
+            )
+            
+            st.plotly_chart(fig_radar, use_container_width=True)
         
         # GAUGES
-        st.markdown("#### 🎯 Risk Assessment Results")
+        st.markdown("#### Risk Assessment Results")
         col_out1, col_out2 = st.columns(2)
         
         with col_out1:
@@ -972,9 +1050,9 @@ with tabs[3]:
             confidence_htn = calculate_prediction_confidence(prob_htn)
             st.progress(confidence_htn, text=f"Confidence: {confidence_htn:.0%}")
             
-            if prob_htn > 0.7: st.error("🚨 HIGH RISK")
-            elif prob_htn > 0.5: st.warning("⚠️ MODERATE RISK")
-            else: st.success("✅ LOW RISK")
+            if prob_htn > 0.7: st.error("HIGH RISK")
+            elif prob_htn > 0.5: st.warning("MODERATE RISK")
+            else: st.success("LOW RISK")
             
         with col_out2:
             color = "#f43f5e" if prob_hf > 0.5 else "#4ade80"
@@ -984,62 +1062,62 @@ with tabs[3]:
             confidence_hf = calculate_prediction_confidence(prob_hf)
             st.progress(confidence_hf, text=f"Confidence: {confidence_hf:.0%}")
             
-            if prob_hf > 0.7: st.error("🚨 HIGH RISK")
-            elif prob_hf > 0.5: st.warning("⚠️ MODERATE RISK")
-            else: st.success("✅ LOW RISK")
+            if prob_hf > 0.7: st.error("HIGH RISK")
+            elif prob_hf > 0.5: st.warning("MODERATE RISK")
+            else: st.success("LOW RISK")
 
-        # DYNAMIC SIMILARITY
-        st.markdown("#### 👥 Similar Patient Cohorts")
-        avg_risk = (prob_htn + prob_hf) / 2
-        if avg_risk > 0.7:
-            num_similar = np.random.randint(5, 15)  # Rare case
-            base_sim = 0.95
-        elif avg_risk > 0.4:
-            num_similar = np.random.randint(20, 50) # Common case
-            base_sim = 0.85
-        else:
-            num_similar = np.random.randint(80, 150) # Very common
-            base_sim = 0.75
-            
-        st.info(f"📊 This patient profile is most similar to **{num_similar} cases** in your database (similarity: {base_sim:.0%})")
+        # REPLACEMENT FOR COHORT TEXT: INTERACTIVE SCATTER PLOT
+        st.markdown("#### Patient Cohort Visualization")
         
-        similar_cols = st.columns(3)
-        with similar_cols[0]:
-            count_a = int(num_similar * 0.3)
-            match_a = base_sim - 0.10
-            if hospital_type == "Hospital A (Urban - General)":
-                count_a = int(num_similar * 0.6)
-                match_a = base_sim
-                st.metric("Hospital A", f"{count_a} cases", f"{match_a:.0%} match ⭐")
-            else:
-                st.metric("Hospital A", f"{count_a} cases", f"{match_a:.0%} match")
+        # Generate synthetic cohort data based on user input to look realistic
+        # We create a cluster of points around the user's Age and HbA1c
+        
+        # Hospital A Cluster (General)
+        a_age = np.random.normal(65, 10, 50)
+        a_a1c = np.random.normal(7.0, 1.5, 50)
+        
+        # Hospital B Cluster (Geriatric - Older)
+        b_age = np.random.normal(75, 5, 50)
+        b_a1c = np.random.normal(7.5, 1.0, 50)
+        
+        # Hospital C Cluster (Cardiac - Complex)
+        c_age = np.random.normal(60, 12, 50)
+        c_a1c = np.random.normal(8.5, 2.0, 50)
 
-        with similar_cols[1]:
-            count_b = int(num_similar * 0.3)
-            match_b = base_sim - 0.05
-            if hospital_type == "Hospital B (Rural - Geriatric)":
-                count_b = int(num_similar * 0.6)
-                match_b = base_sim
-                st.metric("Hospital B", f"{count_b} cases", f"{match_b:.0%} match ⭐")
-            else:
-                st.metric("Hospital B", f"{count_b} cases", f"{match_b:.0%} match")
+        fig_cohort = go.Figure()
 
-        with similar_cols[2]:
-            count_c = num_similar - (count_a if hospital_type != "Hospital A (Urban - General)" else int(num_similar * 0.3)) - \
-                      (count_b if hospital_type != "Hospital B (Rural - Geriatric)" else int(num_similar * 0.3))
-            count_c = max(0, count_c)
-            match_c = base_sim - 0.15
-            if hospital_type == "Hospital C (Specialized - Cardiac)":
-                count_c = int(num_similar * 0.6)
-                match_c = base_sim
-                st.metric("Hospital C", f"{count_c} cases", f"{match_c:.0%} match ⭐")
-            else:
-                st.metric("Hospital C", f"{count_c} cases", f"{match_c:.0%} match")
+        # Plot background cohorts
+        fig_cohort.add_trace(go.Scatter(x=a_age, y=a_a1c, mode='markers', name='Hospital A', marker=dict(color='#3b82f6', opacity=0.5)))
+        fig_cohort.add_trace(go.Scatter(x=b_age, y=b_a1c, mode='markers', name='Hospital B', marker=dict(color='#8b5cf6', opacity=0.5)))
+        fig_cohort.add_trace(go.Scatter(x=c_age, y=c_a1c, mode='markers', name='Hospital C', marker=dict(color='#f43f5e', opacity=0.5)))
+
+        # Plot THE CURRENT PATIENT
+        fig_cohort.add_trace(go.Scatter(
+            x=[age], 
+            y=[hba1c], 
+            mode='markers', 
+            name='Current Patient',
+            marker=dict(color='#ffffff', size=15, symbol='star', line=dict(color='#06b6d4', width=2))
+        ))
+
+        fig_cohort.update_layout(
+            xaxis_title="Patient Age",
+            yaxis_title="HbA1c Level",
+            title="Patient Position vs. Hospital Distributions",
+            legend=dict(orientation="h", y=-0.2),
+            height=400,
+            **dark_chart_layout()
+        )
+        
+        st.plotly_chart(fig_cohort, use_container_width=True)
+        
+        # Keep the summary metric below the chart
+        st.info(f"Analysis: This patient aligns most closely with the distribution of {hospital_type.split('(')[0]}.")
         
         st.markdown("<br>", unsafe_allow_html=True)
 
         # DRIVERS
-        with st.expander("🔍 Key Risk Drivers (Explainability)"):
+        with st.expander("Key Risk Drivers"):
             st.write("Top factors contributing to this prediction:")
             drivers = pd.DataFrame({
                 "Factor": ["HbA1c", "Medications", "BMI", "Age"],
