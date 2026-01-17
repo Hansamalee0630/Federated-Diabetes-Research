@@ -322,7 +322,7 @@ tabs = st.tabs(tab_titles)
 with tabs[0]:
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.markdown("###  Cardiovascular Complication Risk Assessment")
-    st.markdown("**AI-Assisted CVD Risk Prediction using Federated Learning**")
+    st.markdown("**  CVD Risk Prediction using Federated Learning**")
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
     
