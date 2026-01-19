@@ -581,9 +581,9 @@ def load_all_pipeline_results():
         with col_badge3:
             st.markdown(" **Evidence-Based** • Validated against clinical literature")
     
-    This tool predicts the probability that a diabetic patient will be readmitted to the hospital 
+    """This tool predicts the probability that a diabetic patient will be readmitted to the hospital 
     within 30 days of discharge. The model is trained using **Federated Learning** across multiple 
-    hospitals, meaning patient data never leaves your institution.
+    hospitals, meaning patient data never leaves your institution."""
     """)
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
@@ -855,8 +855,8 @@ def load_all_pipeline_results():
         # ====================================================================
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         st.markdown("###  Clinical Disclaimer")
-        
-        st.warning("""
+       """ 
+        st.warning(
         **IMPORTANT:** This AI score is a **decision-support tool only**, not a clinical diagnosis.
         
         ✓ Consider alongside complete clinical assessment  
@@ -865,7 +865,7 @@ def load_all_pipeline_results():
         ✓ Report safety concerns immediately  
         ✓ This model should augment, not replace, clinical judgment
         """)
-        st.markdown('</div>', unsafe_allow_html=True)
+        """"st.markdown('</div>', unsafe_allow_html=True)
 
 # --- EXECUTION ---
 with tabs[1]:
@@ -1215,4 +1215,4 @@ with tabs[3]:
 # --- SIDEBAR (Minimal) ---
 with st.sidebar:
     st.markdown("---")
-    st.caption("v2.5.0-beta | Secure Connection")
+    st.caption("v2.5.0-beta | Secure Connection")"""
