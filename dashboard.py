@@ -78,8 +78,22 @@ def load_trained_model():
                              'A1Cresult_None', 'A1Cresult_Norm', 'insulin_No', 'insulin_Steady', 
                              'insulin_Up', 'change_No', 'diabetesMed_Yes']
 
-        # Initialize and load model
-        model = MultiTaskNet(input_dim=input_dim)
+        # Load model configuration if available
+        config_path = "experiments/comp4_experiments/model_config.json"
+        if os.path.exists(config_path):
+            with open(config_path, "r") as f:
+                config = json.load(f)
+        else:
+            config = {}  # Use defaults if config not found
+        
+        # Initialize and load model with saved configuration
+        model = MultiTaskNet(
+            input_dim=input_dim,
+            shared_layers=config.get("shared_layers", [256, 128]),
+            head_hidden=config.get("head_hidden", 64),
+            head_depth=config.get("head_depth", 1),
+            dropout=config.get("dropout", 0.2)
+        )
         model.load_state_dict(torch.load(model_path, map_location=torch.device('cpu')))
         model.eval()
         
@@ -312,7 +326,7 @@ with col2:
 st.markdown("<br>", unsafe_allow_html=True)
 
 # --- MAIN TABS ---
-tab_titles = [" Privacy Shield", "Readmission Analysis", "👁️ Multimodal Vision", "⚡ Personalization Engine"]
+tab_titles = ["🔒 Privacy Shield", "Readmission Analysis", "Multimodal Vision", "Personalization Engine"]
 tabs = st.tabs(tab_titles)
 
 # ... (Inside TAB 1 code)
@@ -321,14 +335,14 @@ tabs = st.tabs(tab_titles)
 # ------------------------------------------------------------------------------
 with tabs[0]:
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown("###  Cardiovascular Complication Risk Assessment")
-    st.markdown("**  CVD Risk Prediction using Federated Learning**")
+    st.markdown("### 🫀 Cardiovascular Complication Risk Assessment")
+    st.markdown("**AI-Assisted CVD Risk Prediction using Federated Learning**")
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
     
     # SECTION A: CVD PATIENT INPUT FORM
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown("###  CVD Risk Profile")
+    st.markdown("### 📋 CVD Risk Profile")
     
     with st.form("cvd_risk_form"):
         # Inputs are in mmol/L (matches preprocessing training data)
@@ -337,186 +351,6 @@ with tabs[0]:
         with col_demo1:
             age_cvd = st.number_input("Age (years)", min_value=18, max_value=120, value=65, step=1, key="cvd_age")
             bmi_cvd = st.number_input("BMI (kg/m²)", min_value=10.0, max_value=60.0, value=28.0, step=0.1, key="cvd_bmi")
-
-        with col_demo2:
-            # Inputs are expected in mmol/L (ratio values used in training)
-            cholesterol = st.number_input("Total Cholesterol (mmol/L)", min_value=0.0, max_value=10.0, value=5.1, step=0.1, key="chol_mmoll")
-            hdl = st.number_input("HDL Cholesterol (mmol/L)", min_value=0.0, max_value=10.0, value=1.3, step=0.1, key="hdl_mmoll")
-
-        with col_demo3:
-            triglycerides = st.number_input("Triglycerides (mmol/L)", min_value=0.0, max_value=14.0, value=1.7, step=0.1, key="tg_mmoll")
-
-            # only CVD related inputs kept (no renal markers)
-
-        st.markdown("---")
-
-        submit_cvd = st.form_submit_button(" ASSESS CVD RISK", use_container_width=True)
-    
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # EVERYTHING BELOW MUST BE INSIDE THIS IF STATEMENT
-    if submit_cvd:
-        with st.spinner("Computing CVD risk assessment..."):
-            # Initialize core variables to avoid Pylance errors
-            cvd_prob = 0.0
-            
-            # 1. CONVERT UNITS and DERIVE FEATURES (match preprocessing logic)
-            def _calc_fuzzy_weight(val, threshold, margin=0.2):
-                if val is None or (isinstance(val, float) and np.isnan(val)):
-                    return 0.5
-                lower = threshold * (1 - margin)
-                upper = threshold * (1 + margin)
-                if val <= lower or val >= upper:
-                    return 1.0
-                dist = abs(val - threshold) / (threshold * margin)
-                return max(0.1, dist)
-
-            # Inputs are already in mmol/L (dataset training values)
-            chol_mmol = float(cholesterol)
-            tg_mmol = float(triglycerides)
-            hdl_mmol = float(hdl)
-
-            # Dyslipidemia and AIP (same thresholds as preprocessing)
-            dyslipidemia_flag = int((chol_mmol >= 5.1) or (tg_mmol >= 3.1))
-            # AIP (protect against division by zero)
-            aip_val = np.log10(tg_mmol / max(hdl_mmol, 0.1)) if tg_mmol is not None else 0.0
-            cvd_weight = _calc_fuzzy_weight(aip_val, 0.24)
-
-            # Load model and run inference (existing Torch logic if available)
-            cvd_model, _ = load_trained_cvd_model()
-            if cvd_model is not None:
-                try:
-                    # TODO: prepare cvd_input_tensor using the same features used in training
-                    # For now, fall back to a simple evidence-based heuristic using mmol/L values
-                    base_risk = 0.3
-                    # Use HDL (mmol/L) reference ~1.3 mmol/L
-                    hdl_factor = max(0.0, (1.3 - hdl_mmol) / 1.3) * 0.15
-                    age_factor = (age_cvd - 40) / 40 * 0.25 if age_cvd > 40 else 0.0
-                    aip_influence = max(0.0, (aip_val - 0.24)) * 0.12
-                    cvd_prob = min(0.95, max(0.05, base_risk + hdl_factor + age_factor + aip_influence))
-                except Exception:
-                    cvd_prob = 0.5  # Error fallback
-            else:
-                # Fallback clinical calculation when model not available
-                base_risk = 0.3
-                cvd_prob = min(0.95, max(0.05, base_risk + (age_cvd / 200)))
-
-            # Risk stratification UI
-            cvd_risk_color = "#ef4444" if cvd_prob >= 0.6 else "#f97316" if cvd_prob >= 0.4 else "#4ade80"
-            cvd_risk_level = "HIGH" if cvd_prob >= 0.6 else "MODERATE" if cvd_prob >= 0.4 else "LOW"
-            
-            st.markdown(f"""
-            <div class="glass-card" style="text-align: center; padding: 20px;">
-                <div style="font-size: 5rem; font-weight: 900; color: {cvd_risk_color};">{cvd_prob*100:.0f}%</div>
-                <div style="font-size: 1.5rem; color: {cvd_risk_color};"> {cvd_risk_level} RISK</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            # SECTION C: CVD RISK DRIVERS
-            st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-            st.markdown("### 🔍 Key CVD Risk Factors")
-            
-            cvd_risk_factors = []
-
-            # 1. Dyslipidemia (Using your dataset thresholds: 5.1 and 3.1)
-            if chol_mmol >= 5.1 or tg_mmol >= 3.1:
-                impact = min(max((chol_mmol - 5.1) / 2.0, (tg_mmol - 3.1) / 2.0), 1.0)
-                cvd_risk_factors.append({
-                    'name': 'Dyslipidemia',
-                    'value': f"{chol_mmol:.1f} mmol/L",
-                    'impact': impact,
-                    'clinical': f'Threshold exceeded (CHOL 5.1 / TG 3.1)',
-                    'color': '#ef4444'
-                })
-
-            # 2. AIP (Atherogenic Index of Plasma)
-            aip_val = np.log10(tg_mmol / max(hdl_mmol, 0.1))
-            if aip_val > 0.24:
-                impact = min((aip_val - 0.24) / 0.3, 1.0)
-                cvd_risk_factors.append({
-                    'name': 'High AIP Score',
-                    'value': f"{aip_val:.2f}",
-                    'impact': impact,
-                    'clinical': f'AIP > 0.24 indicates high atherogenic risk',
-                    'color': '#f97316'
-                })
-
-            # 3. (Removed BP/HR drivers) — only lipid/AIP based drivers retained
-
-            # Sort and Render Factors
-            cvd_risk_factors.sort(key=lambda x: x['impact'], reverse=True)
-            
-            for i, factor in enumerate(cvd_risk_factors[:5], 1):
-                progress = factor['impact'] * 100
-                st.markdown(f"""
-                <div style='margin-bottom: 15px;'>
-                    <div style='display: flex; justify-content: space-between; margin-bottom: 5px;'>
-                        <span style='font-weight: bold;'>{i}. {factor['name']}</span>
-                        <span style='color: {factor['color']}; font-weight: bold;'>{factor['value']}</span>
-                    </div>
-                    <div style='width: 100%; height: 8px; background: #1e293b; border-radius: 4px;'>
-                        <div style='width: {progress}%; height: 100%; background: {factor['color']};'></div>
-                    </div>
-                    <p style='margin-top: 6px; font-size: 0.85rem; color: #94a3b8;'>{factor['clinical']}</p>
-                </div>
-                """, unsafe_allow_html=True)
-            
-            st.markdown('</div>', unsafe_allow_html=True)
-            # SECTION D: CLINICAL RECOMMENDATIONS
-            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-            st.markdown("###  Clinical Recommendations")
-            
-            if cvd_prob >= 0.60:
-                st.error(" **HIGH CVD RISK - Intensive Management**")
-                st.markdown("""
-                **Immediate Actions:**
-                - Cardiology referral for advanced assessment
-                - Consider cardiac imaging (ECG, echocardiogram, stress test)
-                - Aggressive lipid management (consider statin + ezetimibe)
-                - Blood pressure optimization (target <130/80)
-                - Aspirin therapy consideration
-                
-                **Lifestyle Modifications:**
-                - Cardiac rehabilitation program
-                - Dietary consultation (heart-healthy diet)
-                - Exercise program (supervised initially)
-                - Smoking cessation if applicable
-                """)
-            
-            elif cvd_prob >= 0.40:
-                st.warning(" **MODERATE CVD RISK - Enhanced Prevention**")
-                st.markdown("""
-                **Management Plan:**
-                - Primary care follow-up in 2-4 weeks
-                - Lipid optimization (statin therapy)
-                - Blood pressure management
-                - Diabetes control (HbA1c <7% if diabetic)
-                
-                **Preventive Actions:**
-                - Regular exercise (150 min/week moderate intensity)
-                - Heart-healthy diet
-                - Weight management if applicable
-                - Annual cardiovascular assessment
-                """)
-                
-            else:
-                st.success(" **LOW CVD RISK - Maintenance**")
-                st.markdown("""
-                **Standard Care:**
-                - Annual preventive health assessment
-                - Continue current lifestyle modifications
-                - Routine lipid and BP monitoring
-                - Address modifiable risk factors
-                
-                **Preventive Measures:**
-                - Maintain healthy diet and exercise
-                - Regular health monitoring
-                - Stress management
-                """)
-            
-            st.markdown('</div>', unsafe_allow_html=True)
 
 # ============================================================================
 # TAB 2: READMISSION RISK PREDICTION (MAIN CLINICAL INTERFACE)
@@ -562,28 +396,73 @@ def load_all_pipeline_results():
     except:
         pass
     
-    # ====================================================================
-    # SECTION A: CLINICAL CONTEXT & VALIDATION
-    # ====================================================================
+    try:
+        with open('results/local_hospital_explanations.json', 'r') as f:
+            results['local_explanations'] = json.load(f)
+    except:
+        pass
+    
+    try:
+        with open('results/instance_patient_explanations.json', 'r') as f:
+            results['instance_explanations'] = json.load(f)
+    except:
+        pass
+    
+    try:
+        with open('results/fairness_explanations.json', 'r') as f:
+            results['fairness_explanations'] = json.load(f)
+    except:
+        pass
+    
+    try:
+        results['fedavg_history'] = pd.read_csv('results/fedavg_history_full.csv')
+    except:
+        pass
+    
+    try:
+        with open('results/local_explainability_summary.json', 'r') as f:
+            results['local_explainability_summary'] = json.load(f)
+    except:
+        pass
+    
+    return results
+
+
+def dark_chart_layout():
+    """Dark theme styling for Plotly charts"""
+    return dict(
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='#cbd5e1', family="Inter"),
+        xaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)', zeroline=False),
+        yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)', zeroline=False),
+    )
+
+
+def render_readmission_tab():
+    """Main Tab 2: Readmission Risk Prediction Interface"""
+    
+    # Load all results once at tab entry
+    all_results = load_all_pipeline_results()
+    fairness_metrics = all_results['fairness_metrics']
+    non_iid_metrics = all_results['non_iid_metrics']
+    shap_analysis = all_results['shap_analysis']
+    local_explanations = all_results['local_explanations']
+    instance_explanations = all_results['instance_explanations']
+    fairness_explanations = all_results['fairness_explanations']
+    fedavg_history = all_results['fedavg_history']
+    
+    # ========================================================================
+    # SECTION A: HEADER
+    # ========================================================================
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown("###  Hospital Readmission Risk Assessment")
-    st.markdown("**AI-Assisted 30-Day Readmission Prediction with Fairness Guarantees**")
+    st.markdown("""
+    ###  Hospital Readmission Risk Assessment
+    **AI-Assisted 30-Day Readmission Prediction with Privacy & Fairness**
     
-    # Load fairness verdict
-    if fairness_metrics:
-        verdict = fairness_metrics.get('gender_fairness_6metrics', {}).get('overall_verdict', {})
-        verdict_text = verdict.get('verdict', 'UNKNOWN')
-        col_badge1, col_badge2, col_badge3 = st.columns(3)
-        with col_badge1:
-            st.markdown(f" **{verdict_text}** • Fairness audit passed")
-        with col_badge2:
-            st.markdown(" **Privacy-Preserving** • Hospital-local model training")
-        with col_badge3:
-            st.markdown(" **Evidence-Based** • Validated against clinical literature")
-    
-    """This tool predicts the probability that a diabetic patient will be readmitted to the hospital 
+    This tool predicts the probability that a diabetic patient will be readmitted to the hospital 
     within 30 days of discharge. The model is trained using **Federated Learning** across multiple 
-    hospitals, meaning patient data never leaves your institution."""
+    hospitals, meaning patient data never leaves your institution.
     """)
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
@@ -679,16 +558,21 @@ def load_all_pipeline_results():
         # DISPLAY: Risk Score
         # ====================================================================
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.markdown("###  Risk Assessment Result")
+        st.markdown("###  30-Day Readmission Risk Score")
         
         col_main, col_meta = st.columns([2, 1])
         with col_main:
             st.markdown(f"""
-            <div style='text-align: center; padding: 30px;'>
-                <div style='font-size: 6rem; font-weight: 900; color: {risk_color}; font-family: Rajdhani;'>{pred_prob*100:.0f}%</div>
-               <div style='font-size: 2rem; color: {risk_color}; margin-top: 10px;'>{risk_emoji} {risk_level} RISK</div>
-                <div style='font-size: 1rem; color: #94a3b8; margin-top: 20px;'>
-                    30-Day Hospital Readmission Probability
+            <div style='text-align: center; padding: 40px; background: rgba({
+                239 if risk_level == "HIGH" else 249 if risk_level == "MODERATE" else 74
+            }, {68 if risk_level == "HIGH" else 115 if risk_level == "MODERATE" else 222}, {
+                68 if risk_level == "HIGH" else 22 if risk_level == "MODERATE" else 128
+            }, 0.1); border-radius: 15px; border: 2px solid {risk_color};'>
+                <div style='font-size: 5rem; font-weight: 900; color: {risk_color}; font-family: Rajdhani;'>
+                    {readmit_prob*100:.0f}%
+                </div>
+                <div style='font-size: 1.8rem; color: {risk_color}; margin-top: 15px; font-family: Rajdhani;'>
+                    {risk_emoji} {risk_level} RISK
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -855,8 +739,8 @@ def load_all_pipeline_results():
         # ====================================================================
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         st.markdown("###  Clinical Disclaimer")
-       """ 
-        st.warning(
+        
+        st.warning("""
         **IMPORTANT:** This AI score is a **decision-support tool only**, not a clinical diagnosis.
         
         ✓ Consider alongside complete clinical assessment  
@@ -865,7 +749,7 @@ def load_all_pipeline_results():
         ✓ Report safety concerns immediately  
         ✓ This model should augment, not replace, clinical judgment
         """)
-        """"st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
 # --- EXECUTION ---
 with tabs[1]:
@@ -1215,4 +1099,4 @@ with tabs[3]:
 # --- SIDEBAR (Minimal) ---
 with st.sidebar:
     st.markdown("---")
-    st.caption("v2.5.0-beta | Secure Connection")"""
+    st.caption("v2.5.0-beta | Secure Connection")
