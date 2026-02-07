@@ -21,7 +21,7 @@ from datasets.complication_dataset.data_preprocessing import run_preprocessing
 from datasets.complication_dataset.intermediate_gen import generate_bridge_data
 
 # NEW: REPRODUCIBILITY SEEDING
-def set_seed(seed=47):
+def set_seed(seed=50):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     np.random.seed(seed)
@@ -121,7 +121,7 @@ def evaluate_model(model, csv_path, feature_cols, label_col, device=None, batch_
 # MASTER WORKFLOW
 # ---------------------------------------------------------
 def run_research_experiment():
-    set_seed(47)
+    set_seed(50)
     print("="*50)
     print("STARTING OPTIMIZED FEDERATED LEARNING PIPELINE")
     print("="*50)
