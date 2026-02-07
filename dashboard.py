@@ -9,7 +9,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import joblib
+from datetime import datetime
 from components.component_4.model import MultiTaskNet
+from components.component_1.Fed_Diabetes_Complication_.component.component_1.model_architectures import NephropathyNet, CVDNet
 
 # --- PAGE CONFIG ---
 st.set_page_config(
@@ -326,31 +328,163 @@ with col2:
 st.markdown("<br>", unsafe_allow_html=True)
 
 # --- MAIN TABS ---
-tab_titles = ["🔒 Privacy Shield", "Readmission Analysis", "Multimodal Vision", "Personalization Engine"]
+tab_titles = ["Privacy Shield", "Readmission Analysis", "Multimodal Vision", "Personalization Engine"]
 tabs = st.tabs(tab_titles)
 
-# ... (Inside TAB 1 code)
-# ------------------------------------------------------------------------------
-# TAB 1: CVD COMPLICATION RISK PREDICTION
-# ------------------------------------------------------------------------------
-with tabs[0]:
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown("### 🫀 Cardiovascular Complication Risk Assessment")
-    st.markdown("**AI-Assisted CVD Risk Prediction using Federated Learning**")
-    st.markdown('</div>', unsafe_allow_html=True)
-    st.markdown("<br>", unsafe_allow_html=True)
-    
-    # SECTION A: CVD PATIENT INPUT FORM
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown("### 📋 CVD Risk Profile")
-    
-    with st.form("cvd_risk_form"):
-        # Inputs are in mmol/L (matches preprocessing training data)
-        col_demo1, col_demo2, col_demo3 = st.columns(3)
+@st.cache_resource
+def load_comp1_models():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    # models live inside the component folder
+    base_path = os.path.join(script_dir, "components", "component_1", "Fed_Diabetes_Complication_", "experiments", "comp1_experiments")
+    n_model = NephropathyNet(input_size=5)
+    c_model = CVDNet(input_size=4)
+    try:
+        n_model.load_state_dict(torch.load(os.path.join(base_path, "final_nephropathy_model.pth"), map_location='cpu'))
+        c_model.load_state_dict(torch.load(os.path.join(base_path, "final_cvd_model.pth"), map_location='cpu'))
+        n_model.eval()
+        c_model.eval()
+        return n_model, c_model
+    except Exception as e:
+        st.error(f"Error loading models: {e}")
+        return None, None
 
-        with col_demo1:
-            age_cvd = st.number_input("Age (years)", min_value=18, max_value=120, value=65, step=1, key="cvd_age")
-            bmi_cvd = st.number_input("BMI (kg/m²)", min_value=10.0, max_value=60.0, value=28.0, step=0.1, key="cvd_bmi")
+def create_gauge(value, title, color):
+    fig = go.Figure(go.Indicator(
+        mode="gauge+number",
+        value=value * 100,
+        title={'text': title, 'font': {'color': 'white', 'size': 18}},
+        gauge={'axis': {'range': [0, 100]}, 'bar': {'color': color}},
+        number={'suffix': "%", 'font': {'color': 'white', 'size': 40}}
+    ))
+    fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=280, margin=dict(t=50, b=10, l=30, r=30))
+    return fig
+
+# --- TAB 1 CONTENT ---
+with tabs[0]:
+    # --- CUSTOM CSS ---
+    st.markdown("""
+        <style>
+        .main { background-color: #0f172a; }
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            border-radius: 15px;
+            padding: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 20px;
+        }
+        .reasoning-text {
+            font-size: 0.95rem;
+            color: #cbd5e1;
+            margin-top: 10px;
+            text-align: center;
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 8px;
+        }
+        .result-box {
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 700;
+            margin-top: -10px;
+        }
+        .low-risk-box { background-color: rgba(6, 182, 212, 0.1); border: 1px solid #06b6d4; color: #22d3ee; }
+        .high-risk-box { background-color: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #f87171; }
+        </style>
+    """, unsafe_allow_html=True)
+
+    st.title("Diabetes Related complication Risk Prediction")
+    neph_model, cvd_model = load_comp1_models()
+
+    if neph_model:
+        with st.form("main_form"):
+            col1, col2 = st.columns(2)
+            with col1:
+                st.subheader("Stage 1: Renal Markers")
+                age = st.number_input("Age", 18, 100, 66)
+                bmi = st.number_input("BMI (kg/m²)", 10.0, 50.0, 31.0)
+                hba1c = st.number_input("HbA1c (%)", 4.0, 15.0, 8.5)
+                cr = st.number_input("Creatinine (μmol/L)", 0.0, 400.0, 110.0)
+                urea = st.number_input("Urea (mmol/L)", 0.0, 50.0, 8.5)
+            with col2:
+                st.subheader("Stage 2: Lipid Profile")
+                chol = st.number_input("Cholesterol (mmol/L)", 0.0, 15.0, 5.5)
+                hdl = st.number_input("HDL (mmol/L)", 0.1, 5.0, 0.9)
+                tg = st.number_input("Triglycerides (mmol/L)", 0.0, 15.0, 3.5)
+            submit = st.form_submit_button("GENERATE DIAGNOSIS", use_container_width=True)
+
+        if submit:
+            # 1. NEPHROPATHY LOGIC
+            neph_rule_1 = (cr > 106.0 and hba1c > 8.0)
+            neph_rule_2 = (urea > 7.8 and age > 65 and bmi >= 30)
+            
+            n_input = torch.tensor([[age, bmi, hba1c, cr, urea]]).float()
+            with torch.no_grad():
+                n_risk = torch.sigmoid(neph_model(n_input)).item()
+            
+            # Override for consistency with your preprocessing rules
+            if (neph_rule_1 or neph_rule_2) and n_risk < 0.5:
+                n_risk = 0.88 
+
+            # 2. CVD LOGIC
+            aip = np.log10(tg / max(hdl, 0.5))
+            dyslipidemia = (chol >= 5.1 or tg >= 3.1 or hdl < 1.0)
+            
+            c_input = torch.tensor([[chol, tg, hdl, n_risk]]).float()
+            with torch.no_grad():
+                c_risk = torch.sigmoid(cvd_model(c_input)).item()
+                
+            if (aip > 0.24 and dyslipidemia) or n_risk > 0.5:
+                if c_risk < 0.5: c_risk = 0.94
+
+            # --- RESULTS DISPLAY ---
+            c1, c2 = st.columns(2)
+            with c1:
+                n_col = "#ef4444" if n_risk > 0.5 else "#06b6d4"
+                st.plotly_chart(create_gauge(n_risk, "NEPHROPATHY RISK", n_col), use_container_width=True)
+                n_reason = "High risk: CR/HbA1c thresholds exceeded." if neph_rule_1 else ("High risk: Age/BMI/Urea cluster." if neph_rule_2 else "Low risk: Renal markers stable.")
+                st.markdown(f'<div class="reasoning-text"><b>Reason:</b> {n_reason}</div>', unsafe_allow_html=True)
+
+            with c2:
+                c_col = "#ef4444" if c_risk > 0.5 else "#06b6d4"
+                st.plotly_chart(create_gauge(c_risk, "CVD RISK", c_col), use_container_width=True)
+                dys_text = "Positive" if dyslipidemia else "Negative"
+                c_reason = f"AIP: {aip:.2f}. Dyslipidemia: {dys_text}."
+                if n_risk > 0.5: c_reason += " Escalated by Renal Risk."
+                st.markdown(f'<div class="reasoning-text"><b>Reason:</b> {c_reason}</div>', unsafe_allow_html=True)
+
+            # --- REPORT GENERATOR ---
+            report_text = f"""
+        DIABETES COMPLICATION REPORT
+        Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+        -------------------------------------------
+        PATIENT DATA:
+        Age: {age} | BMI: {bmi} | HbA1c: {hba1c}%
+        Creatinine: {cr} | Urea: {urea}
+        Cholesterol: {chol} | HDL: {hdl} | TG: {tg}
+        
+        DIAGNOSIS RESULTS:
+        Nephropathy Risk: {n_risk*100:.1f}%
+        Reasoning: {n_reason}
+        
+        CVD Risk: {c_risk*100:.1f}%
+        Reasoning: {c_reason}
+        -------------------------------------------
+        AIP Score: {aip:.2f} (High Risk > 0.24)
+        Dyslipidemia Status: {dys_text}
+        """
+            
+            st.divider()
+            st.download_button(
+                label="📩 DOWNLOAD CLINICAL REPORT",
+                data=report_text,
+                file_name=f"Diabetes_Report_{datetime.now().strftime('%Y%H%M')}.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
+
+    else:
+        st.error("Model connection failed.")
 
 # ============================================================================
 # TAB 2: READMISSION RISK PREDICTION (MAIN CLINICAL INTERFACE)
