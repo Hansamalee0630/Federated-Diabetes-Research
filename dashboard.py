@@ -411,7 +411,7 @@ with tabs[0]:
                 chol = st.number_input("Cholesterol (mmol/L)", 0.0, 15.0, 5.5)
                 hdl = st.number_input("HDL (mmol/L)", 0.1, 5.0, 0.9)
                 tg = st.number_input("Triglycerides (mmol/L)", 0.0, 15.0, 3.5)
-            submit = st.form_submit_button("GENERATE DIAGNOSIS", use_container_width=True)
+            submit = st.form_submit_button("GENERATE RISK SCORE", use_container_width=True)
 
         if submit:
             # 1. NEPHROPATHY LOGIC
