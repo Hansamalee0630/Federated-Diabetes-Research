@@ -4,6 +4,7 @@ import numpy as np
 import copy
 import os
 import json
+import random
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.metrics import roc_auc_score, accuracy_score, confusion_matrix, precision_recall_fscore_support, roc_curve
 
@@ -18,6 +19,16 @@ from fl_core.server import FederatedServer
 from fl_core.client import DiabetesClient
 from datasets.complication_dataset.data_preprocessing import run_preprocessing
 from datasets.complication_dataset.intermediate_gen import generate_bridge_data
+
+# NEW: REPRODUCIBILITY SEEDING
+def set_seed(seed=50):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
 
 # ---------------------------------------------------------
 # NEW: ARTIFACT SAVING HELPERS
@@ -110,6 +121,7 @@ def evaluate_model(model, csv_path, feature_cols, label_col, device=None, batch_
 # MASTER WORKFLOW
 # ---------------------------------------------------------
 def run_research_experiment():
+    set_seed(50)
     print("="*50)
     print("STARTING OPTIMIZED FEDERATED LEARNING PIPELINE")
     print("="*50)
@@ -125,7 +137,7 @@ def run_research_experiment():
     nephro_features = ['AGE', 'BMI', 'HBA1C', 'CR', 'UREA'] 
 
     # Step 2: Stage 1 Training (Nephropathy)
-    print(f"\n[Step 2] Training Stage 1: Nephropathy Model (10 Rounds)...")
+    print(f"\n[Step 2] Training Stage 1: Nephropathy Model (15 Rounds)...")
     
     stage1_loaders = prepare_federated_data(processed_csv, nephro_features, "LABEL_NEPHROPATHY", "NEPH_WEIGHT")
     
@@ -136,14 +148,14 @@ def run_research_experiment():
     clients_n = [DiabetesClient(i, copy.deepcopy(global_model_n), stage1_loaders[i]) for i in range(3)]
 
     nephro_history = []
-    for r in range(10): 
+    for r in range(15): 
         # local_train now returns (weights, avg_loss)
         results = [c.local_train(server_n.global_model.state_dict()) for c in clients_n]
         local_updates = [res[0] for res in results]
         avg_loss = np.mean([res[1] for res in results])
         
         server_n.aggregate_weights(local_updates)
-        print(f"Round {r+1:02d}/10 | Aggregated Loss: {avg_loss:.4f}")
+        print(f"Round {r+1:02d}/15 | Aggregated Loss: {avg_loss:.4f}")
 
     evaluate_model(server_n.global_model, processed_csv, nephro_features, "LABEL_NEPHROPATHY")
     
@@ -158,7 +170,7 @@ def run_research_experiment():
 
     # Step 4: Stage 2 Training (CVD)
     cvd_features = ['CHOL', 'TG', 'HDL', "NEPHRO_RISK_SCORE"]
-    print(f"\n[Step 4] Training Stage 2: CVD Risk Model (10 Rounds)...")
+    print(f"\n[Step 4] Training Stage 2: CVD Risk Model (17 Rounds)...")
     stage2_loaders = prepare_federated_data(bridge_csv, cvd_features, "LABEL_CVD", "CVD_WEIGHT")
     
     global_model_c = CVDNet(input_size=len(cvd_features))
@@ -166,13 +178,13 @@ def run_research_experiment():
     clients_c = [DiabetesClient(i, copy.deepcopy(global_model_c), stage2_loaders[i]) for i in range(3)]
     
     cvd_history = []
-    for r in range(10): 
+    for r in range(17): 
         results = [c.local_train(server_c.global_model.state_dict()) for c in clients_c]
         local_updates = [res[0] for res in results]
         avg_loss = np.mean([res[1] for res in results])
         
         server_c.aggregate_weights(local_updates)
-        print(f"Round {r+1:02d}/10 | Aggregated Loss: {avg_loss:.4f}")
+        print(f"Round {r+1:02d}/17 | Aggregated Loss: {avg_loss:.4f}")
 
     evaluate_model(server_c.global_model, bridge_csv, cvd_features, "LABEL_CVD")
 
