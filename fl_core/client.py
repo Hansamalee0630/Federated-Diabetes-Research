@@ -552,8 +552,8 @@ class FederatedClient:
                         
                     num_pos_htn = np.sum(htn_col)
                     num_neg_htn = num_samples - num_pos_htn
-                    # Weight = Negatives / Positives (Capped at 8.0 to prevent explosion)
-                    self.htn_weight = min(float(num_neg_htn / (num_pos_htn + 1e-6)), 8.0)
+                    # Weight = Negatives / Positives (Capped at 10.0 to prevent explosion)
+                    self.htn_weight = min(float(num_neg_htn / (num_pos_htn + 1e-6)), 4.0)
                     print(f"     HTN Imbalance: {num_pos_htn} pos / {num_neg_htn} neg -> Weight: {self.htn_weight:.2f}")
                 
                 # 2. Heart Failure Weight Calculation
@@ -565,7 +565,7 @@ class FederatedClient:
 
                     num_pos_hf = np.sum(hf_col)
                     num_neg_hf = num_samples - num_pos_hf
-                    self.hf_weight = min(float(num_neg_hf / (num_pos_hf + 1e-6)), 8.0)
+                    self.hf_weight = min(float(num_neg_hf / (num_pos_hf + 1e-6)), 4.0)
                     print(f"     HF Imbalance:  {num_pos_hf} pos / {num_neg_hf} neg -> Weight: {self.hf_weight:.2f}")
 
                 # Convert to Tensors
@@ -593,8 +593,8 @@ class FederatedClient:
     def set_model(self, model):
         self.model = model
 
-    def train(self, epochs=20):
-        """Local training loop with WEIGHTED LOSS."""
+    def train(self, epochs=25):
+        """Local training loop with BCEWithLogitsLoss for class imbalance."""
         if not self.model: raise ValueError("Model not set!")
         if not self.train_loader or len(self.train_loader) == 0:
             return self.model.state_dict()
@@ -602,13 +602,10 @@ class FederatedClient:
         optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
         criterion_multi = torch.nn.CrossEntropyLoss()
         
-        # --- CUSTOM WEIGHTED LOSS FUNCTION ---
-        def weighted_bce_loss(pred, target, weight):
-            # Penalize missing a "1" (Sick) much more than missing a "0" (Healthy)
-            # Formula: - [weight * y * log(p) + (1-y) * log(1-p)]
-            loss = - (weight * target * torch.log(pred + 1e-7) + 
-                     (1 - target) * torch.log(1 - pred + 1e-7))
-            return torch.mean(loss)
+        # --- BCEWithLogitsLoss with pos_weight for class imbalance ---
+        # pos_weight > 1 penalizes missing positive cases (sick patients) more heavily
+        criterion_htn = torch.nn.BCEWithLogitsLoss(pos_weight=torch.tensor([self.htn_weight]))
+        criterion_hf = torch.nn.BCEWithLogitsLoss(pos_weight=torch.tensor([self.hf_weight]))
 
         self.model.train()
 
@@ -618,25 +615,26 @@ class FederatedClient:
                 
                 # --- MULTI-TASK LEARNING ---
                 if self.component == "comp4_multitask":
-                    pred_htn, pred_hf, pred_cluster = self.model(batch_X)
+                    # Model outputs raw logits (no sigmoid)
+                    logits_htn, logits_hf, logits_cluster = self.model(batch_X)
                     
                     target_htn = batch_y[:, 0].unsqueeze(1)
                     target_hf = batch_y[:, 1].unsqueeze(1)
                     target_cluster = batch_y[:, 2].long()
 
-                    # Apply Dynamic Weights
-                    loss_htn = weighted_bce_loss(pred_htn, target_htn, self.htn_weight)
-                    loss_hf = weighted_bce_loss(pred_hf, target_hf, self.hf_weight)
-                    loss_cluster = criterion_multi(pred_cluster, target_cluster)
+                    # BCEWithLogitsLoss handles sigmoid internally
+                    loss_htn = criterion_htn(logits_htn, target_htn)
+                    loss_hf = criterion_hf(logits_hf, target_hf)
+                    loss_cluster = criterion_multi(logits_cluster, target_cluster)
                     
                     loss = loss_htn + loss_hf + loss_cluster
 
                 # --- SINGLE-TASK ---
                 else:
-                    outputs = self.model(batch_X)
-                    # Use the correct weight based on component name
-                    w = self.htn_weight if "htn" in self.component else self.hf_weight
-                    loss = weighted_bce_loss(outputs, batch_y.view(-1, 1), w)
+                    logits = self.model(batch_X)
+                    # Use the correct criterion based on component
+                    criterion = criterion_htn if "htn" in self.component else criterion_hf
+                    loss = criterion(logits, batch_y.view(-1, 1))
 
                 loss.backward()
                 optimizer.step()
@@ -651,12 +649,10 @@ class FederatedClient:
 
         optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
         criterion_multi = torch.nn.CrossEntropyLoss()
-
-        # Re-define weighted loss here
-        def weighted_bce_loss(pred, target, weight):
-            loss = - (weight * target * torch.log(pred + 1e-7) + 
-                     (1 - target) * torch.log(1 - pred + 1e-7))
-            return torch.mean(loss)
+        
+        # --- BCEWithLogitsLoss with pos_weight for class imbalance ---
+        criterion_htn = torch.nn.BCEWithLogitsLoss(pos_weight=torch.tensor([self.htn_weight]))
+        criterion_hf = torch.nn.BCEWithLogitsLoss(pos_weight=torch.tensor([self.hf_weight]))
         
         self.model.train()
 
@@ -665,20 +661,20 @@ class FederatedClient:
                 optimizer.zero_grad()
                 
                 if self.component == "comp4_multitask":
-                    pred_htn, pred_hf, pred_cluster = self.model(batch_X)
+                    logits_htn, logits_hf, logits_cluster = self.model(batch_X)
                     target_htn = batch_y[:, 0].unsqueeze(1)
                     target_hf = batch_y[:, 1].unsqueeze(1)
                     target_cluster = batch_y[:, 2].long()
 
-                    loss_htn = weighted_bce_loss(pred_htn, target_htn, self.htn_weight)
-                    loss_hf = weighted_bce_loss(pred_hf, target_hf, self.hf_weight)
-                    loss_cluster = criterion_multi(pred_cluster, target_cluster)
+                    loss_htn = criterion_htn(logits_htn, target_htn)
+                    loss_hf = criterion_hf(logits_hf, target_hf)
+                    loss_cluster = criterion_multi(logits_cluster, target_cluster)
                     
                     loss = loss_htn + loss_hf + loss_cluster
                 else:
-                    outputs = self.model(batch_X)
-                    w = self.htn_weight if "htn" in self.component else self.hf_weight
-                    loss = weighted_bce_loss(outputs, batch_y.view(-1, 1), w)
+                    logits = self.model(batch_X)
+                    criterion = criterion_htn if "htn" in self.component else criterion_hf
+                    loss = criterion(logits, batch_y.view(-1, 1))
 
                 loss.backward()
 
@@ -714,19 +710,25 @@ class FederatedClient:
         with torch.no_grad():
             for batch_X, batch_y in self.train_loader:
                 if self.component == "comp4_multitask":
-                    p_htn, p_hf, p_cluster = model_to_test(batch_X)
+                    # Model outputs raw logits - apply sigmoid for probabilities
+                    logits_htn, logits_hf, logits_cluster = model_to_test(batch_X)
+                    p_htn = torch.sigmoid(logits_htn)
+                    p_hf = torch.sigmoid(logits_hf)
+                    
                     all_preds_htn.extend(p_htn.numpy().flatten())
                     all_targets_htn.extend(batch_y[:, 0].numpy().flatten())
                     all_preds_hf.extend(p_hf.numpy().flatten())
                     all_targets_hf.extend(batch_y[:, 1].numpy().flatten())
-                    all_preds_cluster.extend(p_cluster.numpy())
+                    all_preds_cluster.extend(logits_cluster.numpy())
                     all_targets_cluster.extend(batch_y[:, 2].numpy())
                 elif self.component == "comp4_singletask_htn":
-                    pred = model_to_test(batch_X)
+                    logits = model_to_test(batch_X)
+                    pred = torch.sigmoid(logits)
                     all_preds_htn.extend(pred.numpy().flatten())
                     all_targets_htn.extend(batch_y.numpy().flatten())
                 else:
-                    pred = model_to_test(batch_X)
+                    logits = model_to_test(batch_X)
+                    pred = torch.sigmoid(logits)
                     all_preds_hf.extend(pred.numpy().flatten())
                     all_targets_hf.extend(batch_y.numpy().flatten())
 
@@ -800,11 +802,9 @@ class FederatedClient:
         )
         criterion_multi = torch.nn.CrossEntropyLoss()
         
-        # Redefine weighted loss for personalization scope
-        def weighted_bce_loss(pred, target, weight):
-            loss = - (weight * target * torch.log(pred + 1e-7) + 
-                     (1 - target) * torch.log(1 - pred + 1e-7))
-            return torch.mean(loss)
+        # --- BCEWithLogitsLoss with pos_weight for class imbalance ---
+        criterion_htn = torch.nn.BCEWithLogitsLoss(pos_weight=torch.tensor([self.htn_weight]))
+        criterion_hf = torch.nn.BCEWithLogitsLoss(pos_weight=torch.tensor([self.hf_weight]))
 
         personalized_model.train()
         for epoch in range(epochs):
@@ -812,14 +812,14 @@ class FederatedClient:
                 optimizer.zero_grad()
                 
                 if self.component == "comp4_multitask":
-                    pred_htn, pred_hf, pred_cluster = personalized_model(batch_X)
-                    loss = weighted_bce_loss(pred_htn, batch_y[:, 0].unsqueeze(1), self.htn_weight) + \
-                           weighted_bce_loss(pred_hf, batch_y[:, 1].unsqueeze(1), self.hf_weight) + \
-                           criterion_multi(pred_cluster, batch_y[:, 2].long())
+                    logits_htn, logits_hf, logits_cluster = personalized_model(batch_X)
+                    loss = criterion_htn(logits_htn, batch_y[:, 0].unsqueeze(1)) + \
+                           criterion_hf(logits_hf, batch_y[:, 1].unsqueeze(1)) + \
+                           criterion_multi(logits_cluster, batch_y[:, 2].long())
                 else:
-                    pred = personalized_model(batch_X)
-                    w = self.htn_weight if "htn" in self.component else self.hf_weight
-                    loss = weighted_bce_loss(pred, batch_y.view(-1, 1), w)
+                    logits = personalized_model(batch_X)
+                    criterion = criterion_htn if "htn" in self.component else criterion_hf
+                    loss = criterion(logits, batch_y.view(-1, 1))
                     
                 loss.backward()
                 optimizer.step()
@@ -842,15 +842,20 @@ class FederatedClient:
             for batch_X, batch_y in self.train_loader:
                 
                 if self.component == "comp4_multitask":
-                    p_htn, p_hf, p_cluster = self.model(batch_X)
+                    # Model outputs raw logits - apply sigmoid
+                    logits_htn, logits_hf, logits_cluster = self.model(batch_X)
+                    p_htn = torch.sigmoid(logits_htn)
+                    p_hf = torch.sigmoid(logits_hf)
+                    
                     acc_htn = ((p_htn > 0.5) == (batch_y[:, 0].unsqueeze(1) > 0.5)).sum().item()
                     acc_hf  = ((p_hf > 0.5) == (batch_y[:, 1].unsqueeze(1) > 0.5)).sum().item()
-                    _, pred_cluster_labels = torch.max(p_cluster, 1)
+                    _, pred_cluster_labels = torch.max(logits_cluster, 1)
                     acc_cluster = (pred_cluster_labels == batch_y[:, 2].long()).sum().item()
                     correct += (acc_htn + acc_hf + acc_cluster) / 3 
                 else:
-                    outputs = self.model(batch_X)
-                    predicted = (outputs > DECISION_THRESHOLD).float()
+                    logits = self.model(batch_X)
+                    probs = torch.sigmoid(logits)
+                    predicted = (probs > DECISION_THRESHOLD).float()
                     correct += (predicted == batch_y.view(-1, 1)).sum().item()
                 total += batch_y.size(0)
         
@@ -895,12 +900,14 @@ class FederatedClient:
             self.model.eval()
             with torch.no_grad():
                 if self.component == "comp4_multitask":
-                    p_htn, _, _ = self.model(t_X)
+                    logits_htn, _, _ = self.model(t_X)
+                    p_htn = torch.sigmoid(logits_htn)
                     preds = (p_htn > 0.5).float().numpy()
                     targets = subset_y['target_hypertension'].values.reshape(-1, 1)
                 else:
-                    out = self.model(t_X)
-                    preds = (out > 0.5).float().numpy()
+                    logits = self.model(t_X)
+                    probs = torch.sigmoid(logits)
+                    preds = (probs > 0.5).float().numpy()
                     targets = subset_y.iloc[:, 0].values.reshape(-1, 1)
             
             return (preds == targets).mean()

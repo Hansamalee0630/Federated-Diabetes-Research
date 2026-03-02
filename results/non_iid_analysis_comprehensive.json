@@ -1,0 +1,68 @@
+{
+  "label_heterogeneity": {
+    "per_hospital": {
+      "1": 0.005597308138322128,
+      "2": 0.015853740656231654,
+      "3": 0.0071145025662025865
+    },
+    "average": 0.009521850453585456,
+    "std": 0.00451996274960853,
+    "global_positive_rate": 0.5057843849550103,
+    "interpretation": "LOW"
+  },
+  "feature_heterogeneity": {
+    "per_hospital": {
+      "1": 721286.4375,
+      "2": 1472978.625,
+      "3": 1377905.25
+    },
+    "average": 1190723.4375,
+    "interpretation": "Features normalized; high CV suggests outliers"
+  },
+  "correlation_heterogeneity": {
+    "per_hospital": {
+      "1": 5.018168506226786,
+      "2": 5.263978683765708,
+      "3": 5.069117449045596
+    },
+    "average": 5.117088213012696,
+    "interpretation": "Higher = stronger inter-feature correlations"
+  },
+  "class_imbalance_heterogeneity": {
+    "per_hospital": {
+      "1": 0.007914245128631592,
+      "2": 0.022406697273254395,
+      "3": 0.010061323642730713
+    },
+    "max_diff": 0.022406697273254395,
+    "global_rate": 0.5057843923568726,
+    "interpretation": "Maximum difference in positive class rates"
+  },
+  "covariate_shift_index": {
+    "pairwise": {
+      "H1_vs_H2": 1.4220942258834839,
+      "H1_vs_H3": 1.18832528591156,
+      "H2_vs_H3": 0.9943084716796875
+    },
+    "average": 1.2015759944915771,
+    "metric_name": "Mean Feature Discrepancy (MFD)",
+    "formula": "||mean(X\u2081) - mean(X\u2082)||\u2082",
+    "interpretation": "Higher = greater feature distribution shift"
+  },
+  "wasserstein_distance": {
+    "pairwise": {
+      "H1_vs_H2": 0.014492442689951784,
+      "H1_vs_H3": 0.009421685385049144,
+      "H2_vs_H3": 0.02391412807500093
+    },
+    "average": 0.01594275205000062,
+    "interpretation": "Range [0,1]: 0=identical, 1=different"
+  },
+  "composite_non_iid_score": 0.3321452160707509,
+  "severity_assessment": {
+    "level": "MODERATE",
+    "implications": "Confirmed Non-IID. Consider fairness-aware aggregation.",
+    "recommended_algorithm": "FedAvg + fairness"
+  },
+  "dataset_type": "BALANCED"
+}
