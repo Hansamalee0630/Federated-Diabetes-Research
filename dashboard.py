@@ -8,7 +8,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import joblib
 from datetime import datetime
 from components.component_4.model import MultiTaskNet
 from components.component_1.Fed_Diabetes_Complication_.component.component_1.model_architectures import NephropathyNet, CVDNet
@@ -1017,216 +1016,224 @@ with tabs[3]:
             for i in range(100):
                 time.sleep(0.002)
                 progress_bar.progress(i + 1)
-        
-        # Norms for drivers
-        norm_age = age / 100
-        norm_meds = meds / 40
-        norm_hba1c = (hba1c - 4) / 11 
-        norm_bmi = (bmi - 15) / 35
-        
-        model, model_info = load_trained_model()
-        prob_htn_global = None; prob_hf_global = None
-        
-        if model is None:
-            st.error(f"❌ {model_info}")
-            # Fallback logic (Just in case file is missing)
-            gender_risk = 0.10 if gender == "Male" else 0.00
-            prob_htn = 0.3 + (norm_age*0.2) + (norm_hba1c*0.3) + (norm_bmi*0.25) + (norm_meds*0.15)
-            prob_hf = 0.3 + (norm_age*0.3) + (norm_hba1c*0.25) + (norm_bmi*0.2) + (norm_meds*0.1)
-        else:
-            # REAL MODEL INFERENCE
-            feature_names = model_info
-            input_tensor = prepare_input_features(age, gender, meds, hba1c, bmi, feature_names)
-            
-            with torch.no_grad():
-                htn_out, hf_out, cluster_out = model(input_tensor)
-                prob_htn_global = htn_out.item()
-                prob_hf_global = hf_out.item()
-                prob_htn = prob_htn_global
-                prob_hf = prob_hf_global
 
-            # HOSPITAL CONTEXT
-            if hospital_type == "Hospital B (Rural - Geriatric)":
-                prob_htn = min(prob_htn + 0.05, 0.98)
-                prob_hf = min(prob_hf + 0.08, 0.98)
-            elif hospital_type == "Hospital C (Specialized - Cardiac)":
-                prob_hf = min(prob_hf + 0.10, 0.98)
+            # Norms for drivers
+            norm_age = age / 100
+            norm_meds = meds / 40
+            norm_hba1c = (hba1c - 4) / 11 
+            norm_bmi = (bmi - 15) / 35
+
+            model, model_info = load_trained_model()
+            prob_htn_global = None; prob_hf_global = None
+
+            if model is None:
+                st.error(f"❌ {model_info}")
+                # Fallback logic (Just in case file is missing)
+                gender_risk = 0.10 if gender == "Male" else 0.00
+                prob_htn = 0.3 + (norm_age*0.2) + (norm_hba1c*0.3) + (norm_bmi*0.25) + (norm_meds*0.15)
+                prob_hf = 0.3 + (norm_age*0.3) + (norm_hba1c*0.25) + (norm_bmi*0.2) + (norm_meds*0.1)
+                # clamp fallback probabilities
+                prob_htn = max(0.0, min(prob_htn, 1.0))
+                prob_hf = max(0.0, min(prob_hf, 1.0))
+            else:
+                # REAL MODEL INFERENCE
+                feature_names = model_info
+                input_tensor = prepare_input_features(age, gender, meds, hba1c, bmi, feature_names)
+
+                with torch.no_grad():
+                    htn_out, hf_out, cluster_out = model(input_tensor)
+                    # network likely returns logits – apply sigmoid to obtain [0,1]
+                    prob_htn_global = torch.sigmoid(htn_out).item()
+                    prob_hf_global = torch.sigmoid(hf_out).item()
+                    prob_htn = prob_htn_global
+                    prob_hf = prob_hf_global
+
+                # HOSPITAL CONTEXT
+                if hospital_type == "Hospital B (Rural - Geriatric)":
+                    prob_htn = min(prob_htn + 0.05, 0.98)
+                    prob_hf = min(prob_hf + 0.08, 0.98)
+                elif hospital_type == "Hospital C (Specialized - Cardiac)":
+                    prob_hf = min(prob_hf + 0.10, 0.98)
+
+                # PERSONALIZATION
+                if model_mode == "Personalized Model":
+                    if prob_htn > 0.5: prob_htn = min(prob_htn + 0.03, 0.98)
+                    else:              prob_htn = max(prob_htn - 0.03, 0.02)
+
+                    if prob_hf > 0.5: prob_hf = min(prob_hf + 0.03, 0.98)
+                    else:              prob_hf = max(prob_hf - 0.03, 0.02)
+
+                    st.toast("Personalized model applied: Adjusted for local patient demographics.")
+
+                # ensure values are in [0,1] after all modifications
+                prob_htn = max(0.0, min(prob_htn, 1.0))
+                prob_hf = max(0.0, min(prob_hf, 1.0))
+
+            # calculate and clamp confidence so progress gets a valid value
+            confidence_htn = calculate_prediction_confidence(prob_htn)
+            confidence_htn = max(0.0, min(confidence_htn, 1.0))
+            st.progress(confidence_htn, text=f"Confidence: {confidence_htn:.0%}")
+
+            # …and similarly for HF …
+            confidence_hf = calculate_prediction_confidence(prob_hf)
+            confidence_hf = max(0.0, min(confidence_hf, 1.0))
+            st.progress(confidence_hf, text=f"Confidence: {confidence_hf:.0%}")
             
-            # PERSONALIZATION
-            if model_mode == "Personalized Model":
-                if prob_htn > 0.5: prob_htn = min(prob_htn + 0.03, 0.98)
-                else: prob_htn = max(prob_htn - 0.03, 0.02)
+            # --- REPLACEMENT FOR TEXT COMPARISON: RADAR CHART ---
+            if model_mode == "Personalized Model" and prob_htn_global is not None:
+                st.markdown("#### Model Performance Profile Comparison")
                 
-                if prob_hf > 0.5: prob_hf = min(prob_hf + 0.03, 0.98)
-                else: prob_hf = max(prob_hf - 0.03, 0.02)
+                # Data for Radar Chart
+                categories = ['HTN Risk', 'HF Risk', 'Model Confidence', 'Local Adaptation']
                 
-                st.toast("Personalized model applied: Adjusted for local patient demographics.")
-        
-        # COMPARISON
-        # if model_mode == "Personalized Model" and prob_htn_global is not None:
-        #     st.markdown("#### Global vs Personalized Comparison")
-        #     comp_cols = st.columns(4)
-        #     with comp_cols[0]: st.metric("Global HTN", f"{prob_htn_global:.1%}")
-        #     with comp_cols[1]: st.metric("Personalized HTN", f"{prob_htn:.1%}", delta=f"{(prob_htn - prob_htn_global)*100:+.1f}%")
-        #     with comp_cols[2]: st.metric("Global HF", f"{prob_hf_global:.1%}")
-        #     with comp_cols[3]: st.metric("Personalized HF", f"{prob_hf:.1%}", delta=f"{(prob_hf - prob_hf_global)*100:+.1f}%")
-        #     st.markdown("<br>", unsafe_allow_html=True)
+                # Global Values
+                global_vals = [
+                    prob_htn_global, 
+                    prob_hf_global, 
+                    calculate_prediction_confidence(prob_htn_global),
+                    0.5 # Baseline
+                ]
+                
+                # Personalized Values
+                pers_vals = [
+                    prob_htn, 
+                    prob_hf, 
+                    calculate_prediction_confidence(prob_htn),
+                    0.8 # Higher adaptation
+                ]
+                
+                # Close the loop for the chart
+                global_vals += [global_vals[0]]
+                pers_vals += [pers_vals[0]]
+                categories += [categories[0]]
 
-        # --- REPLACEMENT FOR TEXT COMPARISON: RADAR CHART ---
-        if model_mode == "Personalized Model" and prob_htn_global is not None:
-            st.markdown("#### Model Performance Profile Comparison")
-            
-            # Data for Radar Chart
-            categories = ['HTN Risk', 'HF Risk', 'Model Confidence', 'Local Adaptation']
-            
-            # Global Values
-            global_vals = [
-                prob_htn_global, 
-                prob_hf_global, 
-                calculate_prediction_confidence(prob_htn_global),
-                0.5 # Baseline
-            ]
-            
-            # Personalized Values
-            pers_vals = [
-                prob_htn, 
-                prob_hf, 
-                calculate_prediction_confidence(prob_htn),
-                0.8 # Higher adaptation
-            ]
-            
-            # Close the loop for the chart
-            global_vals += [global_vals[0]]
-            pers_vals += [pers_vals[0]]
-            categories += [categories[0]]
+                fig_radar = go.Figure()
 
-            fig_radar = go.Figure()
+                # Global Trace
+                fig_radar.add_trace(go.Scatterpolar(
+                    r=global_vals,
+                    theta=categories,
+                    fill='toself',
+                    name='Global Model',
+                    line=dict(color='#94a3b8', dash='dash'),
+                    fillcolor='rgba(148, 163, 184, 0.2)'
+                ))
 
-            # Global Trace
-            fig_radar.add_trace(go.Scatterpolar(
-                r=global_vals,
-                theta=categories,
-                fill='toself',
-                name='Global Model',
-                line=dict(color='#94a3b8', dash='dash'),
-                fillcolor='rgba(148, 163, 184, 0.2)'
+                # Personalized Trace
+                fig_radar.add_trace(go.Scatterpolar(
+                    r=pers_vals,
+                    theta=categories,
+                    fill='toself',
+                    name='Personalized Model',
+                    line=dict(color='#06b6d4'),
+                    fillcolor='rgba(6, 182, 212, 0.3)'
+                ))
+
+                fig_radar.update_layout(
+                    polar=dict(
+                        radialaxis=dict(visible=True, range=[0, 1], gridcolor='rgba(255,255,255,0.1)'),
+                        bgcolor='rgba(0,0,0,0)'
+                    ),
+                    showlegend=True,
+                    legend=dict(font=dict(color="white")),
+                    height=350,
+                    **dark_chart_layout()
+                )
+                
+                st.plotly_chart(fig_radar, use_container_width=True)
+            
+            # GAUGES
+            st.markdown("#### Risk Assessment Results")
+            col_out1, col_out2 = st.columns(2)
+            
+            with col_out1:
+                color = "#f43f5e" if prob_htn > 0.5 else "#4ade80" 
+                fig1 = create_gauge_dark(prob_htn, "Hypertension Risk", color)
+                st.plotly_chart(fig1, use_container_width=True)
+                
+                confidence_htn = calculate_prediction_confidence(prob_htn)
+                st.progress(confidence_htn, text=f"Confidence: {confidence_htn:.0%}")
+                
+                if prob_htn > 0.7: st.error("HIGH RISK")
+                elif prob_htn > 0.5: st.warning("MODERATE RISK")
+                else: st.success("LOW RISK")
+                
+            with col_out2:
+                color = "#f43f5e" if prob_hf > 0.5 else "#4ade80"
+                fig2 = create_gauge_dark(prob_hf, "Heart Failure Risk", color)
+                st.plotly_chart(fig2, use_container_width=True)
+                
+                confidence_hf = calculate_prediction_confidence(prob_hf)
+                st.progress(confidence_hf, text=f"Confidence: {confidence_hf:.0%}")
+                
+                if prob_hf > 0.7: st.error("HIGH RISK")
+                elif prob_hf > 0.5: st.warning("MODERATE RISK")
+                else: st.success("LOW RISK")
+
+            # REPLACEMENT FOR COHORT TEXT: INTERACTIVE SCATTER PLOT
+            st.markdown("#### Patient Cohort Visualization")
+            
+            # Generate synthetic cohort data based on user input to look realistic
+            # We create a cluster of points around the user's Age and HbA1c
+            
+            # Hospital A Cluster (General)
+            a_age = np.random.normal(65, 10, 50)
+            a_a1c = np.random.normal(7.0, 1.5, 50)
+            
+            # Hospital B Cluster (Geriatric - Older)
+            b_age = np.random.normal(75, 5, 50)
+            b_a1c = np.random.normal(7.5, 1.0, 50)
+            
+            # Hospital C Cluster (Cardiac - Complex)
+            c_age = np.random.normal(60, 12, 50)
+            c_a1c = np.random.normal(8.5, 2.0, 50)
+
+            fig_cohort = go.Figure()
+
+            # Plot background cohorts
+            fig_cohort.add_trace(go.Scatter(x=a_age, y=a_a1c, mode='markers', name='Hospital A', marker=dict(color='#3b82f6', opacity=0.5)))
+            fig_cohort.add_trace(go.Scatter(x=b_age, y=b_a1c, mode='markers', name='Hospital B', marker=dict(color='#8b5cf6', opacity=0.5)))
+            fig_cohort.add_trace(go.Scatter(x=c_age, y=c_a1c, mode='markers', name='Hospital C', marker=dict(color='#f43f5e', opacity=0.5)))
+
+            # Plot THE CURRENT PATIENT
+            fig_cohort.add_trace(go.Scatter(
+                x=[age], 
+                y=[hba1c], 
+                mode='markers', 
+                name='Current Patient',
+                marker=dict(color='#ffffff', size=15, symbol='star', line=dict(color='#06b6d4', width=2))
             ))
 
-            # Personalized Trace
-            fig_radar.add_trace(go.Scatterpolar(
-                r=pers_vals,
-                theta=categories,
-                fill='toself',
-                name='Personalized Model',
-                line=dict(color='#06b6d4'),
-                fillcolor='rgba(6, 182, 212, 0.3)'
-            ))
-
-            fig_radar.update_layout(
-                polar=dict(
-                    radialaxis=dict(visible=True, range=[0, 1], gridcolor='rgba(255,255,255,0.1)'),
-                    bgcolor='rgba(0,0,0,0)'
-                ),
-                showlegend=True,
-                legend=dict(font=dict(color="white")),
-                height=350,
+            fig_cohort.update_layout(
+                xaxis_title="Patient Age",
+                yaxis_title="HbA1c Level",
+                title="Patient Position vs. Hospital Distributions",
+                legend=dict(orientation="h", y=-0.2),
+                height=400,
                 **dark_chart_layout()
             )
             
-            st.plotly_chart(fig_radar, use_container_width=True)
-        
-        # GAUGES
-        st.markdown("#### Risk Assessment Results")
-        col_out1, col_out2 = st.columns(2)
-        
-        with col_out1:
-            color = "#f43f5e" if prob_htn > 0.5 else "#4ade80" 
-            fig1 = create_gauge_dark(prob_htn, "Hypertension Risk", color)
-            st.plotly_chart(fig1, use_container_width=True)
+            st.plotly_chart(fig_cohort, use_container_width=True)
             
-            confidence_htn = calculate_prediction_confidence(prob_htn)
-            st.progress(confidence_htn, text=f"Confidence: {confidence_htn:.0%}")
+            # Keep the summary metric below the chart
+            st.info(f"Analysis: This patient aligns most closely with the distribution of {hospital_type.split('(')[0]}.")
             
-            if prob_htn > 0.7: st.error("HIGH RISK")
-            elif prob_htn > 0.5: st.warning("MODERATE RISK")
-            else: st.success("LOW RISK")
-            
-        with col_out2:
-            color = "#f43f5e" if prob_hf > 0.5 else "#4ade80"
-            fig2 = create_gauge_dark(prob_hf, "Heart Failure Risk", color)
-            st.plotly_chart(fig2, use_container_width=True)
-            
-            confidence_hf = calculate_prediction_confidence(prob_hf)
-            st.progress(confidence_hf, text=f"Confidence: {confidence_hf:.0%}")
-            
-            if prob_hf > 0.7: st.error("HIGH RISK")
-            elif prob_hf > 0.5: st.warning("MODERATE RISK")
-            else: st.success("LOW RISK")
+            st.markdown("<br>", unsafe_allow_html=True)
 
-        # REPLACEMENT FOR COHORT TEXT: INTERACTIVE SCATTER PLOT
-        st.markdown("#### Patient Cohort Visualization")
-        
-        # Generate synthetic cohort data based on user input to look realistic
-        # We create a cluster of points around the user's Age and HbA1c
-        
-        # Hospital A Cluster (General)
-        a_age = np.random.normal(65, 10, 50)
-        a_a1c = np.random.normal(7.0, 1.5, 50)
-        
-        # Hospital B Cluster (Geriatric - Older)
-        b_age = np.random.normal(75, 5, 50)
-        b_a1c = np.random.normal(7.5, 1.0, 50)
-        
-        # Hospital C Cluster (Cardiac - Complex)
-        c_age = np.random.normal(60, 12, 50)
-        c_a1c = np.random.normal(8.5, 2.0, 50)
-
-        fig_cohort = go.Figure()
-
-        # Plot background cohorts
-        fig_cohort.add_trace(go.Scatter(x=a_age, y=a_a1c, mode='markers', name='Hospital A', marker=dict(color='#3b82f6', opacity=0.5)))
-        fig_cohort.add_trace(go.Scatter(x=b_age, y=b_a1c, mode='markers', name='Hospital B', marker=dict(color='#8b5cf6', opacity=0.5)))
-        fig_cohort.add_trace(go.Scatter(x=c_age, y=c_a1c, mode='markers', name='Hospital C', marker=dict(color='#f43f5e', opacity=0.5)))
-
-        # Plot THE CURRENT PATIENT
-        fig_cohort.add_trace(go.Scatter(
-            x=[age], 
-            y=[hba1c], 
-            mode='markers', 
-            name='Current Patient',
-            marker=dict(color='#ffffff', size=15, symbol='star', line=dict(color='#06b6d4', width=2))
-        ))
-
-        fig_cohort.update_layout(
-            xaxis_title="Patient Age",
-            yaxis_title="HbA1c Level",
-            title="Patient Position vs. Hospital Distributions",
-            legend=dict(orientation="h", y=-0.2),
-            height=400,
-            **dark_chart_layout()
-        )
-        
-        st.plotly_chart(fig_cohort, use_container_width=True)
-        
-        # Keep the summary metric below the chart
-        st.info(f"Analysis: This patient aligns most closely with the distribution of {hospital_type.split('(')[0]}.")
-        
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # DRIVERS
-        with st.expander("Key Risk Drivers"):
-            st.write("Top factors contributing to this prediction:")
-            drivers = pd.DataFrame({
-                "Factor": ["HbA1c", "Medications", "BMI", "Age"],
-                "Impact": [norm_hba1c, norm_meds, norm_bmi, norm_age]
-            }).sort_values(by="Impact", ascending=False)
-            
-            fig_d = go.Figure(go.Bar(
-                x=drivers["Impact"], y=drivers["Factor"], orientation='h',
-                marker=dict(color=['#f43f5e', '#fb923c', '#fbbf24', '#a3e635'])
-            ))
-            fig_d.update_layout(**dark_chart_layout(), height=200, margin=dict(l=0,r=0,t=0,b=0))
-            st.plotly_chart(fig_d, use_container_width=True)
+            # DRIVERS
+            with st.expander("Key Risk Drivers"):
+                st.write("Top factors contributing to this prediction:")
+                drivers = pd.DataFrame({
+                    "Factor": ["HbA1c", "Medications", "BMI", "Age"],
+                    "Impact": [norm_hba1c, norm_meds, norm_bmi, norm_age]
+                }).sort_values(by="Impact", ascending=False)
+                
+                fig_d = go.Figure(go.Bar(
+                    x=drivers["Impact"], y=drivers["Factor"], orientation='h',
+                    marker=dict(color=['#f43f5e', '#fb923c', '#fbbf24', '#a3e635'])
+                ))
+                fig_d.update_layout(**dark_chart_layout(), height=200, margin=dict(l=0,r=0,t=0,b=0))
+                st.plotly_chart(fig_d, use_container_width=True)
 
     st.markdown('</div>', unsafe_allow_html=True)
 
