@@ -73,7 +73,15 @@ def aggregate_metrics(metric_list):
 
 # --- 2. MAIN SIMULATION LOOP ---
 # Scalability (Test Case 8)
-def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"):
+def run_simulation(
+    num_rounds=3,
+    num_clients=3,
+    component_type="comp4_multitask",
+    shared_layers=None,
+    head_hidden=64,
+    head_depth=1,
+    dropout=0.2,
+):
     print(f"--- Starting FL Simulation for {component_type} ---")
 
     # A. AUTO-DETECT INPUT SIZE
@@ -97,8 +105,16 @@ def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"
     # B. INITIALIZE GLOBAL MODEL
     if component_type == "comp4_multitask":
         from components.component_4.model import MultiTaskNet
-        global_model = MultiTaskNet(input_dim=input_dim)
-        print("Loaded Multi-Task Model (Component 4)")
+        global_model = MultiTaskNet(
+            input_dim=input_dim,
+            shared_layers=shared_layers,
+            head_hidden=head_hidden,
+            head_depth=head_depth,
+            dropout=dropout,
+        )
+        print(
+            f"Loaded Multi-Task Model (Component 4) | shared_layers={shared_layers} | head_hidden={head_hidden} | head_depth={head_depth} | dropout={dropout}"
+        )
 
     elif "singletask" in component_type:
         from components.component_4.model import SingleTaskNet
@@ -217,6 +233,17 @@ def run_simulation(num_rounds=3, num_clients=3, component_type="comp4_multitask"
     torch.save(server.global_model.state_dict(), "experiments/comp4_experiments/final_multitask_model.pth")
     print("   Model weights saved to 'experiments/comp4_experiments/final_multitask_model.pth'")
 
+    # --- SAVE MODEL CONFIG FOR DASHBOARD COMPATIBILITY ---
+    model_config = {
+        "shared_layers": shared_layers,
+        "head_hidden": head_hidden,
+        "head_depth": head_depth,
+        "dropout": dropout
+    }
+    with open("experiments/comp4_experiments/model_config.json", "w") as f:
+        json.dump(model_config, f, indent=4)
+    print("   Model config saved to 'experiments/comp4_experiments/model_config.json'")
+
     # --- PREPROCESSING ARTIFACTS SAVING (Critical!) ---
     print("\n--- Saving Preprocessing Artifacts ---")
     try:
@@ -287,6 +314,10 @@ if __name__ == "__main__":
     parser.add_argument("--clients", type=int, default=3, help="Number of clients (hospitals/devices)")
     parser.add_argument("--rounds", type=int, default=3, help="Number of federated rounds")
     parser.add_argument("--privacy", action="store_true", help="Enable Differential Privacy simulation")
+    parser.add_argument("--shared", type=str, default="256,128", help="Comma-separated shared layer sizes (e.g., 256,128 or 256,128,64)")
+    parser.add_argument("--head-hidden", type=int, default=64, help="Hidden width used inside each task head")
+    parser.add_argument("--head-depth", type=int, default=1, help="Number of hidden layers inside each task head")
+    parser.add_argument("--dropout", type=float, default=0.2, help="Dropout rate applied after each shared/head layer")
     
     parser.add_argument(
         "--component",
@@ -298,5 +329,16 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    # Parse architecture options
+    shared_layers = [int(x) for x in args.shared.split(",") if x.strip()]
+
     print(f"Launching with clients={args.clients}, rounds={args.rounds}, component={args.component}")
-    run_simulation(num_rounds=args.rounds, num_clients=args.clients, component_type=args.component)
+    run_simulation(
+        num_rounds=args.rounds,
+        num_clients=args.clients,
+        component_type=args.component,
+        shared_layers=shared_layers,
+        head_hidden=args.head_hidden,
+        head_depth=args.head_depth,
+        dropout=args.dropout,
+    )
