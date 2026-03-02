@@ -11,6 +11,7 @@ import torch.nn.functional as F
 from datetime import datetime
 from components.component_4.model import MultiTaskNet
 from components.component_1.Fed_Diabetes_Complication_.component.component_1.model_architectures import NephropathyNet, CVDNet
+from pathlib import Path
 
 # --- PAGE CONFIG ---
 st.set_page_config(
@@ -489,13 +490,6 @@ with tabs[0]:
 # TAB 2: READMISSION RISK PREDICTION (MAIN CLINICAL INTERFACE)
 # Complete integration of all 7-phase pipeline results
 # ============================================================================
-
-import streamlit as st
-import pandas as pd
-import json
-import plotly.graph_objects as go
-import numpy as np
-from pathlib import Path
 
 @st.cache_data
 def load_all_pipeline_results():
