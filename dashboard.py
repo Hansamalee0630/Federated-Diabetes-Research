@@ -325,7 +325,7 @@ with col1:
 with col2:
     st.image("assets/logo.svg", width=80)
 
-st.markdown("<br>", unsafe_allow_html=True)
+# st.markdown("<br>", unsafe_allow_html=True)
 
 # --- MAIN TABS ---
 tab_titles = ["Privacy Shield", "Readmission Analysis", "Multimodal Vision", "Personalization Engine"]
