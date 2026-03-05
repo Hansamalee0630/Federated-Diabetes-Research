@@ -1,0 +1,15 @@
+[theme]
+# The primary color for buttons and sliders (Medical Teal)
+primaryColor="#00E5FF"
+
+# The background color of the main area (Deep Navy)
+backgroundColor="#0E1117"
+
+# The background color of the sidebar (Darker Navy)
+secondaryBackgroundColor="#262730"
+
+# Text color (White for contrast)
+textColor="#FAFAFA"
+
+# Font family (Sans serif looks modern)
+font="sans serif"
