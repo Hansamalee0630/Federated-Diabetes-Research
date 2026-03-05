@@ -137,7 +137,7 @@ def run_research_experiment():
     nephro_features = ['AGE', 'BMI', 'HBA1C', 'CR', 'UREA'] 
 
     # Step 2: Stage 1 Training (Nephropathy)
-    print(f"\n[Step 2] Training Stage 1: Nephropathy Model (15 Rounds)...")
+    print(f"\n[Step 2] Training Stage 1: Nephropathy Model (20 Rounds)...")
     
     stage1_loaders = prepare_federated_data(processed_csv, nephro_features, "LABEL_NEPHROPATHY", "NEPH_WEIGHT")
     
