@@ -130,7 +130,7 @@ def run_research_experiment():
     processed_csv = os.path.join(BASE_DIR, "datasets", "complication_dataset", "processed_data.csv")
     nephro_features = ['AGE', 'BMI', 'HBA1C', 'CR', 'UREA'] 
 
-    #  Stage 1 Training (Nephropathy)
+    # Step 2: Stage 1 Training (Nephropathy)
     print(f"\n[Step 2] Training Stage 1: Nephropathy Model (20 Rounds)...")
     
     stage1_loaders = prepare_federated_data(processed_csv, nephro_features, "LABEL_NEPHROPATHY", "NEPH_WEIGHT")
@@ -143,6 +143,7 @@ def run_research_experiment():
 
     nephro_history = []
     for r in range(20): 
+        # local_train now returns (weights, avg_loss)
         results = [c.local_train(server_n.global_model.state_dict()) for c in clients_n]
         local_updates = [res[0] for res in results]
         avg_loss = np.mean([res[1] for res in results])
