@@ -361,131 +361,153 @@ def create_gauge(value, title, color):
 
 # --- TAB 1 CONTENT ---
 with tabs[0]:
-    # --- CUSTOM CSS ---
+    # --- CUSTOM CSS STYLING ---
     st.markdown("""
         <style>
-        .main { background-color: #0f172a; }
-        .glass-card {
-            background: rgba(30, 41, 59, 0.7);
-            border-radius: 15px;
-            padding: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            margin-bottom: 20px;
-        }
         .reasoning-text {
-            font-size: 0.95rem;
-            color: #cbd5e1;
-            margin-top: 10px;
-            text-align: center;
-            background: rgba(0,0,0,0.2);
-            padding: 10px;
-            border-radius: 8px;
+            font-size: 0.9rem; color: #cbd5e1; margin-top: 10px; text-align: center;
+            background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;
+            border-left: 4px solid #3b82f6; line-height: 1.4;
         }
-        .result-box {
-            padding: 15px;
-            border-radius: 10px;
-            text-align: center;
-            font-weight: 700;
-            margin-top: -10px;
+        .status-box {
+            padding: 20px; border-radius: 12px; text-align: center; 
+            font-weight: 800; font-size: 1.2rem; margin: 20px 0;
+            letter-spacing: 1px; border: 1px solid;
         }
-        .low-risk-box { background-color: rgba(6, 182, 212, 0.1); border: 1px solid #06b6d4; color: #22d3ee; }
-        .high-risk-box { background-color: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #f87171; }
+        .critical-box { background-color: rgba(239, 68, 68, 0.15); border-color: #ef4444; color: #f87171; }
+        .moderate-box { background-color: rgba(245, 158, 11, 0.15); border-color: #f59e0b; color: #fbbf24; }
+        .stable-box { background-color: rgba(16, 185, 129, 0.15); border-color: #10b981; color: #34d399; }
         </style>
     """, unsafe_allow_html=True)
 
-    st.title("Diabetes Related complication Risk Prediction")
+    st.title("Diabetes Related Complication Risk Assessment")
+    #st.write("Advanced AI assessment for Nephropathy and Cardiovascular risks.")
+
+    # Load your models (Assumes load_comp1_models is defined in your main script)
     neph_model, cvd_model = load_comp1_models()
 
     if neph_model:
-        with st.form("main_form"):
+        with st.form("clinical_input_form"):
             col1, col2 = st.columns(2)
             with col1:
-                st.subheader("Stage 1: Renal Markers")
-                age = st.number_input("Age", 18, 100, 66)
-                bmi = st.number_input("BMI (kg/m²)", 10.0, 50.0, 31.0)
-                hba1c = st.number_input("HbA1c (%)", 4.0, 15.0, 8.5)
-                cr = st.number_input("Creatinine (μmol/L)", 0.0, 400.0, 110.0)
-                urea = st.number_input("Urea (mmol/L)", 0.0, 50.0, 8.5)
+                st.subheader("Renal Biomarkers")
+                age = st.number_input("Age", 18, 100, 60)
+                bmi = st.number_input("BMI (kg/m²)", 10.0, 60.0, 28.5)
+                hba1c = st.number_input("HbA1c (%)", 4.0, 18.0, 7.5)
+                cr = st.number_input("Creatinine (μmol/L)", 10.0, 500.0, 95.0)
+                urea = st.number_input("Urea (mmol/L)", 1.0, 60.0, 6.2)
+            
             with col2:
-                st.subheader("Stage 2: Lipid Profile")
-                chol = st.number_input("Cholesterol (mmol/L)", 0.0, 15.0, 5.5)
-                hdl = st.number_input("HDL (mmol/L)", 0.1, 5.0, 0.9)
-                tg = st.number_input("Triglycerides (mmol/L)", 0.0, 15.0, 3.5)
-            submit = st.form_submit_button("GENERATE RISK SCORE", use_container_width=True)
+                st.subheader("Lipid Profile")
+                chol = st.number_input("Cholesterol (mmol/L)", 1.0, 15.0, 5.0)
+                hdl = st.number_input("HDL (mmol/L)", 0.1, 5.0, 1.2)
+                tg = st.number_input("Triglycerides (mmol/L)", 0.1, 15.0, 1.8)
+                st.info("💡 Tip: AIP is calculated automatically from TG and HDL.")
+
+            submit = st.form_submit_button("RUN CLINICAL DIAGNOSTICS", use_container_width=True)
 
         if submit:
-            # 1. NEPHROPATHY LOGIC
-            neph_rule_1 = (cr > 106.0 and hba1c > 8.0)
-            neph_rule_2 = (urea > 7.8 and age > 65 and bmi >= 30)
+            # --- STEP 1: NEPHROPATHY ANALYSIS ---
+            # Define Clinical Hard-Rules (Matching your Preprocessing)
+            rule_n1 = (cr > 106.0 and hba1c > 8.0)
+            rule_n2 = (urea > 7.8 and age > 65 and bmi >= 30)
             
+            # AI Prediction (PyTorch)
+            # Important: Wrap in StandardScaler.transform() if used in training
             n_input = torch.tensor([[age, bmi, hba1c, cr, urea]]).float()
             with torch.no_grad():
-                n_risk = torch.sigmoid(neph_model(n_input)).item()
+                n_prob = torch.sigmoid(neph_model(n_input)).item()
             
-            # Override for consistency with your preprocessing rules
-            if (neph_rule_1 or neph_rule_2) and n_risk < 0.5:
-                n_risk = 0.88 
+            # Smooth Safety Override (Ensures alignment with rule-based labeling)
+            n_risk = max(n_prob, 0.85) if (rule_n1 or rule_n2) else n_prob
 
-            # 2. CVD LOGIC
+            # --- STEP 2: CVD ANALYSIS ---
             aip = np.log10(tg / max(hdl, 0.5))
             dyslipidemia = (chol >= 5.1 or tg >= 3.1 or hdl < 1.0)
             
+            # CVD model uses Nephropathy risk as an input feature
             c_input = torch.tensor([[chol, tg, hdl, n_risk]]).float()
             with torch.no_grad():
-                c_risk = torch.sigmoid(cvd_model(c_input)).item()
-                
-            if (aip > 0.24 and dyslipidemia) or n_risk > 0.5:
-                if c_risk < 0.5: c_risk = 0.94
-
-            # --- RESULTS DISPLAY ---
-            c1, c2 = st.columns(2)
-            with c1:
-                n_col = "#ef4444" if n_risk > 0.5 else "#06b6d4"
-                st.plotly_chart(create_gauge(n_risk, "NEPHROPATHY RISK", n_col), use_container_width=True)
-                n_reason = "High risk: CR/HbA1c thresholds exceeded." if neph_rule_1 else ("High risk: Age/BMI/Urea cluster." if neph_rule_2 else "Low risk: Renal markers stable.")
-                st.markdown(f'<div class="reasoning-text"><b>Reason:</b> {n_reason}</div>', unsafe_allow_html=True)
-
-            with c2:
-                c_col = "#ef4444" if c_risk > 0.5 else "#06b6d4"
-                st.plotly_chart(create_gauge(c_risk, "CVD RISK", c_col), use_container_width=True)
-                dys_text = "Positive" if dyslipidemia else "Negative"
-                c_reason = f"AIP: {aip:.2f}. Dyslipidemia: {dys_text}."
-                if n_risk > 0.5: c_reason += " Escalated by Renal Risk."
-                st.markdown(f'<div class="reasoning-text"><b>Reason:</b> {c_reason}</div>', unsafe_allow_html=True)
-
-            # --- REPORT GENERATOR ---
-            report_text = f"""
-        DIABETES COMPLICATION REPORT
-        Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-        -------------------------------------------
-        PATIENT DATA:
-        Age: {age} | BMI: {bmi} | HbA1c: {hba1c}%
-        Creatinine: {cr} | Urea: {urea}
-        Cholesterol: {chol} | HDL: {hdl} | TG: {tg}
-        
-        DIAGNOSIS RESULTS:
-        Nephropathy Risk: {n_risk*100:.1f}%
-        Reasoning: {n_reason}
-        
-        CVD Risk: {c_risk*100:.1f}%
-        Reasoning: {c_reason}
-        -------------------------------------------
-        AIP Score: {aip:.2f} (High Risk > 0.24)
-        Dyslipidemia Status: {dys_text}
-        """
+                c_prob = torch.sigmoid(cvd_model(c_input)).item()
             
+            # CVD Override (Risk escalation based on AIP and Renal status)
+            if (aip > 0.24 and dyslipidemia) or (n_risk > 0.75): 
+                c_risk = max(c_prob, 0.92)
+            else:
+                c_risk = c_prob
+            #c_risk = max(c_prob, 0.92) if ((aip > 0.24 and dyslipidemia) or n_risk > 0.8) else c_prob
+
+            # --- STEP 3: VISUAL RESULTS ---
+            res_c1, res_c2 = st.columns(2)
+            
+            with res_c1:
+                n_color = "#ef4444" if n_risk > 0.5 else "#10b981"
+                st.plotly_chart(create_gauge(n_risk, "NEPHROPATHY RISK", n_color), use_container_width=True)
+                
+                # Dynamic Reasoning text
+                if rule_n1: n_reason = "⚠️ Critical: Creatinine and HbA1c levels exceed safe thresholds."
+                elif rule_n2: n_reason = "⚠️ Warning: High-risk demographic cluster (Age/BMI/Urea)."
+                else: n_reason = "✅ Stable: Renal biomarkers are currently within target ranges."
+                st.markdown(f'<div class="reasoning-text"><b>Assessment:</b> {n_reason}</div>', unsafe_allow_html=True)
+
+            with res_c2:
+                c_color = "#ef4444" if c_risk > 0.5 else "#10b981"
+                st.plotly_chart(create_gauge(c_risk, "CVD RISK", c_color), use_container_width=True)
+                
+                dys_status = "Detected" if dyslipidemia else "None"
+                c_reason = f"AIP Score: {aip:.2f} (Target < 0.24). Dyslipidemia: {dys_status}."
+                if n_risk > 0.7: c_reason += " Risk escalated by secondary renal impairment."
+                st.markdown(f'<div class="reasoning-text"><b>Assessment:</b> {c_reason}</div>', unsafe_allow_html=True)
+
+            # --- STEP 4: CLINICAL SUMMARY BOX ---
             st.divider()
+            max_risk_val = max(n_risk, c_risk)
+            
+            if max_risk_val > 0.75:
+                status_class = "critical-box"
+                status_label = "CRITICAL RISK"
+                advice = "Patient requires immediate clinical review. Prioritize renal function tests (eGFR) and cardiovascular screening (ECG/Echo)."
+            elif max_risk_val > 0.45:
+                status_class = "moderate-box"
+                status_label = "MODERATE RISK"
+                advice = "Indications of emerging complications. Recommend intensive glycemic control and lipid-lowering therapy review."
+            else:
+                status_class = "stable-box"
+                status_label = "STABLE / LOW RISK"
+                advice = "Maintain current diabetic management plan. Routine monitoring of HbA1c and lipid profile every 6 months."
+
+            st.markdown(f'<div class="status-box {status_class}">OVERALL STATUS: {status_label}</div>', unsafe_allow_html=True)
+            st.info(f"**Medical Recommendation:** {advice}")
+
+            # --- STEP 5: REPORT GENERATION ---
+            report_content = f"""
+            DIABETES COMPLICATION CLINICAL REPORT
+            Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+            -------------------------------------------
+            METRICS:
+            Age: {age} | BMI: {bmi} | HbA1c: {hba1c}%
+            CR: {cr} μmol/L | Urea: {urea} mmol/L
+            Chol: {chol} | HDL: {hdl} | TG: {tg} | AIP: {aip:.2f}
+            
+            RESULTS:
+            - Nephropathy Risk: {n_risk*100:.1f}%
+            - CVD Risk: {c_risk*100:.1f}%
+            
+            CONCLUSION: {status_label}
+            -------------------------------------------
+            DISCLAIMER: For clinical decision support only. 
+            Final diagnosis must be made by a licensed physician.
+            """
+            
             st.download_button(
-                label="📩 DOWNLOAD CLINICAL REPORT",
-                data=report_text,
-                file_name=f"Diabetes_Report_{datetime.now().strftime('%Y%H%M')}.txt",
+                label=" DOWNLOAD FULL CLINICAL REPORT",
+                data=report_content,
+                file_name=f"Clinical_Report_{datetime.now().strftime('%Y%m%d')}.txt",
                 mime="text/plain",
                 use_container_width=True
             )
-
     else:
-        st.error("Model connection failed.")
-
+        st.error("Model Error: Neural network weights (.pth) could not be loaded. Check your paths.")
 # ============================================================================
 # TAB 2: READMISSION RISK PREDICTION (MAIN CLINICAL INTERFACE)
 # Complete integration of all 7-phase pipeline results
