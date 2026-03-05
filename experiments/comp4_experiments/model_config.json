@@ -1,0 +1,9 @@
+{
+    "shared_layers": [
+        256,
+        128
+    ],
+    "head_hidden": 64,
+    "head_depth": 1,
+    "dropout": 0.2
+}
