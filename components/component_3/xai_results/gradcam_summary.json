@@ -1,0 +1,30 @@
+{
+  "total_images": 5266,
+  "accuracy": 0.7409798708697304,
+  "true_positives": 3,
+  "true_negatives": 3,
+  "false_positives": 3,
+  "false_negatives": 3,
+  "examples": {
+    "tp_indices": [
+      22,
+      23,
+      24
+    ],
+    "tn_indices": [
+      1,
+      2,
+      4
+    ],
+    "fp_indices": [
+      0,
+      3,
+      9
+    ],
+    "fn_indices": [
+      21,
+      26,
+      48
+    ]
+  }
+}
