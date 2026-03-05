@@ -20,7 +20,7 @@ from fl_core.client import DiabetesClient
 from datasets.complication_dataset.data_preprocessing import run_preprocessing
 from datasets.complication_dataset.intermediate_gen import generate_bridge_data
 
-# NEW: REPRODUCIBILITY SEEDING
+# REPRODUCIBILITY SEEDING
 def set_seed(seed=50):
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
@@ -31,8 +31,7 @@ def set_seed(seed=50):
 
 
 # ---------------------------------------------------------
-# NEW: ARTIFACT SAVING HELPERS
-# ---------------------------------------------------------
+# ARTIFACT SAVING HELPERS
 def save_fl_results(history, filename):
     """Saves the training history to a JSON file."""
     os.makedirs(EXP_DIR, exist_ok=True)
@@ -42,8 +41,7 @@ def save_fl_results(history, filename):
     print(f" -> Results saved to {path}")
 
 # ---------------------------------------------------------
-# HELPER: Data Splitting with Fuzzy Weight Support
-# ---------------------------------------------------------
+# Data Splitting with Fuzzy Weight Support
 def prepare_federated_data(csv_path, feature_cols, target_col, weight_col, num_hospitals=3):
     """
     Chunks the dataset into N hospital loaders.
@@ -55,7 +53,7 @@ def prepare_federated_data(csv_path, feature_cols, target_col, weight_col, num_h
     y = torch.tensor(df[target_col].values).float().view(-1, 1)
     w = torch.tensor(df[weight_col].values).float().view(-1, 1) 
     
-    # Dataset returns 3 values: Features, Labels, and Fuzzy Weights
+    # Dataset returns 3 values
     dataset = TensorDataset(X, y, w)
     
     total_size = len(dataset)
@@ -67,8 +65,7 @@ def prepare_federated_data(csv_path, feature_cols, target_col, weight_col, num_h
     return {i: DataLoader(subsets[i], batch_size=16, shuffle=True) for i in range(num_hospitals)}
 
 # ---------------------------------------------------------
-# Evaluation helper - YOUDEN'S J OPTIMIZATION
-# ---------------------------------------------------------
+# Evaluation helper 
 def evaluate_model(model, csv_path, feature_cols, label_col, device=None, batch_size=64):
     if device is None:
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -89,8 +86,7 @@ def evaluate_model(model, csv_path, feature_cols, label_col, device=None, batch_
             probs.extend(out.cpu().numpy().tolist())
             trues.extend(yb.view(-1).cpu().numpy().tolist())
 
-    # Calculate Optimal Threshold using Youden's J Statistic (TPR - FPR)
-    # This specifically addresses the class imbalance you observed
+    # Calculate Optimal Threshold 
     fpr, tpr, thresholds = roc_curve(trues, probs)
     j_scores = tpr - fpr
     best_idx = np.argmax(j_scores)
@@ -107,7 +103,6 @@ def evaluate_model(model, csv_path, feature_cols, label_col, device=None, batch_
     print(f"RESEARCH EVALUATION: {os.path.basename(csv_path)}")
     print(f"="*60)
     print(f"Metrics: AUC: {auc:.4f} | Accuracy: {acc:.4f} | F1-Score: {f1:.4f}")
-    #print(f"Threshold Optimization: Youden's J found Best Threshold at {optimal_threshold:.4f}")
     
     print(f"\n{' ':10} | Predicted Healthy | Predicted Risk")
     print(f"{'-'*58}")
@@ -119,7 +114,6 @@ def evaluate_model(model, csv_path, feature_cols, label_col, device=None, batch_
 
 # ---------------------------------------------------------
 # MASTER WORKFLOW
-# ---------------------------------------------------------
 def run_research_experiment():
     set_seed(50)
     print("="*50)
@@ -129,7 +123,7 @@ def run_research_experiment():
     os.makedirs(RESULTS_MODELS_DIR, exist_ok=True)
     os.makedirs(EXP_DIR, exist_ok=True)
 
-    # Step 1: Preprocessing with Fuzzy Weights
+    #  Preprocessing with Fuzzy Weights
     print("\n[Step 1] Running Data Preprocessing...")
     run_preprocessing()
     
@@ -163,12 +157,12 @@ def run_research_experiment():
     save_fl_results(nephro_history, "nephropathy_training_log.json")
     torch.save(server_n.global_model.state_dict(), os.path.join(EXP_DIR, "final_nephropathy_model.pth"))
 
-    # Step 3: Sequential Dependency Bridge
+    # Sequential Dependency Bridge
     print("\n[Step 3] Generating Risk Scores (Nephropathy -> CVD)...")
     generate_bridge_data()
     bridge_csv = os.path.join(BASE_DIR, "datasets", "complication_dataset", "patient_data_with_nephro_score.csv")
 
-    # Step 4: Stage 2 Training (CVD)
+    # Stage 2 Training (CVD)
     cvd_features = ['CHOL', 'TG', 'HDL', "NEPHRO_RISK_SCORE"]
     print(f"\n[Step 4] Training Stage 2: CVD Risk Model (17 Rounds)...")
     stage2_loaders = prepare_federated_data(bridge_csv, cvd_features, "LABEL_CVD", "CVD_WEIGHT")
