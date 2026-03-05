@@ -445,9 +445,9 @@ with tabs[0]:
                 st.plotly_chart(create_gauge(n_risk, "NEPHROPATHY RISK", n_color), use_container_width=True)
                 
                 # Dynamic Reasoning text
-                if rule_n1: n_reason = "⚠️ Critical: Creatinine and HbA1c levels exceed safe thresholds."
-                elif rule_n2: n_reason = "⚠️ Warning: High-risk demographic cluster (Age/BMI/Urea)."
-                else: n_reason = "✅ Stable: Renal biomarkers are currently within target ranges."
+                if rule_n1: n_reason = " Critical: Creatinine and HbA1c levels exceed safe thresholds."
+                elif rule_n2: n_reason = "Warning: High-risk demographic cluster (Age/BMI/Urea)."
+                else: n_reason = " Stable: Renal biomarkers are currently within target ranges."
                 st.markdown(f'<div class="reasoning-text"><b>Assessment:</b> {n_reason}</div>', unsafe_allow_html=True)
 
             with res_c2:
