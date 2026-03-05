@@ -148,14 +148,14 @@ def run_research_experiment():
     clients_n = [DiabetesClient(i, copy.deepcopy(global_model_n), stage1_loaders[i]) for i in range(3)]
 
     nephro_history = []
-    for r in range(15): 
+    for r in range(20): 
         # local_train now returns (weights, avg_loss)
         results = [c.local_train(server_n.global_model.state_dict()) for c in clients_n]
         local_updates = [res[0] for res in results]
         avg_loss = np.mean([res[1] for res in results])
         
         server_n.aggregate_weights(local_updates)
-        print(f"Round {r+1:02d}/15 | Aggregated Loss: {avg_loss:.4f}")
+        print(f"Round {r+1:02d}/20 | Aggregated Loss: {avg_loss:.4f}")
 
     evaluate_model(server_n.global_model, processed_csv, nephro_features, "LABEL_NEPHROPATHY")
     
