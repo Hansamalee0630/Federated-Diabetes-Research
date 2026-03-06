@@ -13,7 +13,6 @@ from components.component_4.model import MultiTaskNet
 from components.component_1.Fed_Diabetes_Complication_.component.component_1.model_architectures import NephropathyNet, CVDNet
 from pathlib import Path
 
-# --- PAGE CONFIG ---
 st.set_page_config(
     page_title="Federated Diabetes Research Hub",
     page_icon="🧬",
@@ -21,7 +20,6 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# --- DUMMY DATA GENERATOR (Fallback only) ---
 def get_dummy_fl_data():
     rounds = list(range(1, 21))
     global_acc = [0.60 + (i * 0.015) for i in rounds]
@@ -66,13 +64,11 @@ def load_trained_model():
         return None, "Model not found. Run 'python main_fl_runner.py' first."
     
     try:
-        # Detect input dimension from sample data to init model
         if os.path.exists(sample_data_path):
             sample_data = pd.read_csv(sample_data_path)
             input_dim = sample_data.shape[1]
             feature_names = list(sample_data.columns)
         else:
-            # Fallback if csv is missing but we know the columns from training
             input_dim = 19 
             feature_names = ['age', 'time_in_hospital', 'num_lab_procedures', 'num_procedures', 
                              'num_medications', 'number_diagnoses', 'race_Asian', 'race_Caucasian', 
@@ -80,15 +76,13 @@ def load_trained_model():
                              'A1Cresult_None', 'A1Cresult_Norm', 'insulin_No', 'insulin_Steady', 
                              'insulin_Up', 'change_No', 'diabetesMed_Yes']
 
-        # Load model configuration if available
         config_path = "experiments/comp4_experiments/model_config.json"
         if os.path.exists(config_path):
             with open(config_path, "r") as f:
                 config = json.load(f)
         else:
-            config = {}  # Use defaults if config not found
+            config = {}
         
-        # Initialize and load model with saved configuration
         model = MultiTaskNet(
             input_dim=input_dim,
             shared_layers=config.get("shared_layers", [256, 128]),
@@ -103,7 +97,7 @@ def load_trained_model():
     except Exception as e:
         return None, f"Error loading model: {str(e)}"
 
-# --- NEW: Wrapper function for Tab 2 ---
+# Wrapper function for Tab 2
 def load_fedavg_model():
     return load_trained_model()
 
@@ -210,7 +204,7 @@ def prepare_input_features(age, gender, meds, hba1c, bmi, feature_names):
     # NOTE: Debug expander removed for cleaner UI
     return torch.tensor(input_df.values, dtype=torch.float32)
 
-# --- NEW: Bridge function for Tab 2 ---
+# Bridge function for Tab 2
 def prepare_fedavg_features(age, gender, num_medications, hba1c, bmi,
                           hospital_stay, num_comorbidities, num_inpatient,
                           num_emergency, num_lab_procedures, num_procedures,
@@ -271,7 +265,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- HELPER: CUSTOM STAT CARD ---
+# CUSTOM STAT CARD
 def stat_card(label, value, delta=None):
     delta_html = f"<span style='color: #4ade80; font-size: 0.8rem;'>▲ {delta}</span>" if delta else ""
     st.markdown(f"""
