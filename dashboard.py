@@ -937,12 +937,17 @@ with tabs[2]:
         """, unsafe_allow_html=True)
         st.markdown('</div>', unsafe_allow_html=True)
 
+
+
+
+
+
 # ------------------------------------------------------------------------------
 # TAB 4: PERSONALIZATION
 # ------------------------------------------------------------------------------
 
 with tabs[3]:
-    # --- SECTION 1: RESEARCH MONITOR ---
+    # RESEARCH MONITOR
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.markdown("### Training Monitor")
     
@@ -951,7 +956,6 @@ with tabs[3]:
     if df.empty:
         st.warning("⚠️ Waiting for simulation data... Run 'python main_fl_runner.py'")
     else:
-        # TOP METRICS ROW
         curr = df.iloc[-1]
         abs_gain = (curr['pers_overall_acc'] - curr['global_overall_acc']) * 100
         
@@ -987,13 +991,13 @@ with tabs[3]:
     st.markdown('</div>', unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # --- SECTION 2: CLINICIAN PREDICTION TOOL ---
+    # CLINICIAN PREDICTION TOOL
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.markdown("### Clinician Prediction Tool")
     st.caption("Live Multi-Task Prediction: Hypertension & Heart Failure")
     
     with st.form("prediction_form"):
-        # 1. INPUTS
+        # INPUTS
         c1, c2, c3 = st.columns(3)
         with c1:
             age = st.slider("Patient Age", 10, 100, 65)
@@ -1018,16 +1022,14 @@ with tabs[3]:
         st.markdown("<br>", unsafe_allow_html=True)
         submit = st.form_submit_button("RUN RISK ASSESSMENT")
 
-    # 2. OUTPUTS
+    # OUTPUTS
     if submit:
-        # Subtle progress bar
         with st.spinner("Federated inference..."):
             progress_bar = st.progress(0)
             for i in range(100):
                 time.sleep(0.002)
                 progress_bar.progress(i + 1)
 
-            # Norms for drivers
             norm_age = age / 100
             norm_meds = meds / 40
             norm_hba1c = (hba1c - 4) / 11 
@@ -1038,21 +1040,17 @@ with tabs[3]:
 
             if model is None:
                 st.error(f"❌ {model_info}")
-                # Fallback logic (Just in case file is missing)
                 gender_risk = 0.10 if gender == "Male" else 0.00
                 prob_htn = 0.3 + (norm_age*0.2) + (norm_hba1c*0.3) + (norm_bmi*0.25) + (norm_meds*0.15)
                 prob_hf = 0.3 + (norm_age*0.3) + (norm_hba1c*0.25) + (norm_bmi*0.2) + (norm_meds*0.1)
-                # clamp fallback probabilities
                 prob_htn = max(0.0, min(prob_htn, 1.0))
                 prob_hf = max(0.0, min(prob_hf, 1.0))
             else:
-                # REAL MODEL INFERENCE
                 feature_names = model_info
                 input_tensor = prepare_input_features(age, gender, meds, hba1c, bmi, feature_names)
 
                 with torch.no_grad():
                     htn_out, hf_out, cluster_out = model(input_tensor)
-                    # network likely returns logits – apply sigmoid to obtain [0,1]
                     prob_htn_global = torch.sigmoid(htn_out).item()
                     prob_hf_global = torch.sigmoid(hf_out).item()
                     prob_htn = prob_htn_global
@@ -1075,28 +1073,23 @@ with tabs[3]:
 
                     st.toast("Personalized model applied: Adjusted for local patient demographics.")
 
-                # ensure values are in [0,1] after all modifications
                 prob_htn = max(0.0, min(prob_htn, 1.0))
                 prob_hf = max(0.0, min(prob_hf, 1.0))
 
-            # calculate and clamp confidence so progress gets a valid value
             confidence_htn = calculate_prediction_confidence(prob_htn)
             confidence_htn = max(0.0, min(confidence_htn, 1.0))
             st.progress(confidence_htn, text=f"Confidence: {confidence_htn:.0%}")
 
-            # …and similarly for HF …
             confidence_hf = calculate_prediction_confidence(prob_hf)
             confidence_hf = max(0.0, min(confidence_hf, 1.0))
             st.progress(confidence_hf, text=f"Confidence: {confidence_hf:.0%}")
             
-            # --- REPLACEMENT FOR TEXT COMPARISON: RADAR CHART ---
+            # RADAR CHART
             if model_mode == "Personalized Model" and prob_htn_global is not None:
                 st.markdown("#### Model Performance Profile Comparison")
                 
-                # Data for Radar Chart
                 categories = ['HTN Risk', 'HF Risk', 'Model Confidence', 'Local Adaptation']
                 
-                # Global Values
                 global_vals = [
                     prob_htn_global, 
                     prob_hf_global, 
@@ -1104,7 +1097,6 @@ with tabs[3]:
                     0.5 # Baseline
                 ]
                 
-                # Personalized Values
                 pers_vals = [
                     prob_htn, 
                     prob_hf, 
@@ -1112,7 +1104,6 @@ with tabs[3]:
                     0.8 # Higher adaptation
                 ]
                 
-                # Close the loop for the chart
                 global_vals += [global_vals[0]]
                 pers_vals += [pers_vals[0]]
                 categories += [categories[0]]
@@ -1180,11 +1171,8 @@ with tabs[3]:
                 elif prob_hf > 0.5: st.warning("MODERATE RISK")
                 else: st.success("LOW RISK")
 
-            # REPLACEMENT FOR COHORT TEXT: INTERACTIVE SCATTER PLOT
+            # INTERACTIVE SCATTER PLOT
             st.markdown("#### Patient Cohort Visualization")
-            
-            # Generate synthetic cohort data based on user input to look realistic
-            # We create a cluster of points around the user's Age and HbA1c
             
             # Hospital A Cluster (General)
             a_age = np.random.normal(65, 10, 50)
@@ -1225,12 +1213,10 @@ with tabs[3]:
             
             st.plotly_chart(fig_cohort, use_container_width=True)
             
-            # Keep the summary metric below the chart
             st.info(f"Analysis: This patient aligns most closely with the distribution of {hospital_type.split('(')[0]}.")
             
             st.markdown("<br>", unsafe_allow_html=True)
 
-            # DRIVERS
             with st.expander("Key Risk Drivers"):
                 st.write("Top factors contributing to this prediction:")
                 drivers = pd.DataFrame({
@@ -1247,7 +1233,6 @@ with tabs[3]:
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-# --- SIDEBAR (Minimal) ---
 with st.sidebar:
     st.markdown("---")
     st.caption("v2.5.0-beta | Secure Connection")

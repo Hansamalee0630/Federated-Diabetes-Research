@@ -1,23 +1,15 @@
-"""
-Two-Layer Architecture Search
-Finds the optimal 2-layer shared configuration
-"""
-
 import subprocess
 import json
 import pandas as pd
 import sys
 from datetime import datetime
 
-# ============================================
-# 2-LAYER SEARCH SPACE
-# ============================================
 CONFIGS = [
     # Smaller
     {"shared": "128,64", "head": 32, "name": "Small (128→64, h32)"},
     {"shared": "128,64", "head": 64, "name": "Small (128→64, h64)"},
     
-    # Baseline (current)
+    # Baseline
     {"shared": "256,128", "head": 64, "name": "Baseline (256→128, h64)"},
     
     # Medium
@@ -33,7 +25,7 @@ CONFIGS = [
     {"shared": "384,192", "head": 64, "name": "Balanced (384→192, h64)"},
 ]
 
-SEARCH_ROUNDS = 3  # Fast validation
+SEARCH_ROUNDS = 3
 SEARCH_CLIENTS = 3
 
 def run_config(config, idx, total):
@@ -58,7 +50,7 @@ def run_config(config, idx, total):
         try:
             with open("results/comp4_results/fl_results.json", "r") as f:
                 data = json.load(f)
-                final = data[-1]  # Last round
+                final = data[-1]
                 
                 return {
                     "Name": config['name'],
@@ -93,14 +85,13 @@ def main():
         if result:
             results.append(result)
     
-    # Create results dataframe
     df = pd.DataFrame(results)
     
     print("\n" + "="*80)
     print("SEARCH RESULTS")
     print("="*80)
     
-    # Sort by global accuracy (most important for FL)
+    # Sort by global accuracy. important for FL
     df_sorted = df.sort_values('Global Acc', ascending=False)
     
     pd.set_option('display.max_columns', None)
@@ -110,26 +101,24 @@ def main():
     print("\nRanked by Global Accuracy (Best for Federated Learning):")
     print(df_sorted.to_string(index=False))
     
-    # Save results
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     output_file = f"results/comp4_results/two_layer_search_{timestamp}.csv"
     df_sorted.to_csv(output_file, index=False)
     
     print(f"\n✓ Results saved to: {output_file}")
     
-    # Find winners
     best_global = df_sorted.iloc[0]
     best_balanced = df_sorted[df_sorted['Global Acc'] > 0.55].iloc[0]
     
     print("\n" + "-"*80)
     print("🏆 WINNERS")
     print("-"*80)
-    print(f"\n1️⃣  Best Global Accuracy:")
+    print(f"\n Best Global Accuracy:")
     print(f"   {best_global['Name']}")
     print(f"   Global: {best_global['Global Acc']:.4f} | Pers: {best_global['Pers Acc']:.4f}")
     print(f"   Shared: {best_global['Shared Layers']} | Head: {best_global['Head Width']}")
     
-    print(f"\n2️⃣  Best Balanced (Global > 0.55):")
+    print(f"\n Best Balanced (Global > 0.55):")
     if not best_balanced.empty:
         print(f"   {best_balanced['Name']}")
         print(f"   Global: {best_balanced['Global Acc']:.4f} | Pers: {best_balanced['Pers Acc']:.4f}")
