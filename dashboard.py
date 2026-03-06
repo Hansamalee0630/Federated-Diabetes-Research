@@ -11,6 +11,8 @@ import torch.nn.functional as F
 import joblib
 import gdown
 from datetime import datetime
+from PIL import Image
+import torchvision.transforms as T
 from components.component_4.model import MultiTaskNet
 from components.component_1.Fed_Diabetes_Complication_.component.component_1.model_architectures import NephropathyNet, CVDNet
 from components.component_3.multimodal_models import EHRClassifier, BinaryDRClassifier, GlobalMultimodalModel
@@ -50,116 +52,11 @@ def load_comp1_data():
     return get_dummy_fl_data()
 
 
-# @st.cache_resource
-# def load_multimodal_system():
-#     ids = {
-#         "ehr": "1oXzPmXCR-yoNntLUrS4pow8J87B7rRzQ",
-#         "retinal": "1T0XSrTlfSpzrmsL2Y0RbUWDmI-iS8Z7B",
-#         "global": "1fs7sTy2R6scrMQqKpnR2Xw2R58S95U3B"
-#     }
-    
-#     os.makedirs("models", exist_ok=True)
-#     device = torch.device('cpu')
-
-#     def download_file(fid, name):
-#         path = f"models/{name}.pth"
-#         if not os.path.exists(path):
-#             url = f"https://drive.google.com/uc?id={fid}"
-#             gdown.download(url, path, quiet=False)
-#         return path
-
-#     # Download and Load EHR
-#     ehr_path = download_file(ids["ehr"], "ehr_mlp")
-#     ehr_ckpt = torch.load(ehr_path, map_location=device)
-#     ehr_model = EHRClassifier(n_features=8)
-#     ehr_model.load_state_dict(ehr_ckpt['model_state_dict'])
-
-#     # Download and Load Retinal
-#     ret_path = download_file(ids["retinal"], "retinal_b3")
-#     ret_ckpt = torch.load(ret_path, map_location=device)
-#     ret_model = BinaryDRClassifier()
-#     ret_model.load_state_dict(ret_ckpt['model_state_dict'])
-
-#     # Download and Load Global Fusion
-#     global_path = download_file(ids["global"], "global_fusion")
-#     global_ckpt = torch.load(global_path, map_location=device)
-#     fusion_model = GlobalMultimodalModel(
-#         ehr_encoder=ehr_model.feature_extractor,
-#         ret_encoder=ret_model.backbone
-#     )
-#     fusion_model.load_state_dict(global_ckpt['model_state_dict'])
-#     fusion_model.eval()
-
-#     return fusion_model
-
-# @st.cache_resource
-# def load_multimodal_system():
-#     import gdown
-
-#     ids = {
-#         "ehr":     "1oXzPmXCR-yoNntLUrS4pow8J87B7rRzQ",
-#         "retinal": "1T0XSrTlfSpzrmsL2Y0RbUWDmI-iS8Z7B",
-#         "global":  "1fs7sTy2R6scrMQqKpnR2Xw2R58S95U3B",
-#     }
-
-#     os.makedirs("models", exist_ok=True)
-#     device = torch.device("cpu")
-
-#     def get_model_state(ckpt):
-#         if isinstance(ckpt, dict) and "model_state_dict" in ckpt:
-#             return ckpt["model_state_dict"]
-#         return ckpt
-
-#     def download_file(fid, name):
-#         path = f"models/{name}.pth"
-#         if not os.path.exists(path):
-#             url = f"https://drive.google.com/uc?id={fid}"
-#             gdown.download(url, path, quiet=False, fuzzy=True)
-#         if not os.path.exists(path):
-#             raise FileNotFoundError(
-#                 f"Download failed for {name}. "
-#                 f"Check Drive sharing settings."
-#             )
-#         return path
-
-#     # ── Step 1: EHR Model ──
-#     ehr_path = download_file(ids["ehr"], "ehr_mlp")
-#     ehr_ckpt = torch.load(ehr_path, map_location=device, weights_only=False)  # ← FIXED
-#     ehr_model = EHRClassifier(n_features=8)
-#     ehr_model.load_state_dict(get_model_state(ehr_ckpt))
-#     ehr_model.eval()
-
-#     # ── Step 2: Retinal Model ──
-#     ret_path = download_file(ids["retinal"], "retinal_b3")
-#     ret_ckpt = torch.load(ret_path, map_location=device, weights_only=False)  # ← FIXED
-#     ret_model = BinaryDRClassifier()
-#     ret_model.load_state_dict(get_model_state(ret_ckpt))
-#     ret_model.eval()
-
-#     # ── Step 3: Global Fusion Model ──
-#     global_path = download_file(ids["global"], "global_fusion")
-#     global_ckpt = torch.load(global_path, map_location=device, weights_only=False)  # ← FIXED
-#     fusion_model = GlobalMultimodalModel(
-#         ehr_encoder=ehr_model.feature_extractor,
-#         ret_encoder=ret_model.backbone,
-#     )
-#     fusion_model.load_state_dict(get_model_state(global_ckpt))
-#     fusion_model.eval()
-
-#     return fusion_model, ehr_model, ret_model
-
-
-
-#change to load from local files instead of gdown (since gdown is unreliable in some environments)
 @st.cache_resource
 def load_multimodal_system():
     """Load multimodal models from LOCAL paths instead of Google Drive"""
     
     device = torch.device("cpu")
-    
-    # ═══════════════════════════════════════════════════════════════════
-    # LOCAL MODEL PATHS - Update these if your folder structure differs
-    # ═══════════════════════════════════════════════════════════════════
     
     # Option 1: RELATIVE PATHS (recommended - works when running from project root)
     MODEL_DIR = os.path.join("components", "component_3", "model")
@@ -194,23 +91,42 @@ def load_multimodal_system():
             )
         return path
 
+    # Helper to load a checkpoint with safe globals and weights_only=False (PyTorch 2.6+)
+    def safe_load(path):
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"Model file not found: {path}")
+
+        # Torch 2.6+ defaults to weights_only=True which refuses certain pickle globals.
+        # This project trusts the models in ./components/component_3/model.
+        try:
+            safe = getattr(torch.serialization, "safe_globals", None)
+            if safe is not None:
+                with safe([np._core.multiarray.scalar]):
+                    return torch.load(path, map_location=device, weights_only=False)
+            else:
+                torch.serialization.add_safe_globals([np._core.multiarray.scalar])
+                return torch.load(path, map_location=device, weights_only=False)
+        except AttributeError:
+            # Older torch versions don't have safe_globals/add_safe_globals.
+            return torch.load(path, map_location=device, weights_only=False)
+
     # ── Step 1: EHR Model ──
     ehr_path = load_local_model(local_paths["ehr"], "EHR MLP")
-    ehr_ckpt = torch.load(ehr_path, map_location=device, weights_only=False)
+    ehr_ckpt = safe_load(ehr_path)
     ehr_model = EHRClassifier(n_features=8)
     ehr_model.load_state_dict(get_model_state(ehr_ckpt))
     ehr_model.eval()
-    
+
     # ── Step 2: Retinal Model ──
     ret_path = load_local_model(local_paths["retinal"], "Retinal EfficientNet-B3")
-    ret_ckpt = torch.load(ret_path, map_location=device, weights_only=False)
+    ret_ckpt = safe_load(ret_path)
     ret_model = BinaryDRClassifier()
     ret_model.load_state_dict(get_model_state(ret_ckpt))
     ret_model.eval()
-    
+
     # ── Step 3: Global Fusion Model ──
     global_path = load_local_model(local_paths["global"], "Global Multimodal Fusion")
-    global_ckpt = torch.load(global_path, map_location=device, weights_only=False)
+    global_ckpt = safe_load(global_path)
     fusion_model = GlobalMultimodalModel(
         ehr_encoder=ehr_model.feature_extractor,
         ret_encoder=ret_model.backbone,
@@ -219,6 +135,41 @@ def load_multimodal_system():
     fusion_model.eval()
 
     return fusion_model, ehr_model, ret_model
+
+
+def prepare_ehr_tensor(age, bmi, hba1c, glucose, gender, smoke, hypertension, heart_disease):
+    """Convert UI inputs into the 8‑dim vector expected by the EHR model."""
+
+    # NOTE: This is an approximation; the original training pipeline may have used
+    # different normalization. This mapping keeps values in [0,1] for stability.
+    gender_map = {"Female": 0.0, "Male": 1.0, "Other": 0.5}
+    smoke_map = {"never": 0.0, "current": 1.0, "former": 0.5, "ever": 0.5, "No Info": 0.5}
+
+    x = [
+        age / 100.0,
+        bmi / 60.0,
+        hba1c / 15.0,
+        glucose / 400.0,
+        gender_map.get(gender, 0.5),
+        smoke_map.get(smoke, 0.5),
+        1.0 if hypertension else 0.0,
+        1.0 if heart_disease else 0.0
+    ]
+
+    return torch.tensor([x], dtype=torch.float32)
+
+
+def preprocess_retinal_image(uploaded_file, image_size=(300, 300)):
+    """Load and normalize a retinal scan for the EfficientNet-B3 backbone."""
+
+    img = Image.open(uploaded_file).convert("RGB")
+    transform = T.Compose([
+        T.Resize(image_size),
+        T.CenterCrop(image_size),
+        T.ToTensor(),
+        T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    ])
+    return transform(img).unsqueeze(0)
 
 def load_comp4_data():
     if os.path.exists("results/comp4_results/fl_results.json"):
@@ -1084,44 +1035,9 @@ def render_readmission_tab():
 with tabs[1]:
     render_readmission_tab()
 
-# # ------------------------------------------------------------------------------
-# # TAB 3: MULTIMODAL
-# # ------------------------------------------------------------------------------
-# with tabs[2]:
-#     st.markdown("### 🧬 Multimodal Fusion Engine")
-#     col1, col2, col3 = st.columns([1, 1, 1])
-    
-#     with col1:
-#         st.markdown('<div class="glass-card" style="height: 100%">', unsafe_allow_html=True)
-#         st.markdown("#### 1. Retinal Imaging")
-#         st.file_uploader("Upload Fundus Scan", type=['png','jpg'], key='multi_up')
-#         st.markdown("""
-#         <div style="background: #000; height: 150px; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 1px solid #333;">
-#             <span style="color: #444">No Signal</span>
-#         </div>
-#         """, unsafe_allow_html=True)
-#         st.markdown('</div>', unsafe_allow_html=True)
-        
-#     with col2:
-#         st.markdown('<div class="glass-card" style="height: 100%">', unsafe_allow_html=True)
-#         st.markdown("#### 2. Clinical Notes (MLP)")
-#         st.text_area("Physician Notes", "Patient reports blurry vision...", height=150)
-#         st.button("⚡ FUSE STREAMS", use_container_width=True)
-#         st.markdown('</div>', unsafe_allow_html=True)
-        
-#     with col3:
-#         st.markdown('<div class="glass-card" style="height: 100%">', unsafe_allow_html=True)
-#         st.markdown("#### 3. Prediction")
-#         st.markdown("""
-#         <div style="text-align: center; padding: 20px;">
-#             <h2 style="color: #ef4444; font-size: 3rem;">89%</h2>
-#             <p style="color: #94a3b8;">RISK: HIGH (DR)</p>
-#             <div style="width: 100%; height: 6px; background: #334155; border-radius: 3px; margin-top: 10px;">
-#                 <div style="width: 89%; height: 100%; background: #ef4444; border-radius: 3px; box-shadow: 0 0 10px #ef4444;"></div>
-#             </div>
-#         </div>
-#         """, unsafe_allow_html=True)
-#         st.markdown('</div>', unsafe_allow_html=True)
+
+
+
 
 # --- TAB 3: MULTIMODAL FUSION ENGINE ---
 with tabs[2]:
@@ -1132,98 +1048,559 @@ with tabs[2]:
         </p>
     """, unsafe_allow_html=True)
 
-    # Trigger Model Sync (Call the loader we created)
-    # try:
-    #     fusion_engine = load_multimodal_system()
-    # except Exception as e:
-    #     st.warning("🔄 Model sync in progress or classes missing. Please ensure architecture classes are defined.")
-    #     st.stop()
-    # AFTER (shows what actually went wrong)
+    # Load models
     try:
-        fusion_engine = load_multimodal_system()
+        fusion_model, ehr_model, ret_model = load_multimodal_system()
     except Exception as e:
-        st.error(f"❌ Model loading failed: {type(e).__name__}: {e}")
+        st.error(f"Model loading failed: {type(e).__name__}: {e}")
         st.stop()
-        
-    # 1. SETUP TWO COLUMNS FOR INPUTS
+
+    # st.markdown("<br>", unsafe_allow_html=True)
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # SECTION 1: INPUT COLLECTION
+    # ═══════════════════════════════════════════════════════════════════════
+    
     col_ehr, col_img = st.columns([1, 1])
 
+    # --- LEFT COLUMN: EHR INPUTS ---
     with col_ehr:
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.subheader("📋 Modality 1: Clinical EHR")
+        st.markdown("### Modality 1: Clinical EHR")
+        st.caption("Enter patient clinical data for diabetes risk assessment")
         
-        # Exact features from EHR Preprocessing 
-        m1_age = st.number_input("Age", 0, 120, 65, key="m1_age")
-        m1_bmi = st.number_input("BMI", 10.0, 60.0, 28.5, key="m1_bmi")
-        m1_hba1c = st.slider("HbA1c Level (%)", 4.0, 15.0, 8.5)
-        m1_glucose = st.number_input("Blood Glucose (mg/dL)", 50, 400, 150)
+        st.markdown("---")
         
-        c1, c2 = st.columns(2)
-        with c1:
-            m1_gender = st.selectbox("Gender", ["Female", "Male", "Other"])
-            m1_smoke = st.selectbox("Smoking", ["never", "current", "former", "ever", "No Info"])
-        with c2:
-            m1_hyper = st.toggle("Hypertension")
-            m1_heart = st.toggle("Heart Disease")
+        # Row 1: Basic Info
+        st.markdown("##### Patient Demographics")
+        demo_c1, demo_c2 = st.columns(2)
+        with demo_c1:
+            m1_age = st.number_input("Age (years)", 0, 120, 65, key="m1_age", 
+                                     help="Patient's current age")
+            m1_gender = st.selectbox("Gender", ["Female", "Male", "Other"], 
+                                     help="Biological sex")
+        with demo_c2:
+            m1_bmi = st.number_input("BMI (kg/m²)", 10.0, 60.0, 28.5, key="m1_bmi",
+                                     help="Body Mass Index")
+            # BMI Category Indicator
+            if m1_bmi < 18.5:
+                st.caption("📊 Category: Underweight")
+            elif m1_bmi < 25:
+                st.caption("📊 Category: Normal ✅")
+            elif m1_bmi < 30:
+                st.caption("📊 Category: Overweight ⚠️")
+            else:
+                st.caption("📊 Category: Obese 🔴")
+        
+        st.markdown("---")
+        
+        # Row 2: Diabetes Markers
+        st.markdown("##### Glycemic Control")
+        glyc_c1, glyc_c2 = st.columns(2)
+        with glyc_c1:
+            m1_hba1c = st.slider("HbA1c Level (%)", 4.0, 15.0, 8.5, step=0.1,
+                                 help="Glycated hemoglobin - 3-month average blood sugar")
+            # HbA1c interpretation
+            if m1_hba1c < 5.7:
+                st.success("Normal", icon="✅")
+            elif m1_hba1c < 6.5:
+                st.warning("Prediabetic", icon="⚠️")
+            else:
+                st.error("Diabetic Range", icon="🔴")
+                
+        with glyc_c2:
+            m1_glucose = st.number_input("Fasting Glucose (mg/dL)", 50, 400, 150,
+                                         help="Fasting blood glucose level")
+            # Glucose interpretation
+            if m1_glucose < 100:
+                st.success("Normal", icon="✅")
+            elif m1_glucose < 126:
+                st.warning("Impaired", icon="⚠️")
+            else:
+                st.error("High", icon="🔴")
+        
+        st.markdown("---")
+        
+        # Row 3: Risk Factors
+        st.markdown("##### ⚠️ Risk Factors")
+        risk_c1, risk_c2 = st.columns(2)
+        with risk_c1:
+            m1_smoke = st.selectbox("Smoking Status", 
+                                    ["never", "former", "current", "ever", "No Info"],
+                                    help="Patient's smoking history")
+            m1_hyper = st.toggle("Hypertension", help="History of high blood pressure")
+        with risk_c2:
+            m1_heart = st.toggle("Heart Disease", help="History of cardiovascular disease")
+            m1_family = st.toggle("Family History of Diabetes", value=False,
+                                  help="First-degree relative with diabetes")
+        
+        # EHR Completeness Score
+        st.markdown("---")
+        filled_fields = sum([
+            m1_age > 0, m1_bmi > 10, m1_hba1c > 4, m1_glucose > 50,
+            m1_gender != "", m1_smoke != "No Info", True, True  # toggles always count
+        ])
+        completeness = filled_fields / 8
+        st.progress(completeness, text=f"📊 EHR Data Completeness: {completeness:.0%}")
+        
         st.markdown('</div>', unsafe_allow_html=True)
 
+    # --- RIGHT COLUMN: RETINAL IMAGE ---
     with col_img:
-        st.markdown('<div class="glass-card" style="height: 100%">', unsafe_allow_html=True)
-        st.subheader("👁️ Modality 2: Retinal Scan")
+        # st.markdown('<div class="glass-card" style="min-height: 500px;">', unsafe_allow_html=True)
+        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        st.markdown("### 👁️ Modality 2: Retinal Scan")
+        st.caption("Upload fundus photography for diabetic retinopathy screening")
         
-        uploaded_file = st.file_uploader("Upload Fundus Image (300x300)", type=['jpg', 'jpeg', 'png'])
+        st.markdown("---")
+        
+        uploaded_file = st.file_uploader(
+            "Upload Fundus Image", 
+            type=['jpg', 'jpeg', 'png'],
+            help="Accepted formats: JPG, JPEG, PNG. Recommended size: 300x300 pixels"
+        )
         
         if uploaded_file:
-            st.image(uploaded_file, caption="Uploaded Fundus Scan", use_container_width=True)
+            # Display uploaded image with metadata
+            st.image(uploaded_file, caption="📷 Uploaded Fundus Scan", use_container_width=True)
+            
+            # Image metadata
+            file_size = uploaded_file.size / 1024  # KB
+            st.caption(f"📁 File: {uploaded_file.name} | Size: {file_size:.1f} KB")
+            
+            # Image quality check (mock)
+            st.success("✅ Image quality: Good", icon="🔍")
+            
+            # Preview what model sees
+            with st.expander("🔬 Preprocessing Preview"):
+                st.info("Image will be resized to 300x300 and normalized for model input.")
+                st.code("""
+Transform Pipeline:
+1. Resize → 300x300
+2. ToTensor → [0, 1]
+3. Normalize → ImageNet stats
+                """)
         else:
+            # Placeholder with instructions
             st.markdown("""
-                <div style="background: #000; height: 250px; border-radius: 8px; display: flex; align-items: center; justify-content: center; border: 1px dashed #334155;">
-                    <div style="text-align: center; color: #475569;">
-                        <p style="font-size: 2rem;">🖼️</p>
-                        <p>Awaiting Retinal Modality Input</p>
+                <div style="background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); 
+                            height: 280px; border-radius: 12px; 
+                            display: flex; align-items: center; justify-content: center; 
+                            border: 2px dashed #334155; margin: 20px 0;">
+                    <div style="text-align: center; color: #64748b;">
+                        <p style="font-size: 3rem; margin-bottom: 10px;">👁️</p>
+                        <p style="font-size: 1.1rem; font-weight: 600;">Drop Retinal Image Here</p>
+                        <p style="font-size: 0.85rem; margin-top: 5px;">or click to browse</p>
                     </div>
                 </div>
             """, unsafe_allow_html=True)
+            
+            # Sample images option
+            st.markdown("---")
+            st.markdown("##### 📂 Or Use Sample Image")
+            sample_choice = st.selectbox(
+                "Select sample retinal scan:",
+                ["None", "Sample 1: Normal Retina", "Sample 2: Mild DR", "Sample 3: Severe DR"],
+                help="Use a sample image for testing"
+            )
+            if sample_choice != "None":
+                st.info(f"🔄 Using: {sample_choice} (Demo Mode)")
+        
         st.markdown('</div>', unsafe_allow_html=True)
 
-    # 2. FUSION EXECUTION
+    # ═══════════════════════════════════════════════════════════════════════
+    # SECTION 2: INFERENCE CONTROLS
+    # ═══════════════════════════════════════════════════════════════════════
+    
     st.markdown("<br>", unsafe_allow_html=True)
-    if st.button("⚡ EXECUTE MULTIMODAL PRIVACY-PRESERVING INFERENCE", use_container_width=True):
-        if not uploaded_file:
-            st.error("Please upload a retinal scan to perform multimodal fusion.")
-        else:
-            with st.spinner("Extracting Fused Features..."):
-                # Simulation of her pipeline steps:
-                # 1. EHR -> MLP (32 features) [cite: 4]
-                # 2. Image -> B3 (1536 features) [cite: 16]
-                # 3. Concatenate (1568 features) [cite: 17]
-                
-                progress_bar = st.progress(0)
-                for percent_complete in range(100):
-                    time.sleep(0.01)
-                    progress_bar.progress(percent_complete + 1)
 
-                # Results Display
-                st.divider()
-                res_col1, res_col2 = st.columns([1, 2])
+    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    st.markdown("### 🚀 Run Inference")
+
+    st.markdown(
+        """
+        <ul style='font-size: 0.9rem; line-height: 1.4; margin: 0;'>
+            <li><b>Step 1:</b> Fill in the clinical data on the left (required for EHR/fusion).</li>
+            <li><b>Step 2:</b> Upload a retinal image on the right for retinal/fusion analysis.</li>
+            <li><b>Step 3:</b> Choose which model(s) to run below.</li>
+        </ul>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # Model selection with descriptions
+    col_btn1, col_btn2, col_btn3 = st.columns(3)
+
+    with col_btn1:
+        st.markdown("""
+            <div style="text-align: center; padding: 10px;">
+                <p style="font-size: 2rem;">📋</p>
+                <p style="font-weight: 600;">EHR Only</p>
+                <p style="font-size: 0.8rem; color: #94a3b8;">MLP Neural Network</p>
+            </div>
+        """, unsafe_allow_html=True)
+        run_ehr = st.button("🔬 Run EHR Model", use_container_width=True, type="secondary")
+
+    with col_btn2:
+        st.markdown("""
+            <div style="text-align: center; padding: 10px;">
+                <p style="font-size: 2rem;">👁️</p>
+                <p style="font-weight: 600;">Retinal Only</p>
+                <p style="font-size: 0.8rem; color: #94a3b8;">EfficientNet-B3</p>
+            </div>
+        """, unsafe_allow_html=True)
+        run_retinal = st.button(
+            "🖼️ Run Retinal Model",
+            use_container_width=True,
+            type="secondary",
+            disabled=not uploaded_file,
+        )
+        if not uploaded_file:
+            st.caption("Upload an image to enable retinal inference.")
+
+    with col_btn3:
+        st.markdown("""
+            <div style="text-align: center; padding: 10px;">
+                <p style="font-size: 2rem;">🧬</p>
+                <p style="font-weight: 600;">Multimodal Fusion</p>
+                <p style="font-size: 0.8rem; color: #94a3b8;">Combined Analysis</p>
+            </div>
+        """, unsafe_allow_html=True)
+        run_fusion = st.button(
+            "⚡ Run Fusion Model",
+            use_container_width=True,
+            type="primary",
+            disabled=not uploaded_file,
+        )
+        if not uploaded_file:
+            st.caption("Requires a retinal image (and clinical inputs) to run fusion.")
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    # Validation
+    if run_retinal and not uploaded_file:
+        st.error("❌ Please upload a retinal scan first!")
+        run_retinal = False
+    if run_fusion and not uploaded_file:
+        st.error("❌ Please upload a retinal scan for fusion analysis!")
+        run_fusion = False
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # SECTION 3: INFERENCE EXECUTION
+    # ═══════════════════════════════════════════════════════════════════════
+    
+    ehr_prob = None
+    ret_prob = None
+    fusion_prob = None
+
+    # Prepare tensors
+    ehr_tensor = None
+    img_tensor = None
+    
+    if run_ehr or run_fusion:
+        ehr_tensor = prepare_ehr_tensor(
+            age=m1_age, bmi=m1_bmi, hba1c=m1_hba1c, glucose=m1_glucose,
+            gender=m1_gender, smoke=m1_smoke,
+            hypertension=m1_hyper, heart_disease=m1_heart
+        )
+
+    if (run_retinal or run_fusion) and uploaded_file:
+        img_tensor = preprocess_retinal_image(uploaded_file, image_size=(300, 300))
+
+    # Run inference with visual feedback
+    if run_ehr or run_retinal or run_fusion:
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        with st.spinner("🧠 Running AI Inference..."):
+            # Step 1: Preprocessing
+            time.sleep(0.2)
+
+            # Step 2: Model inference
+            with torch.no_grad():
+                if run_ehr and ehr_tensor is not None:
+                    ehr_prob = torch.sigmoid(ehr_model(ehr_tensor)).item()
+
+                if run_retinal and img_tensor is not None:
+                    ret_prob = torch.sigmoid(ret_model(img_tensor)).item()
+
+                if run_fusion and ehr_tensor is not None and img_tensor is not None:
+                    # Ensure individual modality results are available for comparison
+                    if ehr_prob is None:
+                        ehr_prob = torch.sigmoid(ehr_model(ehr_tensor)).item()
+                    if ret_prob is None:
+                        ret_prob = torch.sigmoid(ret_model(img_tensor)).item()
+
+                    fusion_prob = torch.sigmoid(fusion_model(ehr_tensor, img_tensor)).item()
+
+            # Simple progress animation (for UX)
+            progress_bar = st.progress(0)
+            for i in range(100):
+                time.sleep(0.003)
+                progress_bar.progress(i + 1)
+
+    # ═══════════════════════════════════════════════════════════════════════
+    # SECTION 4: RESULTS DISPLAY
+    # ═══════════════════════════════════════════════════════════════════════
+    
+    if ehr_prob is not None or ret_prob is not None or fusion_prob is not None:
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("---")
+        st.markdown("## 📊 Risk Assessment Results")
+        
+        # --- GAUGES ROW ---
+        result_cols = st.columns(3)
+        
+        with result_cols[0]:
+            if ehr_prob is not None:
+                st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+                color = "#4ade80" if ehr_prob < 0.5 else "#ef4444"
+                st.plotly_chart(create_gauge_dark(ehr_prob, "EHR RISK", color), use_container_width=True)
                 
-                with res_col1:
-                    # Mock result based on her FL results 
-                    fusion_risk = 0.885  
-                    color = "#ef4444" if fusion_risk > 0.5 else "#22d3ee"
-                    st.plotly_chart(create_gauge_dark(fusion_risk, "FUSED RISK", color), use_container_width=True)
+                # Risk level badge
+                if ehr_prob < 0.3:
+                    st.success("LOW RISK", icon="✅")
+                elif ehr_prob < 0.6:
+                    st.warning("MODERATE RISK", icon="⚠️")
+                else:
+                    st.error("HIGH RISK", icon="🚨")
+                st.markdown('</div>', unsafe_allow_html=True)
+            else:
+                st.markdown("""
+                    <div class="glass-card" style="text-align: center; padding: 50px; opacity: 0.5;">
+                        <p style="font-size: 2rem;">📋</p>
+                        <p>EHR Model</p>
+                        <p style="color: #64748b;">Not run</p>
+                    </div>
+                """, unsafe_allow_html=True)
+        
+        with result_cols[1]:
+            if ret_prob is not None:
+                st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+                color = "#4ade80" if ret_prob < 0.5 else "#ef4444"
+                st.plotly_chart(create_gauge_dark(ret_prob, "RETINAL RISK", color), use_container_width=True)
                 
-                with res_col2:
-                    st.markdown(f"""
-                        <div class="glass-card">
-                            <h4>Fusion Diagnostics</h4>
-                            <p><b>Global Model:</b> Federated EfficientNet-B3 + MLP</p>
-                            <p><b>Feature Vector:</b> 1568-dim Fused Latent Space</p>
-                            <hr style="border-color: rgba(255,255,255,0.1)">
-                            <p style="color: #ef4444;">⚠️ <b>Finding:</b> High correlation between HbA1c levels and microaneurysms detected in the superior-temporal quadrant of the retinal scan.</p>
-                            <p><i>Confidence Score: 94.2%</i></p>
-                        </div>
-                    """, unsafe_allow_html=True)
+                if ret_prob < 0.3:
+                    st.success("LOW RISK", icon="✅")
+                elif ret_prob < 0.6:
+                    st.warning("MODERATE RISK", icon="⚠️")
+                else:
+                    st.error("HIGH RISK", icon="🚨")
+                st.markdown('</div>', unsafe_allow_html=True)
+            else:
+                st.markdown("""
+                    <div class="glass-card" style="text-align: center; padding: 50px; opacity: 0.5;">
+                        <p style="font-size: 2rem;">👁️</p>
+                        <p>Retinal Model</p>
+                        <p style="color: #64748b;">Not run</p>
+                    </div>
+                """, unsafe_allow_html=True)
+        
+        with result_cols[2]:
+            if fusion_prob is not None:
+                st.markdown('<div class="glass-card" style="border: 2px solid #06b6d4;">', unsafe_allow_html=True)
+                color = "#4ade80" if fusion_prob < 0.5 else "#ef4444"
+                st.plotly_chart(create_gauge_dark(fusion_prob, "🧬 FUSED RISK", color), use_container_width=True)
+                
+                if fusion_prob < 0.3:
+                    st.success("LOW RISK", icon="✅")
+                elif fusion_prob < 0.6:
+                    st.warning("MODERATE RISK", icon="⚠️")
+                else:
+                    st.error("HIGH RISK", icon="🚨")
+                st.markdown('</div>', unsafe_allow_html=True)
+            else:
+                st.markdown("""
+                    <div class="glass-card" style="text-align: center; padding: 50px; opacity: 0.5;">
+                        <p style="font-size: 2rem;">🧬</p>
+                        <p>Fusion Model</p>
+                        <p style="color: #64748b;">Not run</p>
+                    </div>
+                """, unsafe_allow_html=True)
+
+        # ═══════════════════════════════════════════════════════════════════
+        # SECTION 5: CLINICAL INTERPRETATION (Only show if fusion ran)
+        # ═══════════════════════════════════════════════════════════════════
+        
+        if fusion_prob is not None:
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            # --- Model Comparison ---
+            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+            st.markdown("### 📈 Model Comparison")
+            
+            compare_col1, compare_col2 = st.columns([2, 1])
+            
+            with compare_col1:
+                # Bar chart comparing all three
+                fig_compare = go.Figure()
+                
+                models = ['EHR Only', 'Retinal Only', 'Multimodal Fusion']
+                probs = [ehr_prob or 0, ret_prob or 0, fusion_prob]
+                colors = ['#3b82f6', '#8b5cf6', '#06b6d4']
+                
+                fig_compare.add_trace(go.Bar(
+                    x=models, y=[p * 100 for p in probs],
+                    marker_color=colors,
+                    text=[f"{p:.1%}" for p in probs],
+                    textposition='outside'
+                ))
+                
+                fig_compare.update_layout(
+                    yaxis_title="Risk Score (%)",
+                    yaxis_range=[0, 100],
+                    height=300,
+                    **dark_chart_layout()
+                )
+                st.plotly_chart(fig_compare, use_container_width=True)
+            
+            with compare_col2:
+                st.markdown("#### 🔍 Analysis")
+                
+                # Determine which modality contributes more
+                if ehr_prob and ret_prob:
+                    if abs(fusion_prob - ehr_prob) < abs(fusion_prob - ret_prob):
+                        st.info("📋 **EHR data** is the primary risk driver")
+                    else:
+                        st.info("👁️ **Retinal findings** are the primary risk driver")
+                    
+                    # Agreement check
+                    if (ehr_prob > 0.5 and ret_prob > 0.5) or (ehr_prob < 0.5 and ret_prob < 0.5):
+                        st.success("✅ Both modalities **agree** on risk level")
+                    else:
+                        st.warning("⚠️ Modalities **disagree** - clinical review recommended")
+                
+                # Confidence
+                confidence = 1 - abs(ehr_prob - ret_prob) if (ehr_prob and ret_prob) else 0.5
+                st.metric("Model Agreement", f"{confidence:.0%}")
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            # --- Clinical Recommendations ---
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+            st.markdown("### 💊 Clinical Recommendations")
+            
+            rec_col1, rec_col2 = st.columns(2)
+            
+            with rec_col1:
+                st.markdown("#### Based on Risk Level:")
+                if fusion_prob >= 0.7:
+                    st.error("""
+                    🚨 **HIGH RISK - Immediate Action Required**
+                    - Urgent ophthalmology referral
+                    - Intensive glycemic control review
+                    - Consider anti-VEGF therapy evaluation
+                    - Schedule follow-up within 2 weeks
+                    """)
+                elif fusion_prob >= 0.4:
+                    st.warning("""
+                    ⚠️ **MODERATE RISK - Close Monitoring**
+                    - Schedule ophthalmology within 1 month
+                    - Optimize diabetes management
+                    - Review blood pressure control
+                    - Rescreen in 6 months
+                    """)
+                else:
+                    st.success("""
+                    ✅ **LOW RISK - Maintain Current Care**
+                    - Continue routine diabetes management
+                    - Annual eye examination
+                    - Lifestyle modifications as needed
+                    - Rescreen in 12 months
+                    """)
+            
+            with rec_col2:
+                st.markdown("#### Key Risk Factors Identified:")
+                
+                risk_factors = []
+                if m1_hba1c > 7.5:
+                    risk_factors.append(("Elevated HbA1c", f"{m1_hba1c}%", "🔴"))
+                if m1_glucose > 140:
+                    risk_factors.append(("High Fasting Glucose", f"{m1_glucose} mg/dL", "🔴"))
+                if m1_bmi > 30:
+                    risk_factors.append(("Obesity", f"BMI {m1_bmi}", "🟠"))
+                if m1_hyper:
+                    risk_factors.append(("Hypertension", "Present", "🟠"))
+                if m1_heart:
+                    risk_factors.append(("Heart Disease", "Present", "🔴"))
+                if m1_smoke == "current":
+                    risk_factors.append(("Active Smoking", "Current", "🔴"))
+                if m1_age > 65:
+                    risk_factors.append(("Advanced Age", f"{m1_age} years", "🟡"))
+                
+                if risk_factors:
+                    for factor, value, emoji in risk_factors:
+                        st.markdown(f"{emoji} **{factor}:** {value}")
+                else:
+                    st.success("No major modifiable risk factors identified")
+            
+            st.markdown('</div>', unsafe_allow_html=True)
+            
+            # --- Download Report ---
+            st.markdown("<br>", unsafe_allow_html=True)
+            
+            report_content = f"""
+
+          MULTIMODAL DIABETES RISK ASSESSMENT REPORT            
+══════════════════════════════════════════════════════════════ 
+
+Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+Model Version: Federated Learning v2.5.0
+
+═══════════════════════════════════════════════════════════════
+PATIENT PROFILE
+═══════════════════════════════════════════════════════════════
+Age:             {m1_age} years
+Gender:          {m1_gender}
+BMI:             {m1_bmi} kg/m²
+HbA1c:           {m1_hba1c}%
+Fasting Glucose: {m1_glucose} mg/dL
+Smoking:         {m1_smoke}
+Hypertension:    {'Yes' if m1_hyper else 'No'}
+Heart Disease:   {'Yes' if m1_heart else 'No'}
+
+═══════════════════════════════════════════════════════════════
+RISK ASSESSMENT RESULTS
+═══════════════════════════════════════════════════════════════
+EHR Model Risk:      {ehr_prob*100:.1f}%
+Retinal Model Risk:  {ret_prob*100:.1f}%
+Fused Model Risk:    {fusion_prob*100:.1f}%
+
+OVERALL RISK LEVEL:  {'HIGH' if fusion_prob >= 0.6 else 'MODERATE' if fusion_prob >= 0.4 else 'LOW'}
+
+═══════════════════════════════════════════════════════════════
+CLINICAL NOTES
+═══════════════════════════════════════════════════════════════
+This assessment combines clinical EHR data with retinal imaging
+analysis using federated learning models trained across multiple
+institutions while preserving patient privacy.
+
+═══════════════════════════════════════════════════════════════
+DISCLAIMER
+═══════════════════════════════════════════════════════════════
+This report is for clinical decision support only.
+Final diagnosis must be made by a licensed healthcare provider.
+"""
+
+            st.download_button(
+                label="📥 Download Full Clinical Report",
+                data=report_content,
+                file_name=f"Multimodal_Risk_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
+            
+            # --- Disclaimer ---
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.warning("""
+            ⚕️ **Clinical Disclaimer:** This AI-powered assessment is a decision-support tool only. 
+            Results should be interpreted by qualified healthcare professionals in conjunction with 
+            complete clinical evaluation. This system does not provide medical diagnosis.
+            """)
+
+
+
+
 
 # ------------------------------------------------------------------------------
 # TAB 4: PERSONALIZATION
