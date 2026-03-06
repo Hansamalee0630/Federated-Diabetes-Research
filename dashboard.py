@@ -8,8 +8,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-# import joblib
-# import gdown
 import joblib
 import gdown
 from datetime import datetime
@@ -17,7 +15,6 @@ from PIL import Image
 import torchvision.transforms as T
 from components.component_4.model import MultiTaskNet
 from components.component_1.Fed_Diabetes_Complication_.component.component_1.model_architectures import NephropathyNet, CVDNet
-from components.component_3.multimodal_models import EHRClassifier, BinaryDRClassifier, GlobalMultimodalModel
 from components.component_3.multimodal_models import EHRClassifier, BinaryDRClassifier, GlobalMultimodalModel
 
 st.set_page_config(
