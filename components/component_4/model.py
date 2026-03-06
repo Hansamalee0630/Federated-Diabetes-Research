@@ -44,13 +44,6 @@ class MultiTaskNet(nn.Module):
             layers.append(activation)
         return nn.Sequential(*layers)
 
-        # --- HEAD 3: Comorbidity Cluster (Multi-Class: 3 Classes) ---
-        # 0=Metabolic, 1=Circulatory, 2=Complex
-        self.head_cluster = nn.Sequential(
-            nn.Linear(128, 64), nn.ReLU(),
-            nn.Linear(64, 3) # Output size 3 (Logits)
-        )
-
     def forward(self, x):
         for fc, bn in zip(self.shared_fcs, self.shared_bns):
             x = F.relu(bn(fc(x)))
