@@ -14,3 +14,4 @@ __pycache__/
 venv/
 env/
 .env
+components/component_3/model/efficientnet_b3_binary_dr_twostage.pth
