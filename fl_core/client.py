@@ -499,12 +499,15 @@ class FederatedClient:
         self.data_path = f"datasets/diabetes_130/processed/client_{client_id}"
         self.model = None
         self.train_loader = None
-
+        # Initialize default weights
         self.htn_weight = 1.0
         self.hf_weight = 1.0
         
     def load_data(self, data_client_id=None):
-        # Calculates CLASS WEIGHTS to handle imbalance.
+        """
+        Loads data dynamically based on the component type.
+        Calculates CLASS WEIGHTS to handle imbalance.
+        """
         file_id = data_client_id if data_client_id is not None else self.client_id
         
         target_data_path = f"datasets/diabetes_130/processed/client_{file_id}"
@@ -525,14 +528,19 @@ class FederatedClient:
                 
                 y_target = None
 
+                # CASE A: Single Task - Hypertension
                 if self.component == "comp4_singletask_htn":
                     y_target = y['target_hypertension'].values
+
+                # CASE B: Single Task - Heart Failure
                 elif self.component == "comp4_singletask_hf":
                     y_target = y['target_heart_failure'].values
+
+                # CASE C: Multi-Task
                 else:
                     y_target = y[['target_hypertension', 'target_heart_failure', 'target_cluster']].values
 
-                # DYNAMIC CLASS BALANCING
+                # --- DYNAMIC CLASS BALANCING (The Fix) ---
                 num_samples = len(y_target)
                 
                 # 1. Hypertension Weight Calculation
@@ -560,6 +568,7 @@ class FederatedClient:
                     self.hf_weight = min(float(num_neg_hf / (num_pos_hf + 1e-6)), 4.0)
                     print(f"     HF Imbalance:  {num_pos_hf} pos / {num_neg_hf} neg -> Weight: {self.hf_weight:.2f}")
 
+                # Convert to Tensors
                 tensor_x = torch.Tensor(X)
                 tensor_y = torch.Tensor(y_target)
                 
@@ -574,6 +583,7 @@ class FederatedClient:
             print(f"Unknown component type: {self.component}")
             return
 
+        # Finalize the Loader
         if dataset:
             self.train_loader = DataLoader(dataset, batch_size=32, shuffle=True)
             print(f"   -> Data loaded successfully. ({len(dataset)} samples)")
@@ -583,9 +593,8 @@ class FederatedClient:
     def set_model(self, model):
         self.model = model
 
-
-    # Local training loop with BCEWithLogitsLoss for class imbalance.
     def train(self, epochs=25):
+        """Local training loop with BCEWithLogitsLoss for class imbalance."""
         if not self.model: raise ValueError("Model not set!")
         if not self.train_loader or len(self.train_loader) == 0:
             return self.model.state_dict()
@@ -593,7 +602,7 @@ class FederatedClient:
         optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
         criterion_multi = torch.nn.CrossEntropyLoss()
         
-        # BCEWithLogitsLoss with pos_weight for class imbalance
+        # --- BCEWithLogitsLoss with pos_weight for class imbalance ---
         # pos_weight > 1 penalizes missing positive cases (sick patients) more heavily
         criterion_htn = torch.nn.BCEWithLogitsLoss(pos_weight=torch.tensor([self.htn_weight]))
         criterion_hf = torch.nn.BCEWithLogitsLoss(pos_weight=torch.tensor([self.hf_weight]))
@@ -604,7 +613,7 @@ class FederatedClient:
             for batch_X, batch_y in self.train_loader:
                 optimizer.zero_grad()
                 
-                # MULTI-TASK LEARNING
+                # --- MULTI-TASK LEARNING ---
                 if self.component == "comp4_multitask":
                     # Model outputs raw logits (no sigmoid)
                     logits_htn, logits_hf, logits_cluster = self.model(batch_X)
@@ -620,9 +629,10 @@ class FederatedClient:
                     
                     loss = loss_htn + loss_hf + loss_cluster
 
-                # SINGLE-TASK
+                # --- SINGLE-TASK ---
                 else:
                     logits = self.model(batch_X)
+                    # Use the correct criterion based on component
                     criterion = criterion_htn if "htn" in self.component else criterion_hf
                     loss = criterion(logits, batch_y.view(-1, 1))
 
@@ -631,9 +641,8 @@ class FederatedClient:
         
         return self.model.state_dict()
 
-
-    # Local training loop with WEIGHTED LOSS + PRIVACY.
     def train_with_privacy(self, epochs=1, epsilon=1.0, max_grad_norm=1.0):
+        """Local training loop with WEIGHTED LOSS + PRIVACY."""
         if not self.model: raise ValueError("Model not set!")
         if not self.train_loader or len(self.train_loader) == 0:
             return self.model.state_dict()
@@ -641,7 +650,7 @@ class FederatedClient:
         optimizer = torch.optim.Adam(self.model.parameters(), lr=0.001)
         criterion_multi = torch.nn.CrossEntropyLoss()
         
-        # BCEWithLogitsLoss with pos_weight for class imbalance
+        # --- BCEWithLogitsLoss with pos_weight for class imbalance ---
         criterion_htn = torch.nn.BCEWithLogitsLoss(pos_weight=torch.tensor([self.htn_weight]))
         criterion_hf = torch.nn.BCEWithLogitsLoss(pos_weight=torch.tensor([self.hf_weight]))
         
@@ -685,8 +694,8 @@ class FederatedClient:
 
         return noisy_state
 
-    # Calculates metrics.
     def _evaluate_metrics(self, model_to_test):
+        """Calculates metrics."""
         if not self.train_loader: return {}
 
         model_to_test.eval()
@@ -738,6 +747,8 @@ class FederatedClient:
                 sensitivity = tp / (tp + fn) if (tp + fn) > 0 else 0
                 specificity = tn / (tn + fp) if (tn + fp) > 0 else 0
             except: sensitivity = 0; specificity = 0
+            
+            # In _evaluate_metrics(), after computing predictions:
 
             print(f"[DEBUG] {prefix}: Pos Rate = {np.mean(y_true):.2f} | Pred Pos Rate = {np.mean(y_pred):.2f}")
             print(f"[DEBUG] {prefix}: F1={f1_score(y_true, y_pred):.3f} | Sensitivity={sensitivity:.3f}")
@@ -771,9 +782,8 @@ class FederatedClient:
         
         return metrics
 
-
-    # Includes Weighted Loss for Fine-Tuning.
     def evaluate_personalization(self, epochs=10):
+        """Includes Weighted Loss for Fine-Tuning."""
         if not self.model or not self.train_loader or len(self.train_loader) == 0:
             return 0.0, 0.0
 
@@ -792,7 +802,7 @@ class FederatedClient:
         )
         criterion_multi = torch.nn.CrossEntropyLoss()
         
-        # BCEWithLogitsLoss with pos_weight for class imbalance
+        # --- BCEWithLogitsLoss with pos_weight for class imbalance ---
         criterion_htn = torch.nn.BCEWithLogitsLoss(pos_weight=torch.tensor([self.htn_weight]))
         criterion_hf = torch.nn.BCEWithLogitsLoss(pos_weight=torch.tensor([self.hf_weight]))
 
@@ -821,8 +831,8 @@ class FederatedClient:
         
         return baseline_metrics, personalized_metrics
 
-    # Helper to calculate accuracy on local data.
     def _calculate_accuracy(self):
+        """Helper to calculate accuracy on local data."""
         if not self.train_loader or len(self.train_loader) == 0: return 0.0
         correct = 0; total = 0
         self.model.eval()
@@ -851,8 +861,8 @@ class FederatedClient:
         
         return correct / total if total > 0 else 0.0
     
-    # Calculates Demographic Parity Gap.
     def evaluate_fairness(self):
+        """Calculates Demographic Parity Gap."""
         if not self.model: return 0.0
         
         try:
@@ -865,14 +875,22 @@ class FederatedClient:
         group_a = None # Females
         group_b = None # Males
 
-        if 'gender_Female' in df.columns: # If One-Hot encoded
+        # if 'gender_Female' in df.columns:
+        #     group_a = df[df['gender_Female'] > 0]; group_b = df[df['gender_Female'] < 0]
+        # elif 'gender_Male' in df.columns:
+        #     group_a = df[df['gender_Male'] < 0]; group_b = df[df['gender_Male'] > 0]
+        # else: return 0.0
+
+        if 'gender_Female' in df.columns:
+            # If One-Hot encoded, usually 1=Yes (Female), 0=No (Male)
             group_a = df[df['gender_Female'] == 1] 
             group_b = df[df['gender_Female'] == 0] 
         elif 'gender_Male' in df.columns:
-            group_a = df[df['gender_Male'] == 0]
-            group_b = df[df['gender_Male'] == 1]
+            # 1=Male, 0=Female
+            group_a = df[df['gender_Male'] == 0] # Female
+            group_b = df[df['gender_Male'] == 1] # Male
         else:
-            return 0.0
+            return 0.0 # Column not found
 
         def get_acc(subset_X, subset_indices):
             if len(subset_X) == 0: return 0.0
@@ -897,6 +915,7 @@ class FederatedClient:
         acc_female = get_acc(group_a, group_a.index)
         acc_male = get_acc(group_b, group_b.index)
 
+        # Debug print to verify fix (Optional)
         print(f"Client {self.client_id} Fairness: Female Acc {acc_female:.2f} | Male Acc {acc_male:.2f}")
 
         return abs(acc_female - acc_male)

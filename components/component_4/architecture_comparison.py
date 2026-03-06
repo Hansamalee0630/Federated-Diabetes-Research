@@ -1,8 +1,19 @@
+"""
+Component 4 Architecture Comparison
+------------------------------------
+This script compares different neural network architectures for the multitask model:
+1. Baseline: 2 shared layers (256,128), head width 64
+2. 3 shared layers: (256,128,64), head width 64
+3. Wider heads: 2 shared layers (256,128), head width 128
+4. Deeper heads: 2 shared layers (256,128), head width 64, depth 2
+"""
+
 import json
 import pandas as pd
 import os
 
 def load_experiment(filename):
+    """Load experiment results JSON."""
     path = f"../../results/comp4_results/{filename}"
     if not os.path.exists(path):
         print(f"Warning: {filename} not found")
@@ -15,6 +26,7 @@ def summarize_experiment(data, name):
     if not data:
         return None
     
+    # Get final round (round 2)
     final_round = [r for r in data if r['round'] == 2][0]
     
     return {
@@ -42,6 +54,7 @@ def main():
     print("  4. Deeper Heads:  2 shared layers [256,128], head width 64, depth 2")
     print("\n" + "-"*80)
     
+    # Load all experiments
     experiments = [
         ('fl_results_baseline_256x128_head64.json', 'Baseline (2-layer, head=64)'),
         ('fl_results_shared_256x128x64_head64.json', '3-Layer Shared (256,128,64)'),
@@ -56,8 +69,10 @@ def main():
         if summary:
             results.append(summary)
     
+    # Create comparison dataframe
     df = pd.DataFrame(results)
     
+    # Display with formatting
     print("\n### FINAL ROUND (Round 2) COMPARISON ###\n")
     
     pd.set_option('display.max_columns', None)
@@ -69,6 +84,7 @@ def main():
     print("\n" + "-"*80)
     print("\n### KEY FINDINGS ###\n")
     
+    # Find best by different metrics
     best_global_acc = df.loc[df['Global Overall Acc'].idxmax()]
     best_pers_acc = df.loc[df['Pers Overall Acc'].idxmax()]
     best_htn = df.loc[df['Pers HTN AUROC'].idxmax()]
@@ -84,6 +100,7 @@ def main():
     print("\n" + "-"*80)
     print("="*80)
     
+    # Save comparison
     output_path = "../../results/comp4_results/architecture_comparison.csv"
     df.to_csv(output_path, index=False)
     print(f"\nComparison table saved to: {output_path}")

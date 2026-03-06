@@ -6,17 +6,21 @@ import shutil
 import sys
 from datetime import datetime
 
-
+# ==========================================
 # CONFIGURATION
+# ==========================================
+# Set these to True/False based on what you need to run right now
 RUN_PHASE_1_SEARCH = True   # Hyperparameter Search (12 combinations × 3 rounds)
-RUN_OBJECTIVE_1 = True      # Primary Performance (10 rounds)
+RUN_OBJECTIVE_1 = True      # Primary Performance (10 rounds - "Golden Run")
 RUN_OBJECTIVE_2 = True      # Efficiency (Multi vs Single Task)
 RUN_OBJECTIVE_3 = True      # Scalability (3 vs 5 Clients)
 
-
+# ==========================================
 # PHASE 1: HYPERPARAMETER SEARCH SPACE
-SEARCH_ROUNDS = 3
+# ==========================================
+SEARCH_ROUNDS = 3  # Fast check to find the winner
 
+# The "Smart Grid" (12 Combinations)
 # Head Hidden: [64, 96, 128] | Head Depth: [1, 2] | Dropout: [0.1, 0.2]
 GRID_SEARCH = [
     # Group 1: 64 Neurons (Baseline Capacity)
@@ -38,9 +42,14 @@ GRID_SEARCH = [
     {"h": 128, "d": 2, "p": 0.2},
 ]
 
+# Will be populated after Phase 1
 BEST_PARAMS = None
 
-# OBJ 1: main results table
+# ==========================================
+# EXPERIMENT DEFINITIONS
+# ==========================================
+
+# OBJ 1: The "Golden Run" for your main results table
 objective1_experiments = [
     {
         "name": "Proposed MTFL (10 Rounds)",
@@ -51,7 +60,7 @@ objective1_experiments = [
     }
 ]
 
-# OBJ 2: Efficiency
+# OBJ 2: Efficiency (Short runs to measure time/resource usage)
 objective2_experiments = [
     {
         "name": "MultiTask (Efficiency Check)",
@@ -76,7 +85,7 @@ objective2_experiments = [
     }
 ]
 
-# OBJ 3: Scalability
+# OBJ 3: Scalability (Does it break with more clients?)
 objective3_experiments = [
     {
         "name": "Scalability (5 Clients)",
@@ -90,8 +99,10 @@ objective3_experiments = [
 results = []
 
 def run_experiment(exp, objective_name):
+    """Run a single experiment and save results to a unique file"""
     print(f"\n   [{objective_name}] Testing: {exp['name']}")
     
+    # Base command running from ROOT
     cmd = [
         sys.executable, "main_fl_runner.py",
         "--clients", str(exp["clients"]),
@@ -106,11 +117,14 @@ def run_experiment(exp, objective_name):
     
     print(f"   Command: {' '.join(cmd)}")
     
+    # Run from current directory (Root)
     result = subprocess.run(cmd)
     
     if result.returncode != 0:
         print(f"      Experiment Failed: {exp['name']}")
         return False
+
+    # Read result from standard output location
     try:
         source_file = "results/comp4_results/fl_results.json"
         if os.path.exists(source_file):
@@ -118,10 +132,12 @@ def run_experiment(exp, objective_name):
                 data = json.load(f)
                 final = data[-1]
             
+            # Archive the specific result file
             dest_path = f"results/comp4_results/{exp['output_file']}"
             shutil.copy(source_file, dest_path)
             print(f"      Archived to: {dest_path}")
             
+            # Extract key metrics for summary
             metrics = {
                 "Obj": objective_name,
                 "Experiment": exp["name"],
@@ -142,15 +158,19 @@ def run_experiment(exp, objective_name):
         print(f"       Error reading results: {e}")
         return False
 
-
+# ==========================================
+# MAIN EXECUTION FLOW
+# ==========================================
 print("="*80)
 print("RESEARCH EXPERIMENT SUITE STARTING")
 print("="*80)
 
+# Ensure output directory exists
 os.makedirs("results/comp4_results", exist_ok=True)
 
-
+# ==========================================
 # PHASE 1: HYPERPARAMETER SEARCH
+# ==========================================
 if RUN_PHASE_1_SEARCH:
     print("\n" + "="*80)
     print("PHASE 1: HYPERPARAMETER SEARCH (12 Combinations × 3 Rounds)")
@@ -164,6 +184,7 @@ if RUN_PHASE_1_SEARCH:
         
         print(f"\n[{idx}/12] Testing: Head={h}, Depth={d}, Dropout={p}")
         
+        # Build command with these hyperparameters
         cmd = [
             sys.executable, "main_fl_runner.py",
             "--clients", "3",
@@ -201,7 +222,7 @@ if RUN_PHASE_1_SEARCH:
             except Exception as e:
                 print(f"   ✗ Error reading results: {e}")
     
-
+    # Find and display best configuration
     if search_results:
         search_df = pd.DataFrame(search_results)
         best_idx = search_df['Pers Acc'].idxmax()
@@ -213,7 +234,7 @@ if RUN_PHASE_1_SEARCH:
         print(search_df.sort_values('Pers Acc', ascending=False).to_string(index=False))
         
         print("\n" + "="*80)
-        print(" BEST CONFIGURATION SELECTED")
+        print("🏆 BEST CONFIGURATION SELECTED")
         print("="*80)
         print(f"Head Hidden: {best_config['Head']}")
         print(f"Head Depth:  {best_config['Depth']}")
@@ -221,18 +242,20 @@ if RUN_PHASE_1_SEARCH:
         print(f"Personalized Accuracy: {best_config['Pers Acc']:.4f}")
         print(f"Personalization Gain: {best_config['Gain %']:.2f}%")
         
+        # Set BEST_PARAMS for Phase 2
         BEST_PARAMS = [
             "--head-hidden", str(best_config['Head']),
             "--head-depth", str(best_config['Depth']),
             "--dropout", str(best_config['Dropout'])
         ]
         
+        # Save search results
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         search_csv = f"results/comp4_results/phase1_hyperparameter_search_{timestamp}.csv"
         search_df.to_csv(search_csv, index=False)
         print(f"\nSearch results saved to: {search_csv}")
     else:
-        print("\n Phase 1 search failed. Using default parameters.")
+        print("\n❌ Phase 1 search failed. Using default parameters.")
         BEST_PARAMS = ["--head-hidden", "96", "--head-depth", "1", "--dropout", "0.1"]
 
 if RUN_OBJECTIVE_1:
@@ -247,7 +270,9 @@ if RUN_OBJECTIVE_3:
     print("\n--- Running Objective 3 (Scalability) ---")
     for exp in objective3_experiments: run_experiment(exp, "OBJ-3")
 
-
+# ==========================================
+# FINAL SUMMARY
+# ==========================================
 print("\n" + "="*80)
 print("FINAL EXPERIMENT SUMMARY")
 print("="*80)
@@ -256,6 +281,7 @@ if results:
     df = pd.DataFrame(results)
     print(df.to_string(index=False))
     
+    # Save Summary CSV
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     csv_path = f"results/comp4_results/experiment_summary_{timestamp}.csv"
     df.to_csv(csv_path, index=False)
