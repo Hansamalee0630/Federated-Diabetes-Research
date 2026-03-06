@@ -1,22 +1,14 @@
-"""
-Test script to verify dashboard model loading works with architecture configuration.
-This ensures the model can be loaded correctly regardless of which architecture was trained.
-"""
-
 import torch
 import json
 import os
 import sys
 
-# Add project root to path
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, project_root)
 
 from components.component_4.model import MultiTaskNet
 
 def test_model_loading():
-    """Test that model can be loaded with saved configuration."""
-    
     model_path = "experiments/comp4_experiments/final_multitask_model.pth"
     config_path = "experiments/comp4_experiments/model_config.json"
     
@@ -24,7 +16,6 @@ def test_model_loading():
     print("TESTING MODEL LOADING WITH CONFIGURATION")
     print("="*70)
     
-    # Check if files exist
     if not os.path.exists(model_path):
         print(f"Model file not found: {model_path}")
         return False
@@ -45,10 +36,9 @@ def test_model_loading():
     print(f"  Head Depth:    {config.get('head_depth', 1)}")
     print(f"  Dropout:       {config.get('dropout', 0.2)}")
     
-    # Initialize model with configuration
     try:
         model = MultiTaskNet(
-            input_dim=19,  # Diabetes 130 feature count
+            input_dim=19,
             shared_layers=config.get("shared_layers", [256, 128]),
             head_hidden=config.get("head_hidden", 64),
             head_depth=config.get("head_depth", 1),
@@ -59,7 +49,6 @@ def test_model_loading():
         print(f"\nError creating model: {e}")
         return False
     
-    # Load weights
     try:
         state_dict = torch.load(model_path, map_location=torch.device('cpu'))
         model.load_state_dict(state_dict)
@@ -68,7 +57,6 @@ def test_model_loading():
         print(f"Error loading weights: {e}")
         return False
     
-    # Test inference
     try:
         model.eval()
         dummy_input = torch.randn(1, 19)
