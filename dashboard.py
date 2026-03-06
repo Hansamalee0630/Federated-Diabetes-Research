@@ -1633,7 +1633,7 @@ with tabs[3]:
     # CLINICIAN PREDICTION TOOL
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
     st.markdown("### Clinician Prediction Tool")
-    st.caption("Live Multi-Task Prediction: Hypertension & Heart Failure")
+    st.caption("Live Multi-Task Prediction (Includes FedRep Personalization Simulation)")
     
     with st.form("prediction_form"):
         # INPUTS
@@ -1809,6 +1809,100 @@ with tabs[3]:
                 if prob_hf > 0.7: st.error("HIGH RISK")
                 elif prob_hf > 0.5: st.warning("MODERATE RISK")
                 else: st.success("LOW RISK")
+
+            # --- 3RD TASK: COMORBIDITY CLUSTER ---
+            st.markdown("#### Patient Comorbidity Profile")
+            
+            # Get the predicted class (0, 1, or 2)
+            cluster_idx = torch.argmax(cluster_out, dim=1).item()
+            cluster_names = ["Metabolic Dominant", "Circulatory Dominant", "Complex/Mixed"]
+            cluster_colors = ["#3b82f6", "#ef4444", "#8b5cf6"]
+            
+            predicted_cluster = cluster_names[cluster_idx]
+            cluster_color = cluster_colors[cluster_idx]
+            
+            st.markdown(f"""
+            <div style='background: rgba(30, 41, 59, 0.5); padding: 15px; border-radius: 10px; border-left: 5px solid {cluster_color};'>
+                <p style='margin:0; color:#94a3b8; font-size:0.9rem; text-transform:uppercase;'>Predicted Risk Cluster</p>
+                <h3 style='margin:0; color:{cluster_color}; font-family:Rajdhani;'>{predicted_cluster}</h3>
+            </div>
+            <br>
+            """, unsafe_allow_html=True)
+
+            # OVERARCHING STATUS & REASONING
+            st.divider()
+            max_risk = max(prob_htn, prob_hf)
+            
+            if max_risk > 0.7:
+                status_class = "critical-box"
+                status_label = "CRITICAL MULTI-MORBIDITY RISK"
+                advice = f"Immediate intervention required. High probability of {predicted_cluster} complications."
+            elif max_risk > 0.5:
+                status_class = "moderate-box"
+                status_label = "MODERATE RISK"
+                advice = f"Patient shows emerging signs of {predicted_cluster} issues. Preventative care recommended."
+            else:
+                status_class = "stable-box"
+                status_label = "STABLE / LOW RISK"
+                advice = "Patient is currently low risk for cardiovascular complications. Continue standard care."
+
+            st.markdown(f'<div class="status-box {status_class}">OVERALL STATUS: {status_label}</div>', unsafe_allow_html=True)
+            st.info(f"**Medical Recommendation:** {advice}")
+
+            # Explain the Personalization
+            if model_mode == "Personalized Model":
+                htn_diff = (prob_htn - prob_htn_global) * 100
+                hf_diff = (prob_hf - prob_hf_global) * 100
+                st.markdown(f"""
+                <div class="reasoning-text">
+                    <b>Federated AI Reasoning:</b> The Global AI baseline was adjusted based on the specific non-IID demographic of <b>{hospital_type}</b>. 
+                    This resulted in a {htn_diff:+.1f}% shift in Hypertension risk and a {hf_diff:+.1f}% shift in Heart Failure risk to better match local patient outcomes.
+                </div>
+                """, unsafe_allow_html=True)
+
+            report_content = f"""
+            FEDERATED MULTI-TASK DIABETES REPORT            
+            ══════════════════════════════════════════════════════════════ 
+            Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+            Execution Mode: {model_mode}
+            Local Environment: {hospital_type}
+
+            PATIENT PROFILE
+            ══════════════════════════════════════════════════════════════
+            Age:             {age} years
+            Gender:          {gender}
+            BMI:             {bmi}
+            HbA1c:           {hba1c}%
+            Medications:     {meds}
+
+            PREDICTIVE DIAGNOSTICS (MTFL SYSTEM)
+            ══════════════════════════════════════════════════════════════
+            1. Hypertension Risk:  {prob_htn*100:.1f}% 
+            2. Heart Failure Risk: {prob_hf*100:.1f}%
+            3. Comorbidity Phenotype: {predicted_cluster}
+
+            OVERALL STATUS: {status_label}
+            RECOMMENDATION: {advice}
+
+            FEDERATED CONTEXT
+            ══════════════════════════════════════════════════════════════
+            Global Model HTN Baseline: {prob_htn_global*100:.1f}%
+            Global Model HF Baseline:  {prob_hf_global*100:.1f}%
+            Local Adjustment Applied:  {'Yes' if model_mode == "Personalized Model" else 'No'}
+
+            DISCLAIMER: For clinical decision support only. 
+            Final diagnosis must be made by a licensed physician.
+            """
+
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.download_button(
+                label="DOWNLOAD MTFL CLINICAL REPORT",
+                data=report_content,
+                file_name=f"MTFL_Patient_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
+
 
             # INTERACTIVE SCATTER PLOT
             st.markdown("#### Patient Cohort Visualization")
