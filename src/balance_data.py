@@ -1,4 +1,3 @@
-
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
@@ -14,7 +13,6 @@ import os
 
 warnings.filterwarnings('ignore')
 
-
 # ============================================================================
 # STEP 1: LOAD RAW DATA AND CREATE BALANCED DATASET
 # ============================================================================
@@ -25,7 +23,6 @@ def load_raw_data(path):
     df = pd.read_csv(path, na_values='?', low_memory=False)
     return df
 
-
 def create_balanced_dataset_stratified(df):
     """
     Create balanced dataset using STRATIFIED UNDERSAMPLING.
@@ -35,41 +32,33 @@ def create_balanced_dataset_stratified(df):
     - Undersample NO and >30 STRATIFIED by:
       * Gender (preserve 54% F, 46% M)
       * Hospital (preserve 29%, 13%, 55%)
-      * Age (preserve age distributions)
-    
-    Result: ~22,714 samples (50% positive, 50% negative)
     """
     print("\n" + "="*70)
     print("CREATING BALANCED DATASET (Stratified)")
     print("="*70)
     
+    # 0. LEAKAGE FIX: Drop terminal patients (Hospice/Dead cannot be readmitted)
+    if 'discharge_disposition_id' in df.columns:
+        n_pre = len(df)
+        df = df[~df['discharge_disposition_id'].isin([11, 13, 14, 19, 20, 21])]
+        print(f" Removed {n_pre - len(df)} terminal patients (prevents data leakage)")
+
     # Step 1: Create hospital IDs (needed for stratification)
     def group_diagnosis_codes(code):
-        if pd.isna(code):
-            return 'Other'
+        if pd.isna(code): return 'Other'
         try:
             code_str = str(code).strip()
-            if code_str.startswith('V') or code_str.startswith('E'):
-                return 'Other'
+            if code_str.startswith('V') or code_str.startswith('E'): return 'Other'
             code_num = float(code_str)
-            if 390 <= code_num <= 459 or code_num == 785:
-                return 'Circulatory'
-            elif 460 <= code_num <= 519 or code_num == 786:
-                return 'Respiratory'
-            elif 520 <= code_num <= 579 or code_num == 787:
-                return 'Digestive'
-            elif 250 <= code_num < 251:
-                return 'Diabetes'
-            elif 800 <= code_num <= 999:
-                return 'Injury'
-            elif 710 <= code_num <= 739:
-                return 'Musculoskeletal'
-            elif 580 <= code_num <= 629 or code_num == 788:
-                return 'Genitourinary'
-            elif 140 <= code_num <= 239:
-                return 'Neoplasms'
-            else:
-                return 'Other'
+            if 390 <= code_num <= 459 or code_num == 785: return 'Circulatory'
+            elif 460 <= code_num <= 519 or code_num == 786: return 'Respiratory'
+            elif 520 <= code_num <= 579 or code_num == 787: return 'Digestive'
+            elif 250 <= code_num < 251: return 'Diabetes'
+            elif 800 <= code_num <= 999: return 'Injury'
+            elif 710 <= code_num <= 739: return 'Musculoskeletal'
+            elif 580 <= code_num <= 629 or code_num == 788: return 'Genitourinary'
+            elif 140 <= code_num <= 239: return 'Neoplasms'
+            else: return 'Other'
         except:
             return 'Other'
     
@@ -86,6 +75,9 @@ def create_balanced_dataset_stratified(df):
     hospital_id[hospital_id == 0] = 3
     df['hospital_id'] = hospital_id
     
+    # Drop Invalid Gender to avoid Fairness logic crashes
+    df = df[df['gender'] != 'Unknown/Invalid']
+
     # Step 2: Create binary target
     df['readmitted_binary'] = (df['readmitted'] == '<30').astype(int)
     
@@ -93,12 +85,11 @@ def create_balanced_dataset_stratified(df):
     positive = df[df['readmitted_binary'] == 1].copy()
     negative = df[df['readmitted_binary'] == 0].copy()
     
-    print(f"\nOriginal distribution:")
+    print(f"\nOriginal valid distribution:")
     print(f"  Positive (<30): {len(positive):,} ({len(positive)/len(df)*100:.2f}%)")
     print(f"  Negative (>30 or NO): {len(negative):,} ({len(negative)/len(df)*100:.2f}%)")
     
     # Step 4: Stratified undersampling of negative class
-    # Undersample to match positive class size
     target_size = len(positive)
     
     print(f"\nStratified Undersampling:")
@@ -110,12 +101,15 @@ def create_balanced_dataset_stratified(df):
         group_keys=False
     ).apply(
         lambda x: x.sample(
-            n=int(len(x) * (target_size / len(negative))),
+            n=int(np.ceil(len(x) * (target_size / len(negative)))),
             random_state=42,
             replace=False
         )
     )
     
+    if len(negative_sampled) > target_size:
+        negative_sampled = negative_sampled.sample(n=target_size, random_state=42)
+
     # Step 5: Combine positive and negative for balanced dataset
     balanced_df = pd.concat([positive, negative_sampled], ignore_index=True)
     balanced_df = balanced_df.sample(frac=1, random_state=42).reset_index(drop=True)
@@ -126,62 +120,25 @@ def create_balanced_dataset_stratified(df):
     print(f"  Negative (>30 or NO): {(balanced_df['readmitted_binary'] == 0).sum():,} "
           f"({(balanced_df['readmitted_binary'] == 0).mean()*100:.2f}%)")
     
-    # Step 6: Verify distributions are preserved
-    print(f"\nVerifying Distributions Preserved:")
-    
-    print(f"\n  Gender Distribution:")
-    for gender in balanced_df['gender'].unique():
-        if pd.notna(gender):
-            pct = (balanced_df['gender'] == gender).mean() * 100
-            print(f"    {gender}: {pct:.2f}%")
-    
-    print(f"\n  Hospital Distribution:")
-    for h in sorted(balanced_df['hospital_id'].unique()):
-        pct = (balanced_df['hospital_id'] == h).mean() * 100
-        count = (balanced_df['hospital_id'] == h).sum()
-        print(f"    Hospital {h}: {count:,} ({pct:.2f}%)")
-    
-    print(f"\n  Gender Fairness (Baseline):")
-    for gender in ['Female', 'Male']:
-        readmit_rate = (balanced_df[balanced_df['gender'] == gender]['readmitted_binary']).mean()
-        print(f"    {gender} readmission rate: {readmit_rate*100:.2f}%")
-    
     return balanced_df
-
 
 # ============================================================================
 # STEP 2: PREPROCESS BALANCED DATA
 # ============================================================================
 
 def preprocess_balanced_data(balanced_df):
-    """
-    Preprocess balanced dataset (same as original preprocessing).
-    """
     print("\n" + "="*70)
     print("PREPROCESSING BALANCED DATA")
     print("="*70)
     
-    # Clean data
-    drop_cols = ['weight', 'payer_code', 'medical_specialty', 'encounter_id']
+    # Clean data (ensure discharge ID is dropped here so it's not a feature)
+    drop_cols = ['weight', 'payer_code', 'medical_specialty', 'encounter_id', 'discharge_disposition_id']
     available_drop_cols = [col for col in drop_cols if col in balanced_df.columns]
     balanced_df = balanced_df.drop(columns=available_drop_cols)
-    
-    if 'discharge_disposition_id' in balanced_df.columns:
-        balanced_df = balanced_df[
-            ~balanced_df['discharge_disposition_id'].isin([11, 13, 14, 19, 20, 21])
-        ]
     
     # Handle missing demographics
     if 'race' in balanced_df.columns:
         balanced_df['race'] = balanced_df['race'].fillna('Unknown')
-    if 'gender' in balanced_df.columns:
-        # CRITICAL FIX: Drop Unknown/Invalid gender rows entirely
-        # These (~3 rows) can crash binary fairness calculations
-        n_before = len(balanced_df)
-        balanced_df = balanced_df[balanced_df['gender'] != 'Unknown/Invalid']
-        n_dropped = n_before - len(balanced_df)
-        if n_dropped > 0:
-            print(f"  Dropped {n_dropped} rows with Unknown/Invalid gender")
     
     # Preserve sensitive attributes
     sensitive_attrs = balanced_df[['hospital_id', 'race', 'gender', 'age']].copy()
@@ -199,8 +156,7 @@ def preprocess_balanced_data(balanced_df):
     
     categorical_features = [
         'race', 'gender', 'age', 'admission_type_id',
-        'discharge_disposition_id', 'admission_source_id',
-        'diag_1', 'diag_2', 'diag_3',
+        'admission_source_id', 'diag_1', 'diag_2', 'diag_3',
         'max_glu_serum', 'A1Cresult', 'diabetesMed'
     ] + medication_features
     
@@ -216,21 +172,6 @@ def preprocess_balanced_data(balanced_df):
     X = balanced_df.drop(['readmitted_binary', 'patient_nbr', 'hospital_id', 'readmitted'],
                           axis=1, errors='ignore')
     y = balanced_df['readmitted_binary']
-    
-    # CRITICAL FIX: Hospital-wise NUMERIC scaling (LOCAL, NOT GLOBAL)
-    # ===========================================================
-    # In true Federated Learning, the server CANNOT see all data.
-    # 
-    # KEY INSIGHT: We can't fit OneHotEncoder per hospital because:
-    # - Hospital A might have categories that Hospital B doesn't see
-    # - This creates mismatched feature dimensions (ML incompatible)
-    # 
-    # SOLUTION: Two-tier preprocessing:
-    # 1. OneHotEncoder: Global (fit once on all data for consistency)
-    # 2. StandardScaler: Local (fit per hospital for privacy)
-    # 
-    # This balances: (1) FL correctness with (2) ML compatibility
-    # Result: More realistic FL + locally scaled numerical features
     
     print("Building global categorical preprocessor (feature dimensions)...")
     categorical_transformer = Pipeline(steps=[
@@ -276,7 +217,6 @@ def preprocess_balanced_data(balanced_df):
         X_te_cat = categorical_transformer.transform(X_te_raw[categorical_features])
         
         # Step 2: Apply hospital-specific NUMERIC scaling
-        # Fit scaler on hospital's training data ONLY
         numeric_scaler = StandardScaler()
         
         # Prepare numeric features
@@ -328,7 +268,6 @@ def preprocess_balanced_data(balanced_df):
     return (X_train_final, y_train_final, X_test_final, y_test_final,
             sens_train_final, sens_test_final, feature_names, hospital_scalers, hospital_stats)
 
-
 # ============================================================================
 # STEP 3: SAVE BALANCED DATA
 # ============================================================================
@@ -344,22 +283,35 @@ def save_balanced_data(X_train, y_train, X_test, y_test,
     output_dir = Path('data/processed_data_balanced')
     output_dir.mkdir(parents=True, exist_ok=True)
     
-    np.save(output_dir / 'X_train_balanced.npy', X_train.astype(np.float32))
-    np.save(output_dir / 'y_train_balanced.npy', y_train.astype(np.float32))
-    np.save(output_dir / 'X_test_balanced.npy', X_test.astype(np.float32))
-    np.save(output_dir / 'y_test_balanced.npy', y_test.astype(np.float32))
+    # Also save to main processed_data to ensure compatibility with FL script
+    output_dir2 = Path('data/processed_data')
+    output_dir2.mkdir(parents=True, exist_ok=True)
     
-    sens_train.to_csv(output_dir / 'sensitive_attrs_train_balanced.csv', index=False)
-    sens_test.to_csv(output_dir / 'sensitive_attrs_test_balanced.csv', index=False)
-    
-    with open(output_dir / 'feature_names_balanced.txt', 'w') as f:
-        f.write('\n'.join(feature_names))
+    for folder in [output_dir, output_dir2]:
+        np.save(folder / 'X_train_balanced.npy', X_train.astype(np.float32))
+        np.save(folder / 'y_train_balanced.npy', y_train.astype(np.float32))
+        np.save(folder / 'X_test_balanced.npy', X_test.astype(np.float32))
+        np.save(folder / 'y_test_balanced.npy', y_test.astype(np.float32))
+        
+        # Keep legacy naming for federated_learning.py
+        np.save(folder / 'X_train.npy', X_train.astype(np.float32))
+        np.save(folder / 'y_train.npy', y_train.astype(np.float32))
+        np.save(folder / 'X_test.npy', X_test.astype(np.float32))
+        np.save(folder / 'y_test.npy', y_test.astype(np.float32))
+        
+        sens_train.to_csv(folder / 'sensitive_attrs_train_balanced.csv', index=False)
+        sens_test.to_csv(folder / 'sensitive_attrs_test_balanced.csv', index=False)
+        sens_train.to_csv(folder / 'sensitive_attrs_train.csv', index=False)
+        sens_test.to_csv(folder / 'sensitive_attrs_test.csv', index=False)
+        
+        with open(folder / 'feature_names_balanced.txt', 'w') as f:
+            f.write('\n'.join(feature_names))
+        with open(folder / 'feature_names.txt', 'w') as f:
+            f.write('\n'.join(feature_names))
     
     with open(output_dir / 'hospital_stats_balanced.json', 'w') as f:
         json.dump(hospital_stats, f, indent=2)
     
-    # Save hospital-specific numeric scalers for reference
-    # NOTE: In true FL, each hospital keeps its own scaler locally
     with open(output_dir / 'hospital_scalers.pkl', 'wb') as f:
         pickle.dump(hospital_scalers, f)
     
@@ -370,42 +322,30 @@ def save_balanced_data(X_train, y_train, X_test, y_test,
     print(f"  Test shape: {X_test.shape}")
     print(f"  Train positive rate: {y_train.mean()*100:.2f}%")
     print(f"  Test positive rate: {y_test.mean()*100:.2f}%")
-    print(f"\nFederated Learning Note:")
-    print(f"  Categorical features: global (for consistent feature dimensions)")
-    print(f"  Numeric features: local per hospital (preserves privacy)")
-    print(f"  Each hospital scales its own numerical features independently")
-    print(f"  Server never sees hospital-level numeric statistics")
     
     return output_dir
-
 
 # ============================================================================
 # MAIN EXECUTION
 # ============================================================================
 
 def main():
-    """Main execution pipeline."""
     print("\n" + "="*70)
     print("INTELLIGENT DATA BALANCING FOR FEDERATED LEARNING")
     print("="*70)
     
-    # Step 1: Load raw data
-    data_path = Path(__file__).resolve().parent.parent / 'datasets' / 'diabetes_130' / 'raw' / 'diabetic_data.csv'
+    data_path = Path('data/diabetic_data.csv')
     if not data_path.exists():
-        # Backwards-compatible fallback for other setups
-        data_path = Path('data/diabetic_data.csv')
+        data_path = Path('diabetic_data.csv')
 
     df = load_raw_data(str(data_path))
     print(f"Loaded raw data: {df.shape}")
     
-    # Step 2: Create balanced dataset
     balanced_df = create_balanced_dataset_stratified(df)
     
-    # Step 3: Preprocess balanced data (with LOCAL numeric scaling)
     X_train, y_train, X_test, y_test, sens_train, sens_test, \
     feature_names, hospital_scalers, hospital_stats = preprocess_balanced_data(balanced_df)
     
-    # Step 4: Save balanced data
     output_dir = save_balanced_data(
         X_train, y_train, X_test, y_test,
         sens_train, sens_test, feature_names,
@@ -415,9 +355,6 @@ def main():
     print("\n" + "="*70)
     print("BALANCED DATASET CREATION COMPLETE")
     print("="*70)
-    print(f"\nNext steps:")
- 
-
 
 if __name__ == "__main__":
     main()
