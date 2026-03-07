@@ -3,11 +3,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, roc_auc_score, roc_curve
+from sklearn.preprocessing import LabelEncoder
+import os
+import warnings
+
+warnings.filterwarnings('ignore')
 
 def load_raw_data(path):
     """Load raw UCI diabetes dataset"""
     print("Loading raw data...")
-    df = pd.read_csv(path, na_values='?')
+    df = pd.read_csv(path, na_values='?', low_memory=False)
     
     # CRITICAL FIX: Remove rows with Unknown/Invalid gender
     # These (~3 rows in UCI dataset) can crash binary fairness calculations
@@ -174,6 +182,110 @@ def analyze_readmission_by_demographics(df):
     plt.savefig('results/figures/03_fairness_baseline.png', dpi=300, bbox_inches='tight')
     plt.close()
 
+
+def compute_feature_importance_and_eval(df, top_k=15):
+    """
+    OPTIMIZED FOR SPEED AND MEMORY.
+    Uses LabelEncoding instead of get_dummies to prevent column explosion.
+    Removes permutation_importance loop to prevent freezing.
+    """
+    print("\n" + "="*60)
+    print("FEATURE IMPORTANCE ANALYSIS (OPTIMIZED)")
+    print("="*60)
+
+    df2 = df.copy()
+    
+    # 1. FIX LEAKAGE: Remove terminal patients (they can't be readmitted)
+    if 'discharge_disposition_id' in df2.columns:
+        df2 = df2[~df2['discharge_disposition_id'].isin([11, 13, 14, 19, 20, 21])]
+
+    if 'readmitted' not in df2.columns:
+        raise ValueError('readmitted column not found in dataframe')
+
+    # Target
+    y = (df2['readmitted'] == '<30').astype(int)
+
+    # 2. Drop Identifiers & Leaky Columns
+    drop_cols = ['encounter_id', 'patient_nbr', 'readmitted', 'weight', 'payer_code', 'medical_specialty', 'discharge_disposition_id']
+    drop_cols = [c for c in drop_cols if c in df2.columns]
+    X = df2.drop(columns=drop_cols)
+
+    print("Encoding categorical variables for quick scan...")
+    # 3. Label Encoding (This stops the computer from freezing!)
+    le = LabelEncoder()
+    for col in X.select_dtypes(include=['object', 'category']).columns:
+        X[col] = X[col].astype(str)
+        X[col] = le.fit_transform(X[col])
+
+    # Fill NaNs with median
+    X = X.fillna(X.median())
+
+    # Train/test split
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42, stratify=y
+    )
+
+    print(f"Training Random Forest on {X_train.shape[1]} features...")
+    # Reduced n_estimators to 100 for speed, added class_weight='balanced'
+    rf = RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42, n_jobs=-1, class_weight='balanced')
+    rf.fit(X_train, y_train)
+
+    # Instant Feature importances
+    fi = rf.feature_importances_
+    fi_df = pd.DataFrame({'feature': X.columns, 'importance': fi})
+    fi_df = fi_df.sort_values('importance', ascending=False).reset_index(drop=True)
+
+    # Save importance plot
+    Path('results/figures').mkdir(parents=True, exist_ok=True)
+    
+    top_plot_n = min(30, len(fi_df))
+    plt.figure(figsize=(10, max(4, top_plot_n * 0.25)))
+    sns.barplot(x='importance', y='feature', data=fi_df.head(top_plot_n), palette='viridis')
+    plt.title('Top Clinical Features Predicting 30-Day Readmission')
+    plt.xlabel('Random Forest Feature Importance')
+    plt.tight_layout()
+    plt.savefig('results/figures/05_feature_importances.png', dpi=300, bbox_inches='tight')
+    plt.close()
+
+    print('\n🔥 Top features (by impurity importance):')
+    for i, row in fi_df.head(top_k).iterrows():
+        print(f"  {i+1}. {row['feature']} ({row['importance']:.6f})")
+
+    # Evaluate model on top_k features
+    print(f'\nTraining evaluation model strictly on top {top_k} features...')
+    chosen = fi_df['feature'].head(top_k).tolist()
+    X_train_top = X_train[chosen]
+    X_test_top = X_test[chosen]
+
+    rf2 = RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42, n_jobs=-1, class_weight='balanced')
+    rf2.fit(X_train_top, y_train)
+    y_pred = rf2.predict(X_test_top)
+    y_proba = rf2.predict_proba(X_test_top)[:, 1] if rf2.n_classes_ > 1 else rf2.predict_proba(X_test_top)
+
+    print('\nTop-features model evaluation:')
+    print(classification_report(y_test, y_pred, digits=4))
+    
+    try:
+        auc = roc_auc_score(y_test, y_proba)
+        print(f'  ROC AUC: {auc:.4f}')
+
+        # Save ROC curve
+        fpr, tpr, _ = roc_curve(y_test, y_proba)
+        plt.figure(figsize=(6, 5))
+        plt.plot(fpr, tpr, label=f'Top-{top_k} RF (AUC={auc:.3f})')
+        plt.plot([0, 1], [0, 1], linestyle='--', color='gray')
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title('ROC Curve — Top Features Model')
+        plt.legend()
+        plt.tight_layout()
+        plt.savefig('results/figures/06_top_features_roc.png', dpi=300, bbox_inches='tight')
+        plt.close()
+    except Exception:
+        print('  Could not compute ROC/AUC (single-class or error)')
+
+    print('\nFeature importance analysis complete. Plots saved to results/figures/')
+
 def run_eda():
     """Run complete EDA"""
     print("\n" + "="*70)
@@ -184,6 +296,8 @@ def run_eda():
     if not data_path.exists():
         # Backwards-compatible fallback for other setups
         data_path = Path('data/diabetic_data.csv')
+    if not data_path.exists():
+        data_path = Path('diabetic_data.csv')
 
     df = load_raw_data(str(data_path))
     print(f"✓ Loaded data: {df.shape}")
@@ -192,6 +306,12 @@ def run_eda():
     analyze_target_distribution(df)
     analyze_demographics(df)
     analyze_readmission_by_demographics(df)
+
+    # Fast Feature importance and top-feature model evaluation
+    try:
+        compute_feature_importance_and_eval(df)
+    except Exception as e:
+        print(f"Feature importance step failed: {e}")
     
     print("\n" + "="*70)
     print("EDA COMPLETE!")
