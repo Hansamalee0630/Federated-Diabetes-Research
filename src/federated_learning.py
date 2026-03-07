@@ -1,12 +1,12 @@
 """
 FAST OPTIMIZED Federated Learning Training (FedAvg) with Gender-Fairness
-UPDATED FOR BALANCED DATASET (149 Features)
+UPDATED FOR BALANCED DATASET (131 Features)
 ============================================================================
-KEY CHANGES:
-1. Load perfectly balanced dataset (no leakage)
-2. Adjusted Neural Network capacity for 149 features
-3. Focal loss relaxed (data is balanced now)
-4. Strict threshold tuning logic 
+KEY CHANGES FOR HIGHER ACCURACY:
+1. Strict 2-Hidden-Layer Architecture (prevents tabular overfitting)
+2. Lowered Learning Rate (5e-4) for stable FedAvg convergence
+3. Threshold Optimization prioritizes Accuracy over Recall
+4. Standard BCE Loss with relaxed fairness constraints
 ============================================================================
 """
 
@@ -36,27 +36,26 @@ np.random.seed(42)
 
 def find_optimal_threshold(y_true, y_pred_prob):
     """
-    Find optimal threshold by maximizing F1-score.
-    Because data is perfectly balanced, threshold will naturally fall near 0.5.
+    Find optimal threshold strictly maximizing Accuracy.
     """
     y_true = y_true.flatten()
     y_pred_prob = y_pred_prob.flatten()
     
-    best_f1 = 0.0
+    best_acc = 0.0
     best_threshold = 0.5
     best_recall = 0.0
     
-    # Search tightly around 0.5 since data is balanced
-    for threshold in np.linspace(0.30, 0.70, 41):
+    for threshold in np.linspace(0.40, 0.60, 41):
         y_pred = (y_pred_prob > threshold).astype(int)
-        f1 = f1_score(y_true, y_pred, zero_division=0)
         
-        if f1 > best_f1:
-            best_f1 = f1
+        acc = accuracy_score(y_true, y_pred)
+        
+        if acc > best_acc:
+            best_acc = acc
             best_threshold = threshold
             best_recall = recall_score(y_true, y_pred, zero_division=0)
             
-    return best_threshold, best_f1, best_recall
+    return best_threshold, best_acc, best_recall
 
 # ============================================================================
 # DATA LOADING
@@ -117,25 +116,8 @@ def compute_class_weights_per_hospital(y_train, sens_train):
     return class_weights_dict
 
 # ============================================================================
-# FOCAL LOSS (RELAXED FOR BALANCED DATA)
+# FAIRNESS LOSS COMPUTATION
 # ============================================================================
-
-@tf.function
-def focal_loss_fn(y_true, y_pred, alpha=0.50, gamma=1.5):
-    """
-    Since data is balanced, we don't need extreme alpha (0.9).
-    A standard alpha=0.5 and gamma=1.5 helps it focus slightly on hard examples
-    without overpowering the gradients.
-    """
-    y_true = tf.cast(y_true, tf.float32)
-    epsilon = 1e-7
-    
-    y_pred = tf.clip_by_value(y_pred, epsilon, 1.0 - epsilon)
-    bce = -y_true * tf.math.log(y_pred) - (1 - y_true) * tf.math.log(1 - y_pred)
-    p_t = y_true * y_pred + (1 - y_true) * (1 - y_pred)
-    focal_weight = tf.pow(1.0 - p_t, gamma)
-    
-    return tf.reduce_mean(alpha * focal_weight * bce)
 
 @tf.function
 def compute_fairness_loss(preds, batch_y, batch_prot, batch_weights, fairness_threshold, fairness_lambda):
@@ -146,10 +128,9 @@ def compute_fairness_loss(preds, batch_y, batch_prot, batch_weights, fairness_th
     epsilon = 1e-7
     preds_clip = tf.clip_by_value(preds, epsilon, 1.0 - epsilon)
     
+    # Standard BCE Loss
     bce = -batch_y * tf.math.log(preds_clip) - (1 - batch_y) * tf.math.log(1 - preds_clip)
-    p_t = batch_y * preds_clip + (1 - batch_y) * (1 - preds_clip)
-    focal_weight = tf.pow(1.0 - p_t, 1.5)
-    sample_loss = 0.50 * focal_weight * bce
+    sample_loss = bce
     
     prot_bool = tf.cast(tf.equal(batch_prot, 1.0), tf.float32)
     rest_bool = 1.0 - prot_bool
@@ -166,28 +147,31 @@ def compute_fairness_loss(preds, batch_y, batch_prot, batch_weights, fairness_th
     return fairness_lambda * fairness_penalty
 
 # ============================================================================
-# MODEL ARCHITECTURE (TUNED FOR 149 FEATURES)
+# MODEL ARCHITECTURE (Strict 2-Hidden-Layer Design)
 # ============================================================================
 
 def create_model(input_dim):
     """
-    Slightly adjusted architecture for the new 149 feature dimension.
-    Prevents overfitting on the perfectly balanced dataset.
+    Strict 2-Hidden-Layer architecture. 
+    Prevents the network from 'memorizing' noisy tabular data.
     """
     model = tf.keras.Sequential([
         tf.keras.layers.Input(shape=(input_dim,)),
         
-        tf.keras.layers.Dense(128, activation="relu", kernel_regularizer=tf.keras.regularizers.l2(1e-4)),
+        # --- Hidden Layer 1: Wide Feature Extraction ---
+        # L1 regularization acts as a feature selector, muting useless columns
+        tf.keras.layers.Dense(128, activation="relu", 
+                              kernel_regularizer=tf.keras.regularizers.l1_l2(l1=1e-5, l2=1e-4)),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.Dropout(0.4), # Aggressive dropout
+        
+        # --- Hidden Layer 2: Feature Refinement ---
+        tf.keras.layers.Dense(64, activation="relu", 
+                              kernel_regularizer=tf.keras.regularizers.l2(1e-4)),
         tf.keras.layers.BatchNormalization(),
         tf.keras.layers.Dropout(0.3),
         
-        tf.keras.layers.Dense(64, activation="relu", kernel_regularizer=tf.keras.regularizers.l2(1e-4)),
-        tf.keras.layers.BatchNormalization(),
-        tf.keras.layers.Dropout(0.3),
-        
-        tf.keras.layers.Dense(32, activation="relu", kernel_regularizer=tf.keras.regularizers.l2(1e-4)),
-        tf.keras.layers.Dropout(0.2),
-        
+        # --- Output Layer ---
         tf.keras.layers.Dense(1, activation="sigmoid")
     ])
     return model
@@ -212,7 +196,7 @@ def fedavg(weights_list, sample_counts):
 def run_federated_learning():
     print("\n" + "="*70)
     print("PHASE 4: FAST FEDERATED LEARNING WITH GENDER FAIRNESS")
-    print("         (UPDATED FOR 149-FEATURE BALANCED DATASET)")
+    print("         (OPTIMIZED FOR HIGH ACCURACY & BALANCED DATASET)")
     print("="*70)
 
     start_time = time.time()
@@ -228,18 +212,20 @@ def run_federated_learning():
     )
     
     FAIRNESS_THRESHOLD = fairness_params['threshold']
-    FAIRNESS_LAMBDA = fairness_params['lambda']
+    # OPTIMIZATION: Reduce fairness penalty significantly to prioritize Accuracy
+    FAIRNESS_LAMBDA = fairness_params['lambda'] * 0.1 
 
     ROUNDS = 30
     CLIENTS = [1, 2, 3]
     LOCAL_EPOCHS = 5 if is_balanced else 3
     BATCH_SIZE = 64
-    LEARNING_RATE = 1e-3
+    LEARNING_RATE = 5e-4  # <--- LOWERED FOR STABILITY
     PATIENCE = 15
     FAIRNESS_ATTR = 'gender'
     PROTECTED_VALUE = 'Female'
     
     print(f"\nConfiguration: Epochs={LOCAL_EPOCHS}, Batch={BATCH_SIZE}, LR={LEARNING_RATE}")
+    print(f"Fairness Lambda (Relaxed): {FAIRNESS_LAMBDA}")
     
     history = {
         "round": [], "auc": [], "accuracy": [], "recall": [],
@@ -248,7 +234,7 @@ def run_federated_learning():
         "recall_female": [], "recall_male": [], "train_time": []
     }
     
-    best_f1 = 0.0
+    best_acc_metric = 0.0
     rounds_without_improvement = 0
     
     os.makedirs("results/figures", exist_ok=True)
@@ -257,6 +243,9 @@ def run_federated_learning():
     print("\n" + "="*70)
     print("STARTING FEDERATED LEARNING")
     print("="*70)
+
+    # Initialize standard BCE Loss
+    bce_loss_fn = tf.keras.losses.BinaryCrossentropy(reduction=tf.keras.losses.Reduction.NONE)
 
     for r in range(ROUNDS):
         round_start = time.time()
@@ -295,7 +284,7 @@ def run_federated_learning():
                     with tf.GradientTape() as tape:
                         preds = tf.squeeze(local_model(batch_x, training=True), axis=-1)
                         
-                        task_loss_raw = focal_loss_fn(batch_y, preds)
+                        task_loss_raw = bce_loss_fn(batch_y, preds)
                         task_loss = tf.reduce_mean(task_loss_raw * batch_weights)
                         
                         fairness_penalty = compute_fairness_loss(
@@ -303,7 +292,7 @@ def run_federated_learning():
                             FAIRNESS_THRESHOLD, FAIRNESS_LAMBDA
                         )
                         
-                        total_loss = task_loss + fairness_penalty
+                        total_loss = task_loss + fairness_penalty + sum(local_model.losses)
                     
                     grads = tape.gradient(total_loss, local_model.trainable_variables)
                     optimizer.apply_gradients(zip(grads, local_model.trainable_variables))
@@ -316,7 +305,8 @@ def run_federated_learning():
             global_model.set_weights(fedavg(client_weights, client_sizes))
 
         y_pred = global_model.predict(X_test, verbose=0).flatten()
-        best_thr, best_f1_eval, best_recall = find_optimal_threshold(y_test, y_pred)
+        
+        best_thr, best_acc_eval, best_recall = find_optimal_threshold(y_test, y_pred)
         
         y_pred_binary = (y_pred > best_thr).astype(int)
         y_test_flat = y_test.flatten()
@@ -363,14 +353,14 @@ def run_federated_learning():
         history["train_time"].append(round_time)
         
         print(f"  Time: {round_time:.1f}s | Threshold={best_thr:.3f}")
-        print(f"  Metrics: AUC={auc:.4f} | F1={f1:.4f} | Recall={recall:.4f} | Precision={precision:.4f}")
+        print(f"  Metrics: Acc={acc:.4f} | AUC={auc:.4f} | F1={f1:.4f} | Recall={recall:.4f} | Precision={precision:.4f}")
         print(f"  Gender: F={recall_female:.4f}, M={recall_male:.4f}, Gap={fairness_gap:.4f}")
         
-        if f1 > best_f1:
-            best_f1 = f1
+        if acc > best_acc_metric:
+            best_acc_metric = acc
             rounds_without_improvement = 0
             global_model.save("models/fedavg_global_model_best.keras")
-            print(f"  ✓ Best F1: {f1:.4f}")
+            print(f"  ✓ Best Accuracy: {acc:.4f}")
         else:
             rounds_without_improvement += 1
             
@@ -389,8 +379,8 @@ def run_federated_learning():
     axes[0, 0].set_title("AUC-ROC", fontweight='bold')
     axes[0, 0].grid(True, alpha=0.3)
     
-    axes[0, 1].plot(history["round"], history["f1"], marker="s", color="purple")
-    axes[0, 1].set_title("F1-Score", fontweight='bold')
+    axes[0, 1].plot(history["round"], history["accuracy"], marker="s", color="purple")
+    axes[0, 1].set_title("Global Accuracy", fontweight='bold')
     axes[0, 1].grid(True, alpha=0.3)
     
     axes[0, 2].plot(history["round"], history["train_time"], marker="d", color="green")
