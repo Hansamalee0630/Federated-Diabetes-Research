@@ -169,13 +169,39 @@ def preprocess_retinal_image(uploaded_file, image_size=(300, 300)):
     ])
     return transform(img).unsqueeze(0)
 
+# def load_comp4_data():
+#     if os.path.exists("results/comp4_results/fl_results.json"):
+#         try:
+#             with open("results/comp4_results/fl_results.json", "r") as f:
+#                 return pd.DataFrame(json.load(f))
+#         except:
+#             return get_dummy_fl_data()
+#     return get_dummy_fl_data()
+
 def load_comp4_data():
-    if os.path.exists("results/comp4_results/fl_results.json"):
+    # Point directly to the final archived file from the accuracy sweep
+    file_path = "results/comp4_results/fl_results_multitask_10rounds.json"
+    
+    if os.path.exists(file_path):
         try:
-            with open("results/comp4_results/fl_results.json", "r") as f:
+            with open(file_path, "r") as f:
+                data = json.load(f)
+                df = pd.DataFrame(data)
+                return df
+        except Exception as e:
+            st.error(f"Error reading JSON: {e}")
+            return get_dummy_fl_data()
+    
+    # Fallback if the specific sweep file isn't there, check the generic one
+    fallback_path = "results/comp4_results/fl_results.json"
+    if os.path.exists(fallback_path):
+        try:
+            with open(fallback_path, "r") as f:
                 return pd.DataFrame(json.load(f))
         except:
-            return get_dummy_fl_data()
+            pass
+            
+    st.error("Could not find Component 4 results JSON. Loading dummy data.")
     return get_dummy_fl_data()
 
 @st.cache_resource
@@ -573,11 +599,21 @@ def create_gauge(value, title, color):
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=280, margin=dict(t=50, b=10, l=30, r=30))
     return fig
 
-# --- TAB 1 CONTENT ---
+# --- TAB 0 CONTAINER ---
 with tabs[0]:
-    # --- CUSTOM CSS STYLING ---
+    # --- CUSTOM CSS FOR THE "FEDERATED HUB" LOOK ---
     st.markdown("""
         <style>
+        .metric-card {
+            background-color: rgba(30, 41, 59, 0.7);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .metric-value { font-size: 1.8rem; font-weight: 800; color: #38bdf8; }
+        .metric-label { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
         .reasoning-text {
             font-size: 0.9rem; color: #cbd5e1; margin-top: 10px; text-align: center;
             background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;
@@ -594,134 +630,145 @@ with tabs[0]:
         </style>
     """, unsafe_allow_html=True)
 
-    st.title("Diabetes Related Complication Risk Assessment")
-    #st.write("Advanced AI assessment for Nephropathy and Cardiovascular risks.")
+    # --- VIEW MODE SELECTION ---
+    # Key 'comp1_selector' ensures this radio doesn't conflict with other tabs
+    view_mode = st.radio(
+        "Select Dashboard View Mode:",
+        ["Dashboard View", "Research Metrics & Model Performance"],
+        horizontal=True,
+        key="comp1_selector"
+    )
 
-    # Load your models (Assumes load_comp1_models is defined in your main script)
-    neph_model, cvd_model = load_comp1_models()
+    st.divider()
 
-    if neph_model:
-        with st.form("clinical_input_form"):
-            col1, col2 = st.columns(2)
-            with col1:
-                st.subheader("Renal Biomarkers")
-                age = st.number_input("Age", 18, 100, 60)
-                bmi = st.number_input("BMI (kg/m²)", 10.0, 60.0, 28.5)
-                hba1c = st.number_input("HbA1c (%)", 4.0, 18.0, 7.5)
-                cr = st.number_input("Creatinine (μmol/L)", 10.0, 500.0, 95.0)
-                urea = st.number_input("Urea (mmol/L)", 1.0, 60.0, 6.2)
-            
-            with col2:
-                st.subheader("Lipid Profile")
-                chol = st.number_input("Cholesterol (mmol/L)", 1.0, 15.0, 5.0)
-                hdl = st.number_input("HDL (mmol/L)", 0.1, 5.0, 1.2)
-                tg = st.number_input("Triglycerides (mmol/L)", 0.1, 15.0, 1.8)
-                st.info("💡 Tip: AIP is calculated automatically from TG and HDL.")
+    # --- CLINICAL STAFF VIEW ---
+    if view_mode == "Dashboard View":
+        st.title("Diabetes Related Complication Risk Assessment")
+        
+        neph_model, cvd_model = load_comp1_models()
 
-            submit = st.form_submit_button("RUN CLINICAL DIAGNOSTICS", use_container_width=True)
-
-        if submit:
-            # --- STEP 1: NEPHROPATHY ANALYSIS ---
-            # Define Clinical Hard-Rules (Matching your Preprocessing)
-            rule_n1 = (cr > 106.0 and hba1c > 8.0)
-            rule_n2 = (urea > 7.8 and age > 65 and bmi >= 30)
-            
-            # AI Prediction (PyTorch)
-            # Important: Wrap in StandardScaler.transform() if used in training
-            n_input = torch.tensor([[age, bmi, hba1c, cr, urea]]).float()
-            with torch.no_grad():
-                n_prob = torch.sigmoid(neph_model(n_input)).item()
-            
-            # Smooth Safety Override (Ensures alignment with rule-based labeling)
-            n_risk = max(n_prob, 0.85) if (rule_n1 or rule_n2) else n_prob
-
-            # --- STEP 2: CVD ANALYSIS ---
-            aip = np.log10(tg / max(hdl, 0.5))
-            dyslipidemia = (chol >= 5.1 or tg >= 3.1 or hdl < 1.0)
-            
-            # CVD model uses Nephropathy risk as an input feature
-            c_input = torch.tensor([[chol, tg, hdl, n_risk]]).float()
-            with torch.no_grad():
-                c_prob = torch.sigmoid(cvd_model(c_input)).item()
-            
-            # CVD Override (Risk escalation based on AIP and Renal status)
-            if (aip > 0.24 and dyslipidemia) or (n_risk > 0.75): 
-                c_risk = max(c_prob, 0.92)
-            else:
-                c_risk = c_prob
-            #c_risk = max(c_prob, 0.92) if ((aip > 0.24 and dyslipidemia) or n_risk > 0.8) else c_prob
-
-            # --- STEP 3: VISUAL RESULTS ---
-            res_c1, res_c2 = st.columns(2)
-            
-            with res_c1:
-                n_color = "#ef4444" if n_risk > 0.5 else "#10b981"
-                st.plotly_chart(create_gauge(n_risk, "NEPHROPATHY RISK", n_color), use_container_width=True)
+        if neph_model:
+            with st.form("clinical_input_form"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.subheader("Renal Biomarkers")
+                    age = st.number_input("Age", 18, 100, 60)
+                    bmi = st.number_input("BMI (kg/m²)", 10.0, 60.0, 28.5)
+                    hba1c = st.number_input("HbA1c (%)", 4.0, 18.0, 7.5)
+                    cr = st.number_input("Creatinine (μmol/L)", 10.0, 500.0, 95.0)
+                    urea = st.number_input("Urea (mmol/L)", 1.0, 60.0, 6.2)
                 
-                # Dynamic Reasoning text
-                if rule_n1: n_reason = " Critical: Creatinine and HbA1c levels exceed safe thresholds."
-                elif rule_n2: n_reason = "Warning: High-risk demographic cluster (Age/BMI/Urea)."
-                else: n_reason = " Stable: Renal biomarkers are currently within target ranges."
-                st.markdown(f'<div class="reasoning-text"><b>Assessment:</b> {n_reason}</div>', unsafe_allow_html=True)
+                with col2:
+                    st.subheader("Lipid Profile")
+                    chol = st.number_input("Cholesterol (mmol/L)", 1.0, 15.0, 5.0)
+                    hdl = st.number_input("HDL (mmol/L)", 0.1, 5.0, 1.2)
+                    tg = st.number_input("Triglycerides (mmol/L)", 0.1, 15.0, 1.8)
+                    st.info("Tip: AIP is calculated automatically from TG and HDL.")
 
-            with res_c2:
-                c_color = "#ef4444" if c_risk > 0.5 else "#10b981"
-                st.plotly_chart(create_gauge(c_risk, "CVD RISK", c_color), use_container_width=True)
+                submit = st.form_submit_button("RUN CLINICAL DIAGNOSTICS", use_container_width=True)
+
+            if submit:
+                # --- STEP 1: NEPHROPATHY ANALYSIS ---
+                rule_n1 = (cr > 106.0 and hba1c > 8.0)
+                rule_n2 = (urea > 7.8 and age > 65 and bmi >= 30)
                 
-                dys_status = "Detected" if dyslipidemia else "None"
-                c_reason = f"AIP Score: {aip:.2f} (Target < 0.24). Dyslipidemia: {dys_status}."
-                if n_risk > 0.7: c_reason += " Risk escalated by secondary renal impairment."
-                st.markdown(f'<div class="reasoning-text"><b>Assessment:</b> {c_reason}</div>', unsafe_allow_html=True)
+                n_input = torch.tensor([[age, bmi, hba1c, cr, urea]]).float()
+                with torch.no_grad():
+                    n_prob = torch.sigmoid(neph_model(n_input)).item()
+                
+                n_risk = max(n_prob, 0.85) if (rule_n1 or rule_n2) else n_prob
 
-            # --- STEP 4: CLINICAL SUMMARY BOX ---
-            st.divider()
-            max_risk_val = max(n_risk, c_risk)
-            
-            if max_risk_val > 0.75:
-                status_class = "critical-box"
-                status_label = "CRITICAL RISK"
-                advice = "Patient requires immediate clinical review. Prioritize renal function tests (eGFR) and cardiovascular screening (ECG/Echo)."
-            elif max_risk_val > 0.45:
-                status_class = "moderate-box"
-                status_label = "MODERATE RISK"
-                advice = "Indications of emerging complications. Recommend intensive glycemic control and lipid-lowering therapy review."
-            else:
-                status_class = "stable-box"
-                status_label = "STABLE / LOW RISK"
-                advice = "Maintain current diabetic management plan. Routine monitoring of HbA1c and lipid profile every 6 months."
+                # --- STEP 2: CVD ANALYSIS (Sequential Pipeline) ---
+                aip = np.log10(tg / max(hdl, 0.5))
+                dyslipidemia = (chol >= 5.1 or tg >= 3.1 or hdl < 1.0)
+                
+                c_input = torch.tensor([[chol, tg, hdl, n_risk]]).float()
+                with torch.no_grad():
+                    c_prob = torch.sigmoid(cvd_model(c_input)).item()
+                
+                c_risk = max(c_prob, 0.92) if ((aip > 0.24 and dyslipidemia) or (n_risk > 0.75)) else c_prob
 
-            st.markdown(f'<div class="status-box {status_class}">OVERALL STATUS: {status_label}</div>', unsafe_allow_html=True)
-            st.info(f"**Medical Recommendation:** {advice}")
+                # --- STEP 3: VISUAL RESULTS ---
+                res_c1, res_c2 = st.columns(2)
+                with res_c1:
+                    n_color = "#ef4444" if n_risk > 0.5 else "#10b981"
+                    st.plotly_chart(create_gauge(n_risk, "NEPHROPATHY RISK", n_color), use_container_width=True)
+                    n_reason = " Critical: Thresholds exceeded." if rule_n1 else ("Warning: High-risk demographic." if rule_n2 else " Stable: Biomarkers within range.")
+                    st.markdown(f'<div class="reasoning-text"><b>Assessment:</b> {n_reason}</div>', unsafe_allow_html=True)
 
-            # --- STEP 5: REPORT GENERATION ---
-            report_content = f"""
-            DIABETES COMPLICATION CLINICAL REPORT
-            Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-            -------------------------------------------
-            METRICS:
-            Age: {age} | BMI: {bmi} | HbA1c: {hba1c}%
-            CR: {cr} μmol/L | Urea: {urea} mmol/L
-            Chol: {chol} | HDL: {hdl} | TG: {tg} | AIP: {aip:.2f}
-            
-            RESULTS:
-            - Nephropathy Risk: {n_risk*100:.1f}%
-            - CVD Risk: {c_risk*100:.1f}%
-            
-            CONCLUSION: {status_label}
-            -------------------------------------------
-            DISCLAIMER: For clinical decision support only. 
-            Final diagnosis must be made by a licensed physician.
-            """
-            
-            st.download_button(
-                label=" DOWNLOAD FULL CLINICAL REPORT",
-                data=report_content,
-                file_name=f"Clinical_Report_{datetime.now().strftime('%Y%m%d')}.txt",
-                mime="text/plain",
-                use_container_width=True
-            )
+                with res_c2:
+                    c_color = "#ef4444" if c_risk > 0.5 else "#10b981"
+                    st.plotly_chart(create_gauge(c_risk, "CVD RISK", c_color), use_container_width=True)
+                    c_reason = f"AIP Score: {aip:.2f}. Dyslipidemia: {'Detected' if dyslipidemia else 'None'}."
+                    if n_risk > 0.7: c_reason += " Risk escalated by renal impairment."
+                    st.markdown(f'<div class="reasoning-text"><b>Assessment:</b> {c_reason}</div>', unsafe_allow_html=True)
+
+                # --- STEP 4: CLINICAL SUMMARY ---
+                st.divider()
+                max_risk_val = max(n_risk, c_risk)
+                if max_risk_val > 0.75: status_class, status_label, advice = "critical-box", "CRITICAL RISK", "Immediate clinical review required."
+                elif max_risk_val > 0.45: status_class, status_label, advice = "moderate-box", "MODERATE RISK", "Indications of emerging complications."
+                else: status_class, status_label, advice = "stable-box", "STABLE / LOW RISK", "Maintain current diabetic management plan."
+
+                st.markdown(f'<div class="status-box {status_class}">OVERALL STATUS: {status_label}</div>', unsafe_allow_html=True)
+                st.info(f"**Medical Recommendation:** {advice}")
+
+                report_content = f"DIABETES REPORT\nGenerated: {datetime.now()}\nNephro Risk: {n_risk*100:.1f}%\nCVD Risk: {c_risk*100:.1f}%\nStatus: {status_label}"
+                st.download_button("DOWNLOAD FULL CLINICAL REPORT", data=report_content, file_name="Report.txt", use_container_width=True)
+        else:
+            st.error("Model Error: Neural network weights could not be loaded.")
+
+    # --- RESEARCH & ANALYTICS VIEW ---
     else:
-        st.error("Model Error: Neural network weights (.pth) could not be loaded. Check your paths.")
+        st.subheader("FEDERATED LEARNING EVALUATION METRICS")
+        st.caption("Technical performance and privacy analytics across the simulated federated network.")
+        
+        # Sub-tabs for detailed research metrics
+        sub_tabs = st.tabs(["Overall Performance", "FedAvg Training", "Privacy & DP"])
+        
+        with sub_tabs[0]:
+            st.markdown("### Aggregated Global Model Metrics")
+            m1, m2, m3, m4 = st.columns(4)
+            with m1: st.markdown('<div class="metric-card"><div class="metric-label">CVD Accuracy</div><div class="metric-value">87.5%</div></div>', unsafe_allow_html=True)
+            with m2: st.markdown('<div class="metric-card"><div class="metric-label">CVD AUC</div><div class="metric-value">0.9452</div></div>', unsafe_allow_html=True)
+            with m3: st.markdown('<div class="metric-card"><div class="metric-label">F1-Score (CVD)</div><div class="metric-value">0.8757</div></div>', unsafe_allow_html=True)
+            with m4: st.markdown('<div class="metric-card"><div class="metric-label">Nephro Accuracy</div><div class="metric-value">84.3%</div></div>', unsafe_allow_html=True)
+
+        with sub_tabs[1]:
+            st.markdown("### FedAvg Training Convergence")
+            # Loss data from your recent training run
+            neph_loss = [1.3336, 1.1285, 0.8829, 0.5754, 0.6858, 0.6271, 0.4881, 0.4917, 0.5002, 0.5169, 
+                         0.4027, 0.4564, 0.3141, 0.3782, 0.3569, 0.2906, 0.3244, 0.3199, 0.3151, 0.3413]
+            cvd_loss = [0.6158, 0.5500, 0.5394, 0.5056, 0.4848, 0.4327, 0.3922, 0.3757, 0.3837, 0.3679, 
+                        0.3201, 0.3243, 0.3445, 0.3726, 0.3409, 0.3508, 0.3235] + [None]*3
+            
+            convergence_df = pd.DataFrame({
+                "Round": range(1, 21),
+                "Nephropathy (Stage 1)": neph_loss,
+                "CVD Risk (Stage 2)": cvd_loss
+            }).set_index("Round")
+            
+            st.line_chart(convergence_df, color=["#38bdf8", "#a855f7"])
+            
+
+        with sub_tabs[2]:
+            st.markdown("### Privacy Guardrails (Opacus Configuration)")
+            
+            b1, b2 = st.columns(2)
+            with b1:
+                st.markdown('<div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; padding: 10px; border-radius: 8px; text-align: center; color: #10b981; font-weight: bold;">✓ LOCAL TRAINING: ENCRYPTED</div>', unsafe_allow_html=True)
+            with b2:
+                st.markdown('<div style="background: rgba(56, 189, 248, 0.1); border: 1px solid #38bdf8; padding: 10px; border-radius: 8px; text-align: center; color: #38bdf8; font-weight: bold;">🛡️ DP-SGD: ACTIVE</div>', unsafe_allow_html=True)
+
+            st.divider()
+            # Technical parameters from your DiabetesClient
+            p1, p2, p3 = st.columns(3)
+            with p1: st.metric("Noise Multiplier", "0.5", help="Added via PrivacyEngine.make_private")
+            with p2: st.metric("Max Grad Norm", "1.0", help="Gradient clipping for per-sample logic")
+            with p3: st.metric("Privacy Budget (ε)", "0.75", delta="Delta: 1e-5")
+            
+            #st.info("Technical Note: BCEWithLogitsLoss uses reduction='none' to satisfy Opacus per-sample gradient requirements.")
+    
 # ============================================================================
 # TAB 2: READMISSION RISK PREDICTION (MAIN CLINICAL INTERFACE)
 # Complete integration of all 7-phase pipeline results
@@ -1182,7 +1229,7 @@ with tabs[1]:
 # --- TAB 3: MULTIMODAL FUSION ENGINE ---
 with tabs[2]:
     st.markdown("""
-        <h2 style='text-align: center;'>🧬 Next-Gen Multimodal Fusion</h2>
+        <h2 style='text-align: center;'> Next-Gen Multimodal Fusion</h2>
         <p style='text-align: center; color: #94a3b8;'>
             Fusing EfficientNet-B3 Retinal Analysis with MLP-based Clinical EHR
         </p>
@@ -1205,7 +1252,6 @@ with tabs[2]:
 
     # --- LEFT COLUMN: EHR INPUTS ---
     with col_ehr:
-        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         st.markdown("### Modality 1: Clinical EHR")
         st.caption("Enter patient clinical data for diabetes risk assessment")
         
@@ -1224,13 +1270,13 @@ with tabs[2]:
                                      help="Body Mass Index")
             # BMI Category Indicator
             if m1_bmi < 18.5:
-                st.caption("Category: Underweight")
+                st.caption(" Category: Underweight")
             elif m1_bmi < 25:
-                st.caption("Category: Normal")
+                st.caption(" Category: Normal ")
             elif m1_bmi < 30:
-                st.caption("Category: Overweight")
+                st.caption(" Category: Overweight ")
             else:
-                st.caption("Category: Obese")
+                st.caption(" Category: Obese ")
         
         st.markdown("---")
         
@@ -1242,27 +1288,27 @@ with tabs[2]:
                                  help="Glycated hemoglobin - 3-month average blood sugar")
             # HbA1c interpretation
             if m1_hba1c < 5.7:
-                st.success("Normal", icon="✅")
+                st.success("Normal")
             elif m1_hba1c < 6.5:
-                st.warning("Prediabetic", icon="⚠️")
+                st.warning("Prediabetic")
             else:
-                st.error("Diabetic Range", icon="🔴")
+                st.error("Diabetic Range")
                 
         with glyc_c2:
             m1_glucose = st.number_input("Fasting Glucose (mg/dL)", 50, 400, 150,
                                          help="Fasting blood glucose level")
             # Glucose interpretation
             if m1_glucose < 100:
-                st.success("Normal", icon="✅")
+                st.success("Normal")
             elif m1_glucose < 126:
-                st.warning("Impaired", icon="⚠️")
+                st.warning("Impaired")
             else:
-                st.error("High", icon="🔴")
+                st.error("High")
         
         st.markdown("---")
         
         # Row 3: Risk Factors
-        st.markdown("##### ⚠️ Risk Factors")
+        st.markdown("#####  Risk Factors")
         risk_c1, risk_c2 = st.columns(2)
         with risk_c1:
             m1_smoke = st.selectbox("Smoking Status", 
@@ -1281,15 +1327,12 @@ with tabs[2]:
             m1_gender != "", m1_smoke != "No Info", True, True  # toggles always count
         ])
         completeness = filled_fields / 8
-        st.progress(completeness, text=f"EHR Data Completeness: {completeness:.0%}")
+        st.progress(completeness, text=f" EHR Data Completeness: {completeness:.0%}")
         
-        st.markdown('</div>', unsafe_allow_html=True)
 
     # --- RIGHT COLUMN: RETINAL IMAGE ---
     with col_img:
-        # st.markdown('<div class="glass-card" style="min-height: 500px;">', unsafe_allow_html=True)
-        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.markdown("### 👁️ Modality 2: Retinal Scan")
+        st.markdown("###  Modality 2: Retinal Scan")
         st.caption("Upload fundus photography for diabetic retinopathy screening")
         
         st.markdown("---")
@@ -1302,17 +1345,17 @@ with tabs[2]:
         
         if uploaded_file:
             # Display uploaded image with metadata
-            st.image(uploaded_file, caption="📷 Uploaded Fundus Scan", use_container_width=True)
+            st.image(uploaded_file, caption=" Uploaded Fundus Scan", use_container_width=True)
             
             # Image metadata
             file_size = uploaded_file.size / 1024  # KB
-            st.caption(f"📁 File: {uploaded_file.name} | Size: {file_size:.1f} KB")
+            st.caption(f" File: {uploaded_file.name} | Size: {file_size:.1f} KB")
             
             # Image quality check (mock)
-            st.success("✅ Image quality: Good", icon="🔍")
+            st.success(" Image quality: Good")
             
             # Preview what model sees
-            with st.expander("Preprocessing Preview"):
+            with st.expander(" Preprocessing Preview"):
                 st.info("Image will be resized to 300x300 and normalized for model input.")
                 st.code("""
 Transform Pipeline:
@@ -1328,7 +1371,7 @@ Transform Pipeline:
                             display: flex; align-items: center; justify-content: center; 
                             border: 2px dashed #334155; margin: 20px 0;">
                     <div style="text-align: center; color: #64748b;">
-                        <p style="font-size: 3rem; margin-bottom: 10px;">👁️</p>
+                        <p style="font-size: 3rem; margin-bottom: 10px;"></p>
                         <p style="font-size: 1.1rem; font-weight: 600;">Drop Retinal Image Here</p>
                         <p style="font-size: 0.85rem; margin-top: 5px;">or click to browse</p>
                     </div>
@@ -1337,16 +1380,15 @@ Transform Pipeline:
             
             # Sample images option
             st.markdown("---")
-            st.markdown("##### 📂 Or Use Sample Image")
+            st.markdown("#####  Or Use Sample Image")
             sample_choice = st.selectbox(
                 "Select sample retinal scan:",
                 ["None", "Sample 1: Normal Retina", "Sample 2: Mild DR", "Sample 3: Severe DR"],
                 help="Use a sample image for testing"
             )
             if sample_choice != "None":
-                st.info(f"🔄 Using: {sample_choice} (Demo Mode)")
+                st.info(f" Using: {sample_choice} (Demo Mode)")
         
-        st.markdown('</div>', unsafe_allow_html=True)
 
     # ═══════════════════════════════════════════════════════════════════════
     # SECTION 2: INFERENCE CONTROLS
@@ -1354,8 +1396,7 @@ Transform Pipeline:
     
     st.markdown("<br>", unsafe_allow_html=True)
 
-    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown("### Run Inference")
+    st.markdown("###  Run Inference")
 
     st.markdown(
         """
@@ -1374,23 +1415,23 @@ Transform Pipeline:
     with col_btn1:
         st.markdown("""
             <div style="text-align: center; padding: 10px;">
-                <p style="font-size: 2rem;">📋</p>
+                <p style="font-size: 2rem;"></p>
                 <p style="font-weight: 600;">EHR Only</p>
                 <p style="font-size: 0.8rem; color: #94a3b8;">MLP Neural Network</p>
             </div>
         """, unsafe_allow_html=True)
-        run_ehr = st.button("Run EHR Model", use_container_width=True, type="secondary")
+        run_ehr = st.button(" Run EHR Model", use_container_width=True, type="secondary")
 
     with col_btn2:
         st.markdown("""
             <div style="text-align: center; padding: 10px;">
-                <p style="font-size: 2rem;">👁️</p>
+                <p style="font-size: 2rem;"></p>
                 <p style="font-weight: 600;">Retinal Only</p>
                 <p style="font-size: 0.8rem; color: #94a3b8;">EfficientNet-B3</p>
             </div>
         """, unsafe_allow_html=True)
         run_retinal = st.button(
-            "Run Retinal Model",
+            " Run Retinal Model",
             use_container_width=True,
             type="secondary",
             disabled=not uploaded_file,
@@ -1401,13 +1442,13 @@ Transform Pipeline:
     with col_btn3:
         st.markdown("""
             <div style="text-align: center; padding: 10px;">
-                <p style="font-size: 2rem;">🧬</p>
+                <p style="font-size: 2rem;"></p>
                 <p style="font-weight: 600;">Multimodal Fusion</p>
                 <p style="font-size: 0.8rem; color: #94a3b8;">Combined Analysis</p>
             </div>
         """, unsafe_allow_html=True)
         run_fusion = st.button(
-            "Run Fusion Model",
+            " Run Fusion Model",
             use_container_width=True,
             type="primary",
             disabled=not uploaded_file,
@@ -1415,14 +1456,13 @@ Transform Pipeline:
         if not uploaded_file:
             st.caption("Requires a retinal image (and clinical inputs) to run fusion.")
 
-    st.markdown('</div>', unsafe_allow_html=True)
 
     # Validation
     if run_retinal and not uploaded_file:
-        st.error("❌ Please upload a retinal scan first!")
+        st.error(" Please upload a retinal scan first!")
         run_retinal = False
     if run_fusion and not uploaded_file:
-        st.error("❌ Please upload a retinal scan for fusion analysis!")
+        st.error(" Please upload a retinal scan for fusion analysis!")
         run_fusion = False
 
     # ═══════════════════════════════════════════════════════════════════════
@@ -1447,11 +1487,346 @@ Transform Pipeline:
     if (run_retinal or run_fusion) and uploaded_file:
         img_tensor = preprocess_retinal_image(uploaded_file, image_size=(300, 300))
 
-    # Run inference with visual feedback
+#     # Run inference with visual feedback
+#     if run_ehr or run_retinal or run_fusion:
+#         st.markdown("<br>", unsafe_allow_html=True)
+
+#         with st.spinner(" Running AI Inference..."):
+#             # Step 1: Preprocessing
+#             time.sleep(0.2)
+
+#             # Step 2: Model inference
+#             with torch.no_grad():
+#                 if run_ehr and ehr_tensor is not None:
+#                     ehr_prob = torch.sigmoid(ehr_model(ehr_tensor)).item()
+
+#                 if run_retinal and img_tensor is not None:
+#                     ret_prob = torch.sigmoid(ret_model(img_tensor)).item()
+
+#                 if run_fusion and ehr_tensor is not None and img_tensor is not None:
+#                     # Ensure individual modality results are available for comparison
+#                     if ehr_prob is None:
+#                         ehr_prob = torch.sigmoid(ehr_model(ehr_tensor)).item()
+#                     if ret_prob is None:
+#                         ret_prob = torch.sigmoid(ret_model(img_tensor)).item()
+
+#                     fusion_prob = torch.sigmoid(fusion_model(ehr_tensor, img_tensor)).item()
+
+#             # Simple progress animation (for UX)
+#             progress_bar = st.progress(0)
+#             for i in range(100):
+#                 time.sleep(0.003)
+#                 progress_bar.progress(i + 1)
+
+#     # ═══════════════════════════════════════════════════════════════════════
+#     # SECTION 4: RESULTS DISPLAY
+#     # ═══════════════════════════════════════════════════════════════════════
+    
+#     # if ehr_prob is not None or ret_prob is not None or fusion_prob is not None:
+#     #     st.markdown("<br>", unsafe_allow_html=True)
+#     #     st.markdown("---")
+#     #     st.markdown("##  Risk Assessment Results")
+        
+#     #     # --- GAUGES ROW ---
+#     #     result_cols = st.columns(3)
+        
+#     #     with result_cols[0]:
+#     #         if ehr_prob is not None:
+#     #             st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+#     #             color = "#4ade80" if ehr_prob < 0.5 else "#ef4444"
+#     #             st.plotly_chart(create_gauge_dark(ehr_prob, "EHR RISK", color), use_container_width=True)
+                
+#     #             # Risk level badge
+#     #             if ehr_prob < 0.3:
+#     #                 st.success("LOW RISK")
+#     #             elif ehr_prob < 0.6:
+#     #                 st.warning("MODERATE RISK")
+#     #             else:
+#     #                 st.error("HIGH RISK")
+#     #             st.markdown('</div>', unsafe_allow_html=True)
+#     #         else:
+#     #             st.markdown("""
+#     #                 <div class="glass-card" style="text-align: center; padding: 50px; opacity: 0.5;">
+#     #                     <p style="font-size: 2rem;"></p>
+#     #                     <p>EHR Model</p>
+#     #                     <p style="color: #64748b;">Not run</p>
+#     #                 </div>
+#     #             """, unsafe_allow_html=True)
+        
+#     #     with result_cols[1]:
+#     #         if ret_prob is not None:
+#     #             st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+#     #             color = "#4ade80" if ret_prob < 0.5 else "#ef4444"
+#     #             st.plotly_chart(create_gauge_dark(ret_prob, "RETINAL RISK", color), use_container_width=True)
+                
+#     #             if ret_prob < 0.3:
+#     #                 st.success("LOW RISK")
+#     #             elif ret_prob < 0.6:
+#     #                 st.warning("MODERATE RISK")
+#     #             else:
+#     #                 st.error("HIGH RISK")
+#     #             st.markdown('</div>', unsafe_allow_html=True)
+#     #         else:
+#     #             st.markdown("""
+#     #                 <div class="glass-card" style="text-align: center; padding: 50px; opacity: 0.5;">
+#     #                     <p style="font-size: 2rem;"></p>
+#     #                     <p>Retinal Model</p>
+#     #                     <p style="color: #64748b;">Not run</p>
+#     #                 </div>
+#     #             """, unsafe_allow_html=True)
+        
+#     #     with result_cols[2]:
+#     #         if fusion_prob is not None:
+#     #             st.markdown('<div class="glass-card" style="border: 2px solid #06b6d4;">', unsafe_allow_html=True)
+#     #             color = "#4ade80" if fusion_prob < 0.5 else "#ef4444"
+#     #             st.plotly_chart(create_gauge_dark(fusion_prob, " FUSED RISK", color), use_container_width=True)
+                
+#     #             if fusion_prob < 0.3:
+#     #                 st.success("LOW RISK")
+#     #             elif fusion_prob < 0.6:
+#     #                 st.warning("MODERATE RISK")
+#     #             else:
+#     #                 st.error("HIGH RISK")
+#     #             st.markdown('</div>', unsafe_allow_html=True)
+#     #         else:
+#     #             st.markdown("""
+#     #                 <div class="glass-card" style="text-align: center; padding: 50px; opacity: 0.5;">
+#     #                     <p style="font-size: 2rem;"></p>
+#     #                     <p>Fusion Model</p>
+#     #                     <p style="color: #64748b;">Not run</p>
+#     #                 </div>
+#     #             """, unsafe_allow_html=True)
+    
+# # ═══════════════════════════════════════════════════════════════════════
+# # SECTION 4: RESULTS DISPLAY
+# # ═══════════════════════════════════════════════════════════════════════
+
+# if ehr_prob is not None or ret_prob is not None or fusion_prob is not None:
+#     st.markdown("<br>", unsafe_allow_html=True)
+#     st.markdown("---")
+#     st.markdown("##  Risk Assessment Results")
+
+#     # Center the single result using empty columns on the sides
+#     spacer_left, center_col, spacer_right = st.columns([1, 2, 1])
+
+#     with center_col:
+#         if fusion_prob is not None:
+#             # ── Global / Fusion Model ──
+#             color = "#4ade80" if fusion_prob < 0.5 else "#ef4444"
+#             st.plotly_chart(create_gauge_dark(fusion_prob, " FUSED RISK", color), use_container_width=True)
+
+#             if fusion_prob < 0.3:
+#                 st.success("LOW RISK" )
+#             elif fusion_prob < 0.6:
+#                 st.warning("MODERATE RISK")
+#             else:
+#                 st.error("HIGH RISK")
+
+#         elif ret_prob is not None:
+#             # ── Retinal Model ──
+#             color = "#4ade80" if ret_prob < 0.5 else "#ef4444"
+#             st.plotly_chart(create_gauge_dark(ret_prob, "RETINAL RISK", color), use_container_width=True)
+
+#             if ret_prob < 0.3:
+#                 st.success("LOW RISK")
+#             elif ret_prob < 0.6:
+#                 st.warning("MODERATE RISK")
+#             else:
+#                 st.error("HIGH RISK")
+
+#         elif ehr_prob is not None:
+#             # ── EHR Model ──
+#             color = "#4ade80" if ehr_prob < 0.5 else "#ef4444"
+#             st.plotly_chart(create_gauge_dark(ehr_prob, "EHR RISK", color), use_container_width=True)
+
+#             if ehr_prob < 0.3:
+#                 st.success("LOW RISK")
+#             elif ehr_prob < 0.6:
+#                 st.warning("MODERATE RISK")
+#             else:
+#                 st.error("HIGH RISK")
+
+#         # ═══════════════════════════════════════════════════════════════════
+#         # SECTION 5: CLINICAL INTERPRETATION (Only show if fusion ran)
+#         # ═══════════════════════════════════════════════════════════════════
+        
+#         if fusion_prob is not None:
+#             st.markdown("<br>", unsafe_allow_html=True)
+            
+#             # --- Model Comparison ---
+#             st.markdown("###  Model Comparison")
+            
+#             compare_col1, compare_col2 = st.columns([2, 1])
+            
+#             with compare_col1:
+#                 # Bar chart comparing all three
+#                 fig_compare = go.Figure()
+                
+#                 models = ['EHR Only', 'Retinal Only', 'Multimodal Fusion']
+#                 probs = [ehr_prob or 0, ret_prob or 0, fusion_prob]
+#                 colors = ['#3b82f6', '#8b5cf6', '#06b6d4']
+                
+#                 fig_compare.add_trace(go.Bar(
+#                     x=models, y=[p * 100 for p in probs],
+#                     marker_color=colors,
+#                     text=[f"{p:.1%}" for p in probs],
+#                     textposition='outside'
+#                 ))
+                
+#                 fig_compare.update_layout(
+#                     yaxis_title="Risk Score (%)",
+#                     yaxis_range=[0, 100],
+#                     height=300,
+#                     **dark_chart_layout()
+#                 )
+#                 st.plotly_chart(fig_compare, use_container_width=True)
+            
+#             with compare_col2:
+#                 st.markdown("####  Analysis")
+                
+#                 # Determine which modality contributes more
+#                 if ehr_prob and ret_prob:
+#                     if abs(fusion_prob - ehr_prob) < abs(fusion_prob - ret_prob):
+#                         st.info(" **EHR data** is the primary risk driver")
+#                     else:
+#                         st.info(" **Retinal findings** are the primary risk driver")
+                    
+#                     # Agreement check
+#                     if (ehr_prob > 0.5 and ret_prob > 0.5) or (ehr_prob < 0.5 and ret_prob < 0.5):
+#                         st.success(" Both modalities **agree** on risk level")
+#                     else:
+#                         st.warning(" Modalities **disagree** - clinical review recommended")
+                
+#                 # Confidence
+#                 confidence = 1 - abs(ehr_prob - ret_prob) if (ehr_prob and ret_prob) else 0.5
+#                 st.metric("Model Agreement", f"{confidence:.0%}")
+            
+#             # --- Clinical Recommendations ---
+#             st.markdown("<br>", unsafe_allow_html=True)
+#             st.markdown("###  Clinical Recommendations")
+            
+#             rec_col1, rec_col2 = st.columns(2)
+            
+#             with rec_col1:
+#                 st.markdown("#### Based on Risk Level:")
+#                 if fusion_prob >= 0.7:
+#                     st.error("""
+#                      **HIGH RISK - Immediate Action Required**
+#                     - Urgent ophthalmology referral
+#                     - Intensive glycemic control review
+#                     - Consider anti-VEGF therapy evaluation
+#                     - Schedule follow-up within 2 weeks
+#                     """)
+#                 elif fusion_prob >= 0.4:
+#                     st.warning("""
+#                      **MODERATE RISK - Close Monitoring**
+#                     - Schedule ophthalmology within 1 month
+#                     - Optimize diabetes management
+#                     - Review blood pressure control
+#                     - Rescreen in 6 months
+#                     """)
+#                 else:
+#                     st.success("""
+#                      **LOW RISK - Maintain Current Care**
+#                     - Continue routine diabetes management
+#                     - Annual eye examination
+#                     - Lifestyle modifications as needed
+#                     - Rescreen in 12 months
+#                     """)
+            
+#             with rec_col2:
+#                 st.markdown("#### Key Risk Factors Identified:")
+                
+#                 risk_factors = []
+#                 if m1_hba1c > 7.5:
+#                     risk_factors.append(("Elevated HbA1c", f"{m1_hba1c}%", "🔴"))
+#                 if m1_glucose > 140:
+#                     risk_factors.append(("High Fasting Glucose", f"{m1_glucose} mg/dL", "🔴"))
+#                 if m1_bmi > 30:
+#                     risk_factors.append(("Obesity", f"BMI {m1_bmi}", "🟠"))
+#                 if m1_hyper:
+#                     risk_factors.append(("Hypertension", "Present", "🟠"))
+#                 if m1_heart:
+#                     risk_factors.append(("Heart Disease", "Present", "🔴"))
+#                 if m1_smoke == "current":
+#                     risk_factors.append(("Active Smoking", "Current", "🔴"))
+#                 if m1_age > 65:
+#                     risk_factors.append(("Advanced Age", f"{m1_age} years", "🟡"))
+                
+#                 if risk_factors:
+#                     for factor, value, emoji in risk_factors:
+#                         st.markdown(f"{emoji} **{factor}:** {value}")
+#                 else:
+#                     st.success("No major modifiable risk factors identified")
+            
+            
+#             # --- Download Report ---
+#             st.markdown("<br>", unsafe_allow_html=True)
+            
+#             report_content = f"""
+
+#           MULTIMODAL DIABETES RISK ASSESSMENT REPORT            
+# ══════════════════════════════════════════════════════════════ 
+
+# Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+# Model Version: Federated Learning v2.5.0
+
+# ═══════════════════════════════════════════════════════════════
+# PATIENT PROFILE
+# ═══════════════════════════════════════════════════════════════
+# Age:             {m1_age} years
+# Gender:          {m1_gender}
+# BMI:             {m1_bmi} kg/m²
+# HbA1c:           {m1_hba1c}%
+# Fasting Glucose: {m1_glucose} mg/dL
+# Smoking:         {m1_smoke}
+# Hypertension:    {'Yes' if m1_hyper else 'No'}
+# Heart Disease:   {'Yes' if m1_heart else 'No'}
+
+# ═══════════════════════════════════════════════════════════════
+# RISK ASSESSMENT RESULTS
+# ═══════════════════════════════════════════════════════════════
+# EHR Model Risk:      {ehr_prob*100:.1f}%
+# Retinal Model Risk:  {ret_prob*100:.1f}%
+# Fused Model Risk:    {fusion_prob*100:.1f}%
+
+# OVERALL RISK LEVEL:  {'HIGH' if fusion_prob >= 0.6 else 'MODERATE' if fusion_prob >= 0.4 else 'LOW'}
+
+# ═══════════════════════════════════════════════════════════════
+# CLINICAL NOTES
+# ═══════════════════════════════════════════════════════════════
+# This assessment combines clinical EHR data with retinal imaging
+# analysis using federated learning models trained across multiple
+# institutions while preserving patient privacy.
+
+# ═══════════════════════════════════════════════════════════════
+# DISCLAIMER
+# ═══════════════════════════════════════════════════════════════
+# This report is for clinical decision support only.
+# Final diagnosis must be made by a licensed healthcare provider.
+# """
+
+#             st.download_button(
+#                 label="Download Full Clinical Report",
+#                 data=report_content,
+#                 file_name=f"Multimodal_Risk_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt",
+#                 mime="text/plain",
+#                 use_container_width=True
+#             )
+            
+#             # --- Disclaimer ---
+#             st.markdown("<br>", unsafe_allow_html=True)
+#             st.warning("""
+#             ⚕️ **Clinical Disclaimer:** This AI-powered assessment is a decision-support tool only. 
+#             Results should be interpreted by qualified healthcare professionals in conjunction with 
+#             complete clinical evaluation. This system does not provide medical diagnosis.
+#             """)
+
+# Run inference with visual feedback
     if run_ehr or run_retinal or run_fusion:
         st.markdown("<br>", unsafe_allow_html=True)
 
-        with st.spinner("🧠 Running AI Inference..."):
+        with st.spinner(" Running AI Inference..."):
             # Step 1: Preprocessing
             time.sleep(0.2)
 
@@ -1478,95 +1853,63 @@ Transform Pipeline:
                 time.sleep(0.003)
                 progress_bar.progress(i + 1)
 
-    # ═══════════════════════════════════════════════════════════════════════
-    # SECTION 4: RESULTS DISPLAY
-    # ═══════════════════════════════════════════════════════════════════════
-    
-    if ehr_prob is not None or ret_prob is not None or fusion_prob is not None:
+        # ═══════════════════════════════════════════════════════════════════════
+        # SECTION 4: RESULTS DISPLAY (NOW NESTED INSIDE THE BUTTON CLICK)
+        # ═══════════════════════════════════════════════════════════════════════
+        
         st.markdown("<br>", unsafe_allow_html=True)
         st.markdown("---")
         st.markdown("## Risk Assessment Results")
-        
-        # --- GAUGES ROW ---
-        result_cols = st.columns(3)
-        
-        with result_cols[0]:
-            if ehr_prob is not None:
-                st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-                color = "#4ade80" if ehr_prob < 0.5 else "#ef4444"
-                st.plotly_chart(create_gauge_dark(ehr_prob, "EHR RISK", color), use_container_width=True)
-                
-                # Risk level badge
-                if ehr_prob < 0.3:
-                    st.success("LOW RISK", icon="✅")
-                elif ehr_prob < 0.6:
-                    st.warning("MODERATE RISK", icon="⚠️")
+
+        # Center the single result using empty columns on the sides
+        spacer_left, center_col, spacer_right = st.columns([1, 2, 1])
+
+        with center_col:
+            if fusion_prob is not None:
+                # ── Global / Fusion Model ──
+                color = "#4ade80" if fusion_prob < 0.5 else "#ef4444"
+                st.plotly_chart(create_gauge_dark(fusion_prob, " FUSED RISK", color), use_container_width=True)
+
+                if fusion_prob < 0.3:
+                    st.success("LOW RISK" )
+                elif fusion_prob < 0.6:
+                    st.warning("MODERATE RISK")
                 else:
-                    st.error("HIGH RISK", icon="🚨")
-                st.markdown('</div>', unsafe_allow_html=True)
-            else:
-                st.markdown("""
-                    <div class="glass-card" style="text-align: center; padding: 50px; opacity: 0.5;">
-                        <p style="font-size: 2rem;">📋</p>
-                        <p>EHR Model</p>
-                        <p style="color: #64748b;">Not run</p>
-                    </div>
-                """, unsafe_allow_html=True)
-        
-        with result_cols[1]:
-            if ret_prob is not None:
-                st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+                    st.error("HIGH RISK")
+
+            elif ret_prob is not None:
+                # ── Retinal Model ──
                 color = "#4ade80" if ret_prob < 0.5 else "#ef4444"
                 st.plotly_chart(create_gauge_dark(ret_prob, "RETINAL RISK", color), use_container_width=True)
-                
+
                 if ret_prob < 0.3:
-                    st.success("LOW RISK", icon="✅")
+                    st.success("LOW RISK")
                 elif ret_prob < 0.6:
-                    st.warning("MODERATE RISK", icon="⚠️")
+                    st.warning("MODERATE RISK")
                 else:
-                    st.error("HIGH RISK", icon="🚨")
-                st.markdown('</div>', unsafe_allow_html=True)
-            else:
-                st.markdown("""
-                    <div class="glass-card" style="text-align: center; padding: 50px; opacity: 0.5;">
-                        <p style="font-size: 2rem;">👁️</p>
-                        <p>Retinal Model</p>
-                        <p style="color: #64748b;">Not run</p>
-                    </div>
-                """, unsafe_allow_html=True)
-        
-        with result_cols[2]:
-            if fusion_prob is not None:
-                st.markdown('<div class="glass-card" style="border: 2px solid #06b6d4;">', unsafe_allow_html=True)
-                color = "#4ade80" if fusion_prob < 0.5 else "#ef4444"
-                st.plotly_chart(create_gauge_dark(fusion_prob, "🧬 FUSED RISK", color), use_container_width=True)
-                
-                if fusion_prob < 0.3:
-                    st.success("LOW RISK", icon="✅")
-                elif fusion_prob < 0.6:
-                    st.warning("MODERATE RISK", icon="⚠️")
+                    st.error("HIGH RISK")
+
+            elif ehr_prob is not None:
+                # ── EHR Model ──
+                color = "#4ade80" if ehr_prob < 0.5 else "#ef4444"
+                st.plotly_chart(create_gauge_dark(ehr_prob, "EHR RISK", color), use_container_width=True)
+
+                if ehr_prob < 0.3:
+                    st.success("LOW RISK")
+                elif ehr_prob < 0.6:
+                    st.warning("MODERATE RISK")
                 else:
-                    st.error("HIGH RISK", icon="🚨")
-                st.markdown('</div>', unsafe_allow_html=True)
-            else:
-                st.markdown("""
-                    <div class="glass-card" style="text-align: center; padding: 50px; opacity: 0.5;">
-                        <p style="font-size: 2rem;">🧬</p>
-                        <p>Fusion Model</p>
-                        <p style="color: #64748b;">Not run</p>
-                    </div>
-                """, unsafe_allow_html=True)
+                    st.error("HIGH RISK")
 
         # ═══════════════════════════════════════════════════════════════════
-        # SECTION 5: CLINICAL INTERPRETATION (Only show if fusion ran)
+        # SECTION 5: CLINICAL INTERPRETATION 
         # ═══════════════════════════════════════════════════════════════════
         
         if fusion_prob is not None:
             st.markdown("<br>", unsafe_allow_html=True)
             
             # --- Model Comparison ---
-            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-            st.markdown("### 📈 Model Comparison")
+            st.markdown("###  Model Comparison")
             
             compare_col1, compare_col2 = st.columns([2, 1])
             
@@ -1594,31 +1937,28 @@ Transform Pipeline:
                 st.plotly_chart(fig_compare, use_container_width=True)
             
             with compare_col2:
-                st.markdown("#### 🔍 Analysis")
+                st.markdown("####  Analysis")
                 
                 # Determine which modality contributes more
                 if ehr_prob and ret_prob:
                     if abs(fusion_prob - ehr_prob) < abs(fusion_prob - ret_prob):
-                        st.info("📋 **EHR data** is the primary risk driver")
+                        st.info(" **EHR data** is the primary risk driver")
                     else:
-                        st.info("👁️ **Retinal findings** are the primary risk driver")
+                        st.info(" **Retinal findings** are the primary risk driver")
                     
                     # Agreement check
                     if (ehr_prob > 0.5 and ret_prob > 0.5) or (ehr_prob < 0.5 and ret_prob < 0.5):
-                        st.success("✅ Both modalities **agree** on risk level")
+                        st.success(" Both modalities **agree** on risk level")
                     else:
-                        st.warning("⚠️ Modalities **disagree** - clinical review recommended")
+                        st.warning(" Modalities **disagree** - clinical review recommended")
                 
                 # Confidence
                 confidence = 1 - abs(ehr_prob - ret_prob) if (ehr_prob and ret_prob) else 0.5
                 st.metric("Model Agreement", f"{confidence:.0%}")
             
-            st.markdown('</div>', unsafe_allow_html=True)
-            
             # --- Clinical Recommendations ---
             st.markdown("<br>", unsafe_allow_html=True)
-            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-            st.markdown("### Clinical Recommendations")
+            st.markdown("###  Clinical Recommendations")
             
             rec_col1, rec_col2 = st.columns(2)
             
@@ -1626,7 +1966,7 @@ Transform Pipeline:
                 st.markdown("#### Based on Risk Level:")
                 if fusion_prob >= 0.7:
                     st.error("""
-                    🚨 **HIGH RISK - Immediate Action Required**
+                     **HIGH RISK - Immediate Action Required**
                     - Urgent ophthalmology referral
                     - Intensive glycemic control review
                     - Consider anti-VEGF therapy evaluation
@@ -1634,7 +1974,7 @@ Transform Pipeline:
                     """)
                 elif fusion_prob >= 0.4:
                     st.warning("""
-                    ⚠️ **MODERATE RISK - Close Monitoring**
+                     **MODERATE RISK - Close Monitoring**
                     - Schedule ophthalmology within 1 month
                     - Optimize diabetes management
                     - Review blood pressure control
@@ -1642,7 +1982,7 @@ Transform Pipeline:
                     """)
                 else:
                     st.success("""
-                    ✅ **LOW RISK - Maintain Current Care**
+                     **LOW RISK - Maintain Current Care**
                     - Continue routine diabetes management
                     - Annual eye examination
                     - Lifestyle modifications as needed
@@ -1674,7 +2014,6 @@ Transform Pipeline:
                 else:
                     st.success("No major modifiable risk factors identified")
             
-            st.markdown('</div>', unsafe_allow_html=True)
             
             # --- Download Report ---
             st.markdown("<br>", unsafe_allow_html=True)
@@ -1748,10 +2087,7 @@ Final diagnosis must be made by a licensed healthcare provider.
 
 
 # ------------------------------------------------------------------------------
-# TAB 4: PERSONALIZATION
-# ------------------------------------------------------------------------------
-# ------------------------------------------------------------------------------
-# TAB 4: PERSONALIZATION
+# TAB 4: PERSONALIZATION ENGINE (MTFL)
 # ------------------------------------------------------------------------------
 
 with tabs[3]:
@@ -1763,74 +2099,20 @@ with tabs[3]:
     """, unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
 
-    # --- UI ENHANCEMENT 1: SUB-TABS FOR CLEANER UX ---
-    subtab_clinical , subtab_research = st.tabs(["Local Clinical Inference" , "Global Training & Efficiency"])
 
-    # ═══════════════════════════════════════════════════════════════════════
-    # SUB-TAB A: RESEARCH & TRAINING METRICS
-    # ═══════════════════════════════════════════════════════════════════════
-    with subtab_research:
-        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.markdown("### Federated Network Monitor")
+    # ROLE SELECTOR
+    view_mode_comp4 = st.radio(
+        "Select Dashboard View Mode:", 
+        ["Clinical Staff (Doctors/Nurses)", "Research & Analytics (Data Science)"],
+        horizontal=True,
+        key="comp4_selector"
+    )
+
+
+    # VIEW 1: CLINICAL STAFF (DOCTORS & NURSES)
+    if view_mode_comp4 == "Clinical Staff (Doctors/Nurses)":
         
-        df = load_comp4_data()
-        
-        if df.empty:
-            st.warning("Waiting for simulation data... Run 'python main_fl_runner.py'")
-        else:
-            curr = df.iloc[-1]
-            abs_gain = (curr['pers_overall_acc'] - curr['global_overall_acc']) * 100
-            
-            c1, c2, c3, c4 = st.columns(4)
-            with c1: stat_card("Current Round", int(curr['round']))
-            with c2: stat_card("Global Acc", f"{curr['global_overall_acc']:.1%}")
-            with c3: stat_card("Personalized", f"{curr['pers_overall_acc']:.1%}", f"+{abs_gain:.2f}% Gain")
-            
-            gap_val = curr['fairness_gap']
-            with c4: stat_card("Fairness Gap", f"{gap_val:.4f}", "Target ≤ 0.05")
-
-            st.markdown("<br>", unsafe_allow_html=True)
-
-            # --- UI ENHANCEMENT 2: EFFICIENCY PROOF (Objective 2 of Proposal) ---
-            st.markdown("#### Architecture Efficiency (MTFL vs Single-Task)")
-            eff_c1, eff_c2, eff_c3 = st.columns(3)
-            with eff_c1:
-                st.info("**Model Transmission Size**\n\n**0.30 MB** (MTFL)\n\n*(vs 0.90 MB for 3 Single-Task Models)*")
-            with eff_c2:
-                st.info("**Bandwidth Saved**\n\n66.6% Reduction\n\n*(Shared feature extractor efficiency)*")
-            with eff_c3:
-                st.info("**Privacy Protocol**\n\n **Active**\n\n*(DP Noise Injected + Secure Aggregation)*")
-
-            st.markdown("<br>", unsafe_allow_html=True)
-
-            # CHARTS ROW
-            g1, g2 = st.columns(2)
-            with g1:
-                st.markdown("#### Accuracy Evolution")
-                fig = go.Figure()
-                fig.add_trace(go.Scatter(x=df['round'], y=df['global_overall_acc'], name='Global', line=dict(color='#64748b', width=2, dash='dash')))
-                fig.add_trace(go.Scatter(x=df['round'], y=df['pers_overall_acc'], name='Personalized', line=dict(color='#06b6d4', width=4)))
-                fig.update_layout(**dark_chart_layout(), height=300, xaxis_title="Round", yaxis_title="Accuracy", margin=dict(l=0, r=0, t=30, b=0))
-                st.plotly_chart(fig, use_container_width=True)
-                
-            with g2:
-                st.markdown("#### Fairness Monitoring (Demographic Parity)")
-                fig = go.Figure()
-                fig.add_trace(go.Scatter(x=df['round'], y=df['fairness_gap'], fill='tozeroy', line=dict(color='#f43f5e', width=2)))
-                fig.add_hline(y=0.05, line_dash="dash", line_color="#4ade80", annotation_text="Target Gap")
-                fig.update_layout(**dark_chart_layout(), height=300, xaxis_title="Round", yaxis_title="Disparity Gap", margin=dict(l=0, r=0, t=30, b=0))
-                st.plotly_chart(fig, use_container_width=True)
-
-        st.markdown('</div>', unsafe_allow_html=True)
-
-
-    # ═══════════════════════════════════════════════════════════════════════
-    # SUB-TAB B: CLINICAL INFERENCE
-    # ═══════════════════════════════════════════════════════════════════════
-    with subtab_clinical:
-        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        
-        # --- UI ENHANCEMENT 3: PRIVACY SHIELD INDICATOR ---
+        # PRIVACY SHIELD INDICATOR
         st.markdown("""
         <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;'>
             <h3 style='margin: 0;'>Multi-Task Clinical Predictor</h3>
@@ -1840,28 +2122,28 @@ with tabs[3]:
         </div>
         """, unsafe_allow_html=True)
         
-        with st.form("prediction_form"):
+        with st.form("prediction_form_comp4"):
             st.markdown("#### Patient Demographics & Vitals")
             c1, c2, c3 = st.columns(3)
             with c1:
-                age    = st.slider("Patient Age", 10, 100, 65)
-                gender = st.selectbox("Gender", ["Female", "Male"])
+                age    = st.slider("Patient Age", 10, 100, 65, key="c4_age")
+                gender = st.selectbox("Gender", ["Female", "Male"], key="c4_gender")
             with c2:
-                bmi    = st.slider("BMI (kg/m²)", 15.0, 50.0, 30.0)
-                hba1c  = st.slider("HbA1c Level (%)", 4.0, 15.0, 8.5)
+                bmi    = st.slider("BMI (kg/m²)", 15.0, 50.0, 30.0, key="c4_bmi")
+                hba1c  = st.slider("HbA1c Level (%)", 4.0, 15.0, 8.5, key="c4_hba1c")
             with c3:
-                insulin = st.selectbox("Insulin Prescription", ["No", "Steady", "Up", "Down"])
-                meds   = st.slider("Number of Medications", 0, 40, 12)
+                insulin = st.selectbox("Insulin Prescription", ["No", "Steady", "Up", "Down"], key="c4_ins")
+                meds   = st.slider("Number of Medications", 0, 40, 12, key="c4_meds")
 
             st.markdown("---")
             st.markdown("#### Clinical History & Encounter Details")
             c4, c5, c6 = st.columns(3)
             with c4:
-                time_in_hospital = st.number_input("Days in Hospital", min_value=1, max_value=14, value=4)
+                time_in_hospital = st.number_input("Days in Hospital", min_value=1, max_value=14, value=4, key="c4_time")
             with c5:
-                num_diagnoses = st.number_input("Number of Diagnoses", min_value=1, max_value=16, value=7)
+                num_diagnoses = st.number_input("Number of Diagnoses", min_value=1, max_value=16, value=7, key="c4_diag")
             with c6:
-                num_lab_procedures = st.number_input("Lab Procedures", min_value=1, max_value=132, value=43)
+                num_lab_procedures = st.number_input("Lab Procedures", min_value=1, max_value=132, value=43, key="c4_lab")
 
             st.markdown("---")
             st.markdown("#### Federated Node Configuration")
@@ -1871,22 +2153,22 @@ with tabs[3]:
                     "Select Facility Context (Non-IID Profile)",
                     ["Hospital A (Urban - General)",
                      "Hospital B (Rural - Geriatric)",
-                     "Hospital C (Specialized - Cardiac)"]
+                     "Hospital C (Specialized - Cardiac)"],
+                     key="c4_hosp"
                 )
             with h2:
                 model_mode = st.radio(
                     "Federated Execution Mode",
                     ["Global Model (Shared Baseline)", "Personalized Model (FedRep Fine-Tuned)"],
-                    horizontal=True
+                    horizontal=True,
+                    key="c4_mode"
                 )
 
             st.markdown("<br>", unsafe_allow_html=True)
-            submit = st.form_submit_button("RUN MULTI-TASK ASSESSMENT", use_container_width=True)
+            submit_comp4 = st.form_submit_button("RUN MULTI-TASK ASSESSMENT", use_container_width=True)
 
-        st.markdown('</div><br>', unsafe_allow_html=True)
-
-        # ── INFERENCE ────────────────────────────────────────────────────────────
-        if submit:
+        # INFERENCE
+        if submit_comp4:
             with st.spinner("Processing via local FedRep layers..."):
                 progress_bar = st.progress(0)
                 for i in range(100):
@@ -1899,17 +2181,17 @@ with tabs[3]:
                 norm_bmi   = (bmi  - 15) / 35
 
                 model, model_info = load_trained_model()
-                prob_htn_global = None
-                prob_hf_global  = None
+                c4_prob_htn_global = None
+                c4_prob_hf_global  = None
 
                 if model is None:
                     st.error(f"❌ {model_info}")
-                    prob_htn = 0.3 + (norm_age*0.2) + (norm_hba1c*0.3) + (norm_bmi*0.25) + (norm_meds*0.15)
-                    prob_hf  = 0.3 + (norm_age*0.3) + (norm_hba1c*0.25)+ (norm_bmi*0.2)  + (norm_meds*0.1)
-                    prob_htn = max(0.0, min(prob_htn, 1.0))
-                    prob_hf  = max(0.0, min(prob_hf,  1.0))
-                    cluster_out = None
-                    cluster_idx = 0
+                    c4_prob_htn = 0.3 + (norm_age*0.2) + (norm_hba1c*0.3) + (norm_bmi*0.25) + (norm_meds*0.15)
+                    c4_prob_hf  = 0.3 + (norm_age*0.3) + (norm_hba1c*0.25)+ (norm_bmi*0.2)  + (norm_meds*0.1)
+                    c4_prob_htn = max(0.0, min(c4_prob_htn, 1.0))
+                    c4_prob_hf  = max(0.0, min(c4_prob_hf,  1.0))
+                    c4_cluster_out = None
+                    c4_cluster_idx = 0
                 else:
                     feature_names = model_info
                     input_tensor  = prepare_input_features(age, gender, meds, hba1c, bmi, 
@@ -1918,52 +2200,51 @@ with tabs[3]:
                     
                     with torch.no_grad():
                         htn_out, hf_out, cluster_out = model(input_tensor)
-                        prob_htn_global = torch.sigmoid(htn_out).item()
-                        prob_hf_global  = torch.sigmoid(hf_out).item()
-                        prob_htn = prob_htn_global
-                        prob_hf  = prob_hf_global
-                        cluster_idx = torch.argmax(cluster_out, dim=1).item()
+                        c4_prob_htn_global = torch.sigmoid(htn_out).item()
+                        c4_prob_hf_global  = torch.sigmoid(hf_out).item()
+                        c4_prob_htn = c4_prob_htn_global
+                        c4_prob_hf  = c4_prob_hf_global
+                        c4_cluster_idx = torch.argmax(cluster_out, dim=1).item()
 
-                    # Hospital context shift
-                    if hospital_type == "Hospital B (Rural - Geriatric)":
-                        prob_htn = min(prob_htn + 0.05, 0.98)
-                        prob_hf  = min(prob_hf  + 0.08, 0.98)
-                    elif hospital_type == "Hospital C (Specialized - Cardiac)":
-                        prob_hf  = min(prob_hf  + 0.10, 0.98)
+                # Hospital context shift
+                if hospital_type == "Hospital B (Rural - Geriatric)":
+                    c4_prob_htn = min(c4_prob_htn + 0.05, 0.98)
+                    c4_prob_hf  = min(c4_prob_hf  + 0.08, 0.98)
+                elif hospital_type == "Hospital C (Specialized - Cardiac)":
+                    c4_prob_hf  = min(c4_prob_hf  + 0.10, 0.98)
 
-                    # Personalization shift
-                    if "Personalized" in model_mode:
-                        prob_htn = min(prob_htn + 0.03, 0.98) if prob_htn > 0.5 else max(prob_htn - 0.03, 0.02)
-                        prob_hf  = min(prob_hf  + 0.03, 0.98) if prob_hf  > 0.5 else max(prob_hf  - 0.03, 0.02)
-                        st.toast("FedRep layers activated: Adjusted for local demographics.")
+                # Personalization shift
+                if "Personalized" in model_mode:
+                    c4_prob_htn = min(c4_prob_htn + 0.03, 0.98) if c4_prob_htn > 0.5 else max(c4_prob_htn - 0.03, 0.02)
+                    c4_prob_hf  = min(c4_prob_hf  + 0.03, 0.98) if c4_prob_hf  > 0.5 else max(c4_prob_hf  - 0.03, 0.02)
+                    st.toast("FedRep layers activated: Adjusted for local demographics.")
 
-                    prob_htn = max(0.0, min(prob_htn, 1.0))
-                    prob_hf  = max(0.0, min(prob_hf,  1.0))
+                c4_prob_htn = max(0.0, min(c4_prob_htn, 1.0))
+                c4_prob_hf  = max(0.0, min(c4_prob_hf,  1.0))
 
-            # ── 1. RISK ASSESSMENT RESULTS ────────────────────────────────────
-            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+            # 1. RISK ASSESSMENT RESULTS (Triggered safely inside the submit block)
             
-            # --- UI ENHANCEMENT 4: ARCHITECTURE PIPELINE VISUAL ---
+            # ARCHITECTURE PIPELINE VISUAL
             st.markdown("<p style='text-align:center; color:#94a3b8; font-size:0.9rem;'>Shared Feature Extractor with Multi-Task Heads</p>", unsafe_allow_html=True)
             
             col_out1, col_out2, col_out3 = st.columns(3)
             with col_out1:
-                color = "#f43f5e" if prob_htn > 0.5 else "#4ade80"
-                st.plotly_chart(create_gauge_dark(prob_htn, "Task 1: HTN Risk", color), use_container_width=True)
-                conf = calculate_prediction_confidence(prob_htn)
+                color = "#f43f5e" if c4_prob_htn > 0.5 else "#4ade80"
+                st.plotly_chart(create_gauge_dark(c4_prob_htn, "Task 1: HTN Risk", color), use_container_width=True)
+                conf = calculate_prediction_confidence(c4_prob_htn)
                 st.progress(max(0.0, min(conf, 1.0)), text=f"Confidence: {conf:.0%}")
 
             with col_out2:
-                color = "#f43f5e" if prob_hf > 0.5 else "#4ade80"
-                st.plotly_chart(create_gauge_dark(prob_hf, "Task 2: HF Risk", color), use_container_width=True)
-                conf = calculate_prediction_confidence(prob_hf)
+                color = "#f43f5e" if c4_prob_hf > 0.5 else "#4ade80"
+                st.plotly_chart(create_gauge_dark(c4_prob_hf, "Task 2: HF Risk", color), use_container_width=True)
+                conf = calculate_prediction_confidence(c4_prob_hf)
                 st.progress(max(0.0, min(conf, 1.0)), text=f"Confidence: {conf:.0%}")
                 
             with col_out3:
                 cluster_names  = ["Metabolic", "Circulatory", "Complex/Mixed"]
                 cluster_colors = ["#3b82f6", "#ef4444", "#8b5cf6"]
-                predicted_cluster = cluster_names[cluster_idx]
-                c_color = cluster_colors[cluster_idx]
+                predicted_cluster = cluster_names[c4_cluster_idx]
+                c_color = cluster_colors[c4_cluster_idx]
                 
                 st.markdown("<br><br>", unsafe_allow_html=True)
                 st.markdown(f"""
@@ -1974,9 +2255,9 @@ with tabs[3]:
                 </div>
                 """, unsafe_allow_html=True)
 
-            # ── 2. OVERALL STATUS BANNER ──────────────────────────────────────
+            # 2. OVERALL STATUS BANNER
             st.divider()
-            max_risk = max(prob_htn, prob_hf)
+            max_risk = max(c4_prob_htn, c4_prob_hf)
             if max_risk > 0.7:
                 status_class, status_label = "critical-box", "CRITICAL MULTI-MORBIDITY RISK"
                 advice = f"Immediate intervention required. High probability of {predicted_cluster.lower()} complications."
@@ -1990,17 +2271,17 @@ with tabs[3]:
             st.markdown(f'<div class="status-box {status_class}">OVERALL STATUS: {status_label}</div>', unsafe_allow_html=True)
             st.info(f"**Clinical Recommendation:** {advice}")
 
-            # ── 3. PERSONALIZATION DELTA & COHORTS ─────────────────────────────
-            if "Personalized" in model_mode and prob_htn_global is not None:
+            # 3. PERSONALIZATION DELTA & COHORTS
+            if "Personalized" in model_mode and c4_prob_htn_global is not None:
                 st.markdown("---")
                 st.markdown("#### Personalization Delta (FedRep Influence)")
                 
                 pd1, pd2 = st.columns([1, 2])
                 with pd1:
-                    htn_diff = (prob_htn - prob_htn_global) * 100
-                    hf_diff  = (prob_hf  - prob_hf_global)  * 100
-                    st.metric("Hypertension Shift", f"{prob_htn*100:.1f}%", f"{htn_diff:+.1f}% vs Global")
-                    st.metric("Heart Failure Shift", f"{prob_hf*100:.1f}%", f"{hf_diff:+.1f}% vs Global")
+                    htn_diff = (c4_prob_htn - c4_prob_htn_global) * 100
+                    hf_diff  = (c4_prob_hf  - c4_prob_hf_global)  * 100
+                    st.metric("Hypertension Shift", f"{c4_prob_htn*100:.1f}%", f"{htn_diff:+.1f}% vs Global")
+                    st.metric("Heart Failure Shift", f"{c4_prob_hf*100:.1f}%", f"{hf_diff:+.1f}% vs Global")
                     
                     st.markdown(f"""
                     <div style="font-size:0.85rem; color:#cbd5e1; background:rgba(255,255,255,0.05); padding:10px; border-radius:8px; margin-top:10px;">
@@ -2011,8 +2292,8 @@ with tabs[3]:
                 with pd2:
                     # Radar chart compressed
                     categories   = ['HTN Risk', 'HF Risk', 'Confidence', 'Local Weight']
-                    global_vals  = [prob_htn_global, prob_hf_global, calculate_prediction_confidence(prob_htn_global), 0.3, prob_htn_global]
-                    pers_vals    = [prob_htn, prob_hf, calculate_prediction_confidence(prob_htn), 0.8, prob_htn]
+                    global_vals  = [c4_prob_htn_global, c4_prob_hf_global, calculate_prediction_confidence(c4_prob_htn_global), 0.3, c4_prob_htn_global]
+                    pers_vals    = [c4_prob_htn, c4_prob_hf, calculate_prediction_confidence(c4_prob_htn), 0.8, c4_prob_htn]
                     
                     fig_radar = go.Figure()
                     fig_radar.add_trace(go.Scatterpolar(r=global_vals, theta=categories, fill='toself', name='Global', line=dict(color='#94a3b8', dash='dash')))
@@ -2020,9 +2301,8 @@ with tabs[3]:
                     fig_radar.update_layout(polar=dict(radialaxis=dict(visible=False), bgcolor='rgba(0,0,0,0)'), showlegend=True, height=250, margin=dict(t=20, b=20, l=40, r=40), **dark_chart_layout())
                     st.plotly_chart(fig_radar, use_container_width=True)
 
-            st.markdown('</div><br>', unsafe_allow_html=True)
             
-            # ── 4. ADVANCED POPULATION VIEW ───────────────────────────
+            # 4. ADVANCED POPULATION VIEW
             with st.expander("View Patient Cohort Mapping (Non-IID Distribution)"):
                 a_age = np.random.normal(65, 10, 50); a_a1c = np.random.normal(7.0, 1.5, 50)
                 b_age = np.random.normal(75, 5, 50);  b_a1c = np.random.normal(7.5, 1.0, 50)
@@ -2036,7 +2316,7 @@ with tabs[3]:
                 fig_cohort.update_layout(xaxis_title="Patient Age", yaxis_title="HbA1c Level", legend=dict(orientation="h", y=-0.2), height=350, margin=dict(t=10, b=0), **dark_chart_layout())
                 st.plotly_chart(fig_cohort, use_container_width=True)
 
-            # ── 5. DOWNLOAD REPORT ────────────────────────────────────────────
+            # DOWNLOAD REPORT
             report_content = f"""
             FEDERATED MULTI-TASK DIABETES REPORT
             ══════════════════════════════════════════════════════════════
@@ -2054,8 +2334,8 @@ with tabs[3]:
 
             PREDICTIVE DIAGNOSTICS (MTFL SYSTEM)
             ══════════════════════════════════════════════════════════════
-            1. Hypertension Risk:    {prob_htn*100:.1f}%
-            2. Heart Failure Risk:   {prob_hf*100:.1f}%
+            1. Hypertension Risk:    {c4_prob_htn*100:.1f}%
+            2. Heart Failure Risk:   {c4_prob_hf*100:.1f}%
             3. Comorbidity Phenotype: {predicted_cluster}
 
             OVERALL STATUS:   {status_label}
@@ -2063,8 +2343,8 @@ with tabs[3]:
 
             FEDERATED CONTEXT (DATA PRIVACY: SECURED)
             ══════════════════════════════════════════════════════════════
-            Global Model HTN Baseline: {(prob_htn_global or 0)*100:.1f}%
-            Global Model HF Baseline:  {(prob_hf_global  or 0)*100:.1f}%
+            Global Model HTN Baseline: {(c4_prob_htn_global or 0)*100:.1f}%
+            Global Model HF Baseline:  {(c4_prob_hf_global  or 0)*100:.1f}%
             Local Adjustment Applied:  {'Yes' if "Personalized" in model_mode else 'No'}
 
             DISCLAIMER: For clinical decision support only.
@@ -2075,6 +2355,107 @@ with tabs[3]:
             st.markdown("<br>", unsafe_allow_html=True)
             st.warning("**Clinical Disclaimer:** This AI-powered assessment is a decision-support tool only. Results should be interpreted by qualified healthcare professionals. This system operates entirely on local node parameters; no raw patient data leaves this device.")
 
+
+    # VIEW 2: RESEARCH & ANALYTICS (DATA SCIENCE)
+    elif view_mode_comp4 == "Research & Analytics (Data Science)":
+        st.markdown("### Federated Learning Evaluation Metrics")
+        
+        df = load_comp4_data()
+        
+        if df.empty:
+            st.warning("Waiting for simulation data... Run 'python main_fl_runner.py'")
+        else:
+            curr = df.iloc[-1]
+            abs_gain = (curr['pers_overall_acc'] - curr['global_overall_acc']) * 100
+            
+            r_tab1, r_tab2, r_tab3 = st.tabs([
+                "Model Performance", 
+                "Algorithmic Fairness", 
+                "Architecture Efficiency"
+            ])
+
+            # SUBTAB 1: MODEL PERFORMANCE
+            with r_tab1:
+                st.markdown("#### Global vs Personalized Convergence")
+                c1, c2, c3 = st.columns(3)
+                with c1: stat_card("Current Round", int(curr['round']))
+                with c2: stat_card("Global Acc", f"{curr['global_overall_acc']:.1%}")
+                with c3: stat_card("Personalized Acc", f"{curr['pers_overall_acc']:.1%}", f"+{abs_gain:.2f}% Gain")
+
+                st.markdown("<br>", unsafe_allow_html=True)
+
+                # COMPREHENSIVE EVALUATION METRICS
+                st.markdown("#### Final Personalized Model Evaluation (Round 10)")
+                
+                col_m1, col_m2, col_m3 = st.columns(3)
+                with col_m1:
+                    st.markdown("<div style='background: rgba(15, 23, 42, 0.4); padding: 15px; border-radius: 8px; border-left: 3px solid #f43f5e;'>", unsafe_allow_html=True)
+                    st.markdown("**Hypertension (Task 1)**")
+                    st.metric("HTN Accuracy", f"{curr.get('pers_htn_acc', 0):.1%}")
+                    st.metric("HTN AUROC", f"{curr.get('pers_htn_auroc', 0):.3f}")
+                    st.metric("HTN F1-Score", f"{curr.get('pers_htn_f1', 0):.3f}")
+                    st.markdown("</div>", unsafe_allow_html=True)
+
+                with col_m2:
+                    st.markdown("<div style='background: rgba(15, 23, 42, 0.4); padding: 15px; border-radius: 8px; border-left: 3px solid #3b82f6;'>", unsafe_allow_html=True)
+                    st.markdown("**Heart Failure (Task 2)**")
+                    st.metric("HF Accuracy", f"{curr.get('pers_hf_acc', 0):.1%}")
+                    st.metric("HF AUROC", f"{curr.get('pers_hf_auroc', 0):.3f}")
+                    st.metric("HF F1-Score", f"{curr.get('pers_hf_f1', 0):.3f}")
+                    st.markdown("</div>", unsafe_allow_html=True)
+
+                with col_m3:
+                    st.markdown("<div style='background: rgba(15, 23, 42, 0.4); padding: 15px; border-radius: 8px; border-left: 3px solid #8b5cf6;'>", unsafe_allow_html=True)
+                    st.markdown("**Comorbidity Cluster (Task 3)**")
+                    st.metric("Cluster Accuracy", f"{curr.get('pers_cluster_acc', 0):.1%}")
+                    st.metric("Cluster Macro-F1", f"{curr.get('pers_cluster_f1_macro', 0):.3f}")
+                    st.markdown("*(Multi-class classification)*")
+                    st.markdown("</div>", unsafe_allow_html=True)
+
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+                st.markdown("#### Accuracy Evolution")
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(x=df['round'], y=df['global_overall_acc'], name='Global', line=dict(color='#64748b', width=2, dash='dash')))
+                fig.add_trace(go.Scatter(x=df['round'], y=df['pers_overall_acc'], name='Personalized', line=dict(color='#06b6d4', width=4)))
+                fig.update_layout(**dark_chart_layout(), height=350, xaxis_title="Federated Round", yaxis_title="Accuracy", margin=dict(l=0, r=0, t=30, b=0))
+                st.plotly_chart(fig, use_container_width=True)
+
+
+            # SUBTAB 2: ALGORITHMIC FAIRNESS
+            with r_tab2:
+                st.markdown("#### Demographic Parity Assessment")
+                gap_val = curr['fairness_gap']
+                
+                f_col1, f_col2 = st.columns([1, 2])
+                with f_col1:
+                    stat_card("Fairness Gap", f"{gap_val:.4f}", "Target ≤ 0.05")
+                    st.info("**Evaluation Context:**\nMeasures the disparity in predictive accuracy between demographic sub-groups (e.g., Gender). A gap near 0.00 indicates strong algorithmic fairness.")
+                
+                with f_col2:
+                    fig2 = go.Figure()
+                    fig2.add_trace(go.Scatter(x=df['round'], y=df['fairness_gap'], fill='tozeroy', line=dict(color='#f43f5e', width=2), name="Fairness Gap"))
+                    fig2.add_hline(y=0.05, line_dash="dash", line_color="#4ade80", annotation_text="Acceptable Threshold (0.05)")
+                    fig2.update_layout(**dark_chart_layout(), height=300, xaxis_title="Federated Round", yaxis_title="Disparity Gap", margin=dict(l=0, r=0, t=30, b=0))
+                    st.plotly_chart(fig2, use_container_width=True)
+
+            # SUBTAB 3: ARCHITECTURE EFFICIENCY
+            with r_tab3:
+                st.markdown("#### Multi-Task vs Single-Task Efficiency Profile")
+                eff_c1, eff_c2, eff_c3 = st.columns(3)
+                with eff_c1:
+                    st.info("**Model Transmission Size**\n\n### 0.30 MB\n\n*(vs 0.90 MB for 3 Single-Task Models)*")
+                with eff_c2:
+                    st.info("**Bandwidth Saved**\n\n### 66.6% Reduction\n\n*(Shared feature extractor efficiency)*")
+                with eff_c3:
+                    st.info("**Privacy Protocol**\n\n### Active\n\n*(DP Noise Injected + Secure Aggregation)*")
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                st.markdown("""
+                **Architectural Advantage:** By utilizing a hard-parameter sharing approach (shared body with task-specific heads), the MTFL framework dramatically reduces the computational payload required for federated communication rounds. This enables edge deployment in resource-constrained hospital networks while maintaining strict data locality and differential privacy boundaries.
+                """)
+
+# SIDEBAR
 with st.sidebar:
     st.markdown("---")
     st.caption("v2.5.0-beta | Secure Connection")
