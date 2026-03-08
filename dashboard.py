@@ -892,7 +892,7 @@ def render_readmission_tab():
             hospital_id = hospital_mapping[hospital_context]
             
             st.markdown("<br>", unsafe_allow_html=True)
-            submit = st.form_submit_button("🔮 Calculate Readmission Risk", use_container_width=True)
+            submit = st.form_submit_button("Calculate Readmission Risk", use_container_width=True)
         
         
         if submit:
