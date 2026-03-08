@@ -838,14 +838,14 @@ def render_readmission_tab():
     # ------------------------------------------------------------------------
     view_mode = st.radio(
         "Select Dashboard View Mode:", 
-        ["Clinical Staff (Doctors/Nurses)", "Research & Analytics (Data Science)"],
+        ["Clinical Staff", "Research & Analytics"],
         horizontal=True
     )
 
     # ========================================================================
-    # VIEW 1: CLINICAL STAFF (DOCTORS & NURSES)
+    # VIEW 1: CLINICAL STAFF
     # ========================================================================
-    if view_mode == "Clinical Staff (Doctors/Nurses)":
+    if view_mode == "Clinical Staff":
         
         st.markdown("""
         ###  Hospital Readmission Risk Assessment
@@ -892,7 +892,7 @@ def render_readmission_tab():
             hospital_id = hospital_mapping[hospital_context]
             
             st.markdown("<br>", unsafe_allow_html=True)
-            submit = st.form_submit_button("🔮 Calculate Readmission Risk", use_container_width=True)
+            submit = st.form_submit_button("Calculate Readmission Risk", use_container_width=True)
         
         
         if submit:
@@ -927,7 +927,6 @@ def render_readmission_tab():
             with col_meta:
                 st.metric("Clinical Confidence", "High", "Explainable AI Validated")
                 st.metric("Fairness Audit", "Passed", "Unbiased across demographics")
-
 
             # ====================================================================
             # DISPLAY: Risk Factors (Patient Level)
@@ -997,8 +996,7 @@ def render_readmission_tab():
                     
                     validation = h_data.get('clinical_validation', {})
                     align_score = validation.get('alignment_score', 0)
-                    interp = validation.get('interpretation', 'UNKNOWN')
-                    st.write(f"**Clinical Alignment:** {align_score*100:.0f}% | {interp}")
+                    st.write(f"**Clinical Alignment:** {align_score*100:.0f}%")
                 else:
                     st.info("Historical clinical drivers not available for this facility type.")
 
@@ -1021,8 +1019,6 @@ def render_readmission_tab():
                     ))
                     fig2.update_layout(title="Historical Readmission Triggers (Global)", height=300, **dark_chart_layout())
                     st.plotly_chart(fig2, use_container_width=True)
-                    
-                    st.write("**Validation:** Super-Model logic derived without seeing raw patient data.")
                 else:
                     st.info("Global clinical drivers not available.")
                 
@@ -1032,9 +1028,9 @@ def render_readmission_tab():
             st.warning("**IMPORTANT:** This AI score is a **decision-support tool only**, not a clinical diagnosis. Consider alongside complete clinical assessment.")
 
     # ========================================================================
-    # VIEW 2: RESEARCH & ANALYTICS (DATA SCIENCE)
+    # VIEW 2: RESEARCH & ANALYTICS
     # ========================================================================
-    elif view_mode == "Research & Analytics (Data Science)":
+    elif view_mode == "Research & Analytics":
         
         st.markdown("""
         ### Federated Learning Evaluation Metrics
@@ -1045,7 +1041,7 @@ def render_readmission_tab():
             " Global Performance", 
             " Algorithmic Fairness", 
             " Non-IID Distribution", 
-            "FedAvg Training"
+            " FedAvg Training"
         ])
         
         # ----------------------------------------------------
@@ -1064,8 +1060,7 @@ def render_readmission_tab():
                 c4.metric("F1-Score", f"{metrics.get('f1_score', 0):.4f}")
                 
                 st.markdown("---")
-                st.markdown(f"**Optimal Decision Threshold:** `{all_results['fairness_metrics'].get('optimal_threshold', 0.5):.2f}`")
-                st.markdown(f"**Dataset Configuration:** `{all_results['fairness_metrics'].get('dataset_type', 'Unknown')}` (131 Features, No Leakage)")
+                st.markdown(f"**Dataset Configuration:** `{all_results['fairness_metrics'].get('dataset_type', 'Unknown')}`")
             else:
                 st.warning("Performance metrics not found. Please run the fairness audit script.")
             
@@ -1081,6 +1076,9 @@ def render_readmission_tab():
         # SUBTAB 2: FAIRNESS AUDIT
         # ----------------------------------------------------
         with r_tab2:
+            st.markdown(f"**Optimal Decision Threshold:** `{all_results['fairness_metrics'].get('optimal_threshold', 0.5):.2f}`")
+            st.markdown("---")
+            
             gender_fairness = all_results['fairness_metrics'].get('gender_fairness_6metrics', {})
             
             if gender_fairness:
@@ -1134,24 +1132,67 @@ def render_readmission_tab():
                 st.warning("Fairness data unavailable.")
 
         # ----------------------------------------------------
-        # SUBTAB 3: NON-IID DISTRIBUTION
+        # SUBTAB 3: NON-IID DISTRIBUTION (UPDATED 5 METRICS)
         # ----------------------------------------------------
         with r_tab3:
             niid = all_results['non_iid_metrics']
             
             if niid:
-                st.markdown("#### Heterogeneity Quantification (6-Metric Framework)")
+                st.markdown("#### Heterogeneity Quantification (5-Metric Framework)")
                 
-                nc1, nc2, nc3 = st.columns(3)
                 comp_score = niid.get('composite_non_iid_score', 0)
                 severity = niid.get('severity_assessment', {}).get('level', 'Unknown')
-                nc1.metric("Composite Non-IID Score", f"{comp_score:.4f}", severity)
+                
+                st.markdown(f"""
+                <div style='text-align: center; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px; border: 1px solid #4ade80; margin-bottom: 20px;'>
+                    <h3 style='color: #cbd5e1; margin:0;'>Composite Non-IID Score</h3>
+                    <h1 style='color: #4ade80; margin:0;'>{comp_score:.4f}</h1>
+                    <h4 style='color: #cbd5e1; margin:0;'>Severity: {severity}</h4>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # Row 1 (3 Metrics)
+                nc1, nc2, nc3 = st.columns(3)
                 
                 js_div = niid.get('label_heterogeneity', {}).get('average', 0)
-                nc2.metric("Label Jensen-Shannon Div.", f"{js_div:.4f}")
+                nc1.metric(
+                    "1. Label Heterogeneity (JSD)", 
+                    f"{js_div:.4f}", 
+                    help="Checks if one hospital has significantly more readmitted patients. (Should be low due to balancing)."
+                )
                 
+                corr_het = niid.get('correlation_heterogeneity', {}).get('average', 0)
+                nc2.metric(
+                    "2. Correlation Heterogeneity", 
+                    f"{corr_het:.4f}", 
+                    help="Measures how feature relationships change using the Frobenius norm of correlation matrices."
+                )
+
+                class_imb = niid.get('class_imbalance_heterogeneity', {}).get('max_diff', 0)
+                nc3.metric(
+                    "3. Class Imbalance Diff", 
+                    f"{class_imb*100:.2f}%", 
+                    help="A simple check to ensure no single hospital is hoarding all the positive or negative cases."
+                )
+
+                st.markdown("<br>", unsafe_allow_html=True)
+
+                # Row 2 (2 Metrics)
+                nc4, nc5 = st.columns(2)
+
                 csi = niid.get('covariate_shift_index', {}).get('average', 0)
-                nc3.metric("Covariate Shift Index (MFD)", f"{csi:.4f}")
+                nc4.metric(
+                    "4. Covariate Shift Index (MFD)", 
+                    f"{csi:.4f}", 
+                    help="Measures the mathematical distance between the 'average patient' at Hospital 1 vs Hospital 2 using linear algebra."
+                )
+
+                wd = niid.get('wasserstein_distance', {}).get('average', 0)
+                nc5.metric(
+                    "5. Wasserstein Distance", 
+                    f"{wd:.4f}", 
+                    help="Earth Mover's Distance. Calculates the 'effort' needed to transform one hospital's data distribution to look like another's."
+                )
                 
             else:
                 st.warning("Non-IID metrics unavailable.")
