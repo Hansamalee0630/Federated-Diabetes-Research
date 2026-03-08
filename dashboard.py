@@ -1187,7 +1187,7 @@ with tabs[1]:
 # --- TAB 3: MULTIMODAL FUSION ENGINE ---
 with tabs[2]:
     st.markdown("""
-        <h2 style='text-align: center;'>🧬 Next-Gen Multimodal Fusion</h2>
+        <h2 style='text-align: center;'> Next-Gen Multimodal Fusion</h2>
         <p style='text-align: center; color: #94a3b8;'>
             Fusing EfficientNet-B3 Retinal Analysis with MLP-based Clinical EHR
         </p>
@@ -1229,13 +1229,13 @@ with tabs[2]:
                                      help="Body Mass Index")
             # BMI Category Indicator
             if m1_bmi < 18.5:
-                st.caption("Category: Underweight")
+                st.caption(" Category: Underweight")
             elif m1_bmi < 25:
-                st.caption("Category: Normal")
+                st.caption(" Category: Normal ")
             elif m1_bmi < 30:
-                st.caption("Category: Overweight")
+                st.caption(" Category: Overweight ")
             else:
-                st.caption("Category: Obese")
+                st.caption(" Category: Obese ")
         
         st.markdown("---")
         
@@ -1247,27 +1247,27 @@ with tabs[2]:
                                  help="Glycated hemoglobin - 3-month average blood sugar")
             # HbA1c interpretation
             if m1_hba1c < 5.7:
-                st.success("Normal", icon="✅")
+                st.success("Normal")
             elif m1_hba1c < 6.5:
-                st.warning("Prediabetic", icon="⚠️")
+                st.warning("Prediabetic")
             else:
-                st.error("Diabetic Range", icon="🔴")
+                st.error("Diabetic Range")
                 
         with glyc_c2:
             m1_glucose = st.number_input("Fasting Glucose (mg/dL)", 50, 400, 150,
                                          help="Fasting blood glucose level")
             # Glucose interpretation
             if m1_glucose < 100:
-                st.success("Normal", icon="✅")
+                st.success("Normal")
             elif m1_glucose < 126:
-                st.warning("Impaired", icon="⚠️")
+                st.warning("Impaired")
             else:
-                st.error("High", icon="🔴")
+                st.error("High")
         
         st.markdown("---")
         
         # Row 3: Risk Factors
-        st.markdown("##### ⚠️ Risk Factors")
+        st.markdown("#####  Risk Factors")
         risk_c1, risk_c2 = st.columns(2)
         with risk_c1:
             m1_smoke = st.selectbox("Smoking Status", 
@@ -1286,7 +1286,7 @@ with tabs[2]:
             m1_gender != "", m1_smoke != "No Info", True, True  # toggles always count
         ])
         completeness = filled_fields / 8
-        st.progress(completeness, text=f"EHR Data Completeness: {completeness:.0%}")
+        st.progress(completeness, text=f" EHR Data Completeness: {completeness:.0%}")
         
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1294,7 +1294,7 @@ with tabs[2]:
     with col_img:
         # st.markdown('<div class="glass-card" style="min-height: 500px;">', unsafe_allow_html=True)
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-        st.markdown("### 👁️ Modality 2: Retinal Scan")
+        st.markdown("###  Modality 2: Retinal Scan")
         st.caption("Upload fundus photography for diabetic retinopathy screening")
         
         st.markdown("---")
@@ -1307,17 +1307,17 @@ with tabs[2]:
         
         if uploaded_file:
             # Display uploaded image with metadata
-            st.image(uploaded_file, caption="📷 Uploaded Fundus Scan", use_container_width=True)
+            st.image(uploaded_file, caption=" Uploaded Fundus Scan", use_container_width=True)
             
             # Image metadata
             file_size = uploaded_file.size / 1024  # KB
-            st.caption(f"📁 File: {uploaded_file.name} | Size: {file_size:.1f} KB")
+            st.caption(f" File: {uploaded_file.name} | Size: {file_size:.1f} KB")
             
             # Image quality check (mock)
-            st.success("✅ Image quality: Good", icon="🔍")
+            st.success(" Image quality: Good")
             
             # Preview what model sees
-            with st.expander("Preprocessing Preview"):
+            with st.expander(" Preprocessing Preview"):
                 st.info("Image will be resized to 300x300 and normalized for model input.")
                 st.code("""
 Transform Pipeline:
@@ -1333,7 +1333,7 @@ Transform Pipeline:
                             display: flex; align-items: center; justify-content: center; 
                             border: 2px dashed #334155; margin: 20px 0;">
                     <div style="text-align: center; color: #64748b;">
-                        <p style="font-size: 3rem; margin-bottom: 10px;">👁️</p>
+                        <p style="font-size: 3rem; margin-bottom: 10px;"></p>
                         <p style="font-size: 1.1rem; font-weight: 600;">Drop Retinal Image Here</p>
                         <p style="font-size: 0.85rem; margin-top: 5px;">or click to browse</p>
                     </div>
@@ -1342,14 +1342,14 @@ Transform Pipeline:
             
             # Sample images option
             st.markdown("---")
-            st.markdown("##### 📂 Or Use Sample Image")
+            st.markdown("#####  Or Use Sample Image")
             sample_choice = st.selectbox(
                 "Select sample retinal scan:",
                 ["None", "Sample 1: Normal Retina", "Sample 2: Mild DR", "Sample 3: Severe DR"],
                 help="Use a sample image for testing"
             )
             if sample_choice != "None":
-                st.info(f"🔄 Using: {sample_choice} (Demo Mode)")
+                st.info(f" Using: {sample_choice} (Demo Mode)")
         
         st.markdown('</div>', unsafe_allow_html=True)
 
@@ -1360,7 +1360,7 @@ Transform Pipeline:
     st.markdown("<br>", unsafe_allow_html=True)
 
     st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-    st.markdown("### Run Inference")
+    st.markdown("###  Run Inference")
 
     st.markdown(
         """
@@ -1379,23 +1379,23 @@ Transform Pipeline:
     with col_btn1:
         st.markdown("""
             <div style="text-align: center; padding: 10px;">
-                <p style="font-size: 2rem;">📋</p>
+                <p style="font-size: 2rem;"></p>
                 <p style="font-weight: 600;">EHR Only</p>
                 <p style="font-size: 0.8rem; color: #94a3b8;">MLP Neural Network</p>
             </div>
         """, unsafe_allow_html=True)
-        run_ehr = st.button("Run EHR Model", use_container_width=True, type="secondary")
+        run_ehr = st.button(" Run EHR Model", use_container_width=True, type="secondary")
 
     with col_btn2:
         st.markdown("""
             <div style="text-align: center; padding: 10px;">
-                <p style="font-size: 2rem;">👁️</p>
+                <p style="font-size: 2rem;"></p>
                 <p style="font-weight: 600;">Retinal Only</p>
                 <p style="font-size: 0.8rem; color: #94a3b8;">EfficientNet-B3</p>
             </div>
         """, unsafe_allow_html=True)
         run_retinal = st.button(
-            "Run Retinal Model",
+            " Run Retinal Model",
             use_container_width=True,
             type="secondary",
             disabled=not uploaded_file,
@@ -1406,13 +1406,13 @@ Transform Pipeline:
     with col_btn3:
         st.markdown("""
             <div style="text-align: center; padding: 10px;">
-                <p style="font-size: 2rem;">🧬</p>
+                <p style="font-size: 2rem;"></p>
                 <p style="font-weight: 600;">Multimodal Fusion</p>
                 <p style="font-size: 0.8rem; color: #94a3b8;">Combined Analysis</p>
             </div>
         """, unsafe_allow_html=True)
         run_fusion = st.button(
-            "Run Fusion Model",
+            " Run Fusion Model",
             use_container_width=True,
             type="primary",
             disabled=not uploaded_file,
@@ -1424,10 +1424,10 @@ Transform Pipeline:
 
     # Validation
     if run_retinal and not uploaded_file:
-        st.error("❌ Please upload a retinal scan first!")
+        st.error(" Please upload a retinal scan first!")
         run_retinal = False
     if run_fusion and not uploaded_file:
-        st.error("❌ Please upload a retinal scan for fusion analysis!")
+        st.error(" Please upload a retinal scan for fusion analysis!")
         run_fusion = False
 
     # ═══════════════════════════════════════════════════════════════════════
@@ -1456,7 +1456,7 @@ Transform Pipeline:
     if run_ehr or run_retinal or run_fusion:
         st.markdown("<br>", unsafe_allow_html=True)
 
-        with st.spinner("🧠 Running AI Inference..."):
+        with st.spinner(" Running AI Inference..."):
             # Step 1: Preprocessing
             time.sleep(0.2)
 
@@ -1487,80 +1487,135 @@ Transform Pipeline:
     # SECTION 4: RESULTS DISPLAY
     # ═══════════════════════════════════════════════════════════════════════
     
-    if ehr_prob is not None or ret_prob is not None or fusion_prob is not None:
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("---")
-        st.markdown("## Risk Assessment Results")
+    # if ehr_prob is not None or ret_prob is not None or fusion_prob is not None:
+    #     st.markdown("<br>", unsafe_allow_html=True)
+    #     st.markdown("---")
+    #     st.markdown("##  Risk Assessment Results")
         
-        # --- GAUGES ROW ---
-        result_cols = st.columns(3)
+    #     # --- GAUGES ROW ---
+    #     result_cols = st.columns(3)
         
-        with result_cols[0]:
-            if ehr_prob is not None:
-                st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-                color = "#4ade80" if ehr_prob < 0.5 else "#ef4444"
-                st.plotly_chart(create_gauge_dark(ehr_prob, "EHR RISK", color), use_container_width=True)
+    #     with result_cols[0]:
+    #         if ehr_prob is not None:
+    #             st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    #             color = "#4ade80" if ehr_prob < 0.5 else "#ef4444"
+    #             st.plotly_chart(create_gauge_dark(ehr_prob, "EHR RISK", color), use_container_width=True)
                 
-                # Risk level badge
-                if ehr_prob < 0.3:
-                    st.success("LOW RISK", icon="✅")
-                elif ehr_prob < 0.6:
-                    st.warning("MODERATE RISK", icon="⚠️")
-                else:
-                    st.error("HIGH RISK", icon="🚨")
-                st.markdown('</div>', unsafe_allow_html=True)
-            else:
-                st.markdown("""
-                    <div class="glass-card" style="text-align: center; padding: 50px; opacity: 0.5;">
-                        <p style="font-size: 2rem;">📋</p>
-                        <p>EHR Model</p>
-                        <p style="color: #64748b;">Not run</p>
-                    </div>
-                """, unsafe_allow_html=True)
+    #             # Risk level badge
+    #             if ehr_prob < 0.3:
+    #                 st.success("LOW RISK")
+    #             elif ehr_prob < 0.6:
+    #                 st.warning("MODERATE RISK")
+    #             else:
+    #                 st.error("HIGH RISK")
+    #             st.markdown('</div>', unsafe_allow_html=True)
+    #         else:
+    #             st.markdown("""
+    #                 <div class="glass-card" style="text-align: center; padding: 50px; opacity: 0.5;">
+    #                     <p style="font-size: 2rem;"></p>
+    #                     <p>EHR Model</p>
+    #                     <p style="color: #64748b;">Not run</p>
+    #                 </div>
+    #             """, unsafe_allow_html=True)
         
-        with result_cols[1]:
-            if ret_prob is not None:
-                st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-                color = "#4ade80" if ret_prob < 0.5 else "#ef4444"
-                st.plotly_chart(create_gauge_dark(ret_prob, "RETINAL RISK", color), use_container_width=True)
+    #     with result_cols[1]:
+    #         if ret_prob is not None:
+    #             st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+    #             color = "#4ade80" if ret_prob < 0.5 else "#ef4444"
+    #             st.plotly_chart(create_gauge_dark(ret_prob, "RETINAL RISK", color), use_container_width=True)
                 
-                if ret_prob < 0.3:
-                    st.success("LOW RISK", icon="✅")
-                elif ret_prob < 0.6:
-                    st.warning("MODERATE RISK", icon="⚠️")
-                else:
-                    st.error("HIGH RISK", icon="🚨")
-                st.markdown('</div>', unsafe_allow_html=True)
-            else:
-                st.markdown("""
-                    <div class="glass-card" style="text-align: center; padding: 50px; opacity: 0.5;">
-                        <p style="font-size: 2rem;">👁️</p>
-                        <p>Retinal Model</p>
-                        <p style="color: #64748b;">Not run</p>
-                    </div>
-                """, unsafe_allow_html=True)
+    #             if ret_prob < 0.3:
+    #                 st.success("LOW RISK")
+    #             elif ret_prob < 0.6:
+    #                 st.warning("MODERATE RISK")
+    #             else:
+    #                 st.error("HIGH RISK")
+    #             st.markdown('</div>', unsafe_allow_html=True)
+    #         else:
+    #             st.markdown("""
+    #                 <div class="glass-card" style="text-align: center; padding: 50px; opacity: 0.5;">
+    #                     <p style="font-size: 2rem;"></p>
+    #                     <p>Retinal Model</p>
+    #                     <p style="color: #64748b;">Not run</p>
+    #                 </div>
+    #             """, unsafe_allow_html=True)
         
-        with result_cols[2]:
-            if fusion_prob is not None:
-                st.markdown('<div class="glass-card" style="border: 2px solid #06b6d4;">', unsafe_allow_html=True)
-                color = "#4ade80" if fusion_prob < 0.5 else "#ef4444"
-                st.plotly_chart(create_gauge_dark(fusion_prob, "🧬 FUSED RISK", color), use_container_width=True)
+    #     with result_cols[2]:
+    #         if fusion_prob is not None:
+    #             st.markdown('<div class="glass-card" style="border: 2px solid #06b6d4;">', unsafe_allow_html=True)
+    #             color = "#4ade80" if fusion_prob < 0.5 else "#ef4444"
+    #             st.plotly_chart(create_gauge_dark(fusion_prob, " FUSED RISK", color), use_container_width=True)
                 
-                if fusion_prob < 0.3:
-                    st.success("LOW RISK", icon="✅")
-                elif fusion_prob < 0.6:
-                    st.warning("MODERATE RISK", icon="⚠️")
-                else:
-                    st.error("HIGH RISK", icon="🚨")
-                st.markdown('</div>', unsafe_allow_html=True)
+    #             if fusion_prob < 0.3:
+    #                 st.success("LOW RISK")
+    #             elif fusion_prob < 0.6:
+    #                 st.warning("MODERATE RISK")
+    #             else:
+    #                 st.error("HIGH RISK")
+    #             st.markdown('</div>', unsafe_allow_html=True)
+    #         else:
+    #             st.markdown("""
+    #                 <div class="glass-card" style="text-align: center; padding: 50px; opacity: 0.5;">
+    #                     <p style="font-size: 2rem;"></p>
+    #                     <p>Fusion Model</p>
+    #                     <p style="color: #64748b;">Not run</p>
+    #                 </div>
+    #             """, unsafe_allow_html=True)
+    
+# ═══════════════════════════════════════════════════════════════════════
+# SECTION 4: RESULTS DISPLAY
+# ═══════════════════════════════════════════════════════════════════════
+
+if ehr_prob is not None or ret_prob is not None or fusion_prob is not None:
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("---")
+    st.markdown("##  Risk Assessment Results")
+
+    # Center the single result using empty columns on the sides
+    spacer_left, center_col, spacer_right = st.columns([1, 2, 1])
+
+    with center_col:
+        if fusion_prob is not None:
+            # ── Global / Fusion Model ──
+            st.markdown('<div class="glass-card" style="border: 2px solid #06b6d4;">', unsafe_allow_html=True)
+            color = "#4ade80" if fusion_prob < 0.5 else "#ef4444"
+            st.plotly_chart(create_gauge_dark(fusion_prob, " FUSED RISK", color), use_container_width=True)
+
+            if fusion_prob < 0.3:
+                st.success("LOW RISK" )
+            elif fusion_prob < 0.6:
+                st.warning("MODERATE RISK")
             else:
-                st.markdown("""
-                    <div class="glass-card" style="text-align: center; padding: 50px; opacity: 0.5;">
-                        <p style="font-size: 2rem;">🧬</p>
-                        <p>Fusion Model</p>
-                        <p style="color: #64748b;">Not run</p>
-                    </div>
-                """, unsafe_allow_html=True)
+                st.error("HIGH RISK")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        elif ret_prob is not None:
+            # ── Retinal Model ──
+            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+            color = "#4ade80" if ret_prob < 0.5 else "#ef4444"
+            st.plotly_chart(create_gauge_dark(ret_prob, "RETINAL RISK", color), use_container_width=True)
+
+            if ret_prob < 0.3:
+                st.success("LOW RISK")
+            elif ret_prob < 0.6:
+                st.warning("MODERATE RISK")
+            else:
+                st.error("HIGH RISK")
+            st.markdown('</div>', unsafe_allow_html=True)
+
+        elif ehr_prob is not None:
+            # ── EHR Model ──
+            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+            color = "#4ade80" if ehr_prob < 0.5 else "#ef4444"
+            st.plotly_chart(create_gauge_dark(ehr_prob, "EHR RISK", color), use_container_width=True)
+
+            if ehr_prob < 0.3:
+                st.success("LOW RISK")
+            elif ehr_prob < 0.6:
+                st.warning("MODERATE RISK")
+            else:
+                st.error("HIGH RISK")
+            st.markdown('</div>', unsafe_allow_html=True)
 
         # ═══════════════════════════════════════════════════════════════════
         # SECTION 5: CLINICAL INTERPRETATION (Only show if fusion ran)
@@ -1571,7 +1626,7 @@ Transform Pipeline:
             
             # --- Model Comparison ---
             st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-            st.markdown("### 📈 Model Comparison")
+            st.markdown("###  Model Comparison")
             
             compare_col1, compare_col2 = st.columns([2, 1])
             
@@ -1599,20 +1654,20 @@ Transform Pipeline:
                 st.plotly_chart(fig_compare, use_container_width=True)
             
             with compare_col2:
-                st.markdown("#### 🔍 Analysis")
+                st.markdown("####  Analysis")
                 
                 # Determine which modality contributes more
                 if ehr_prob and ret_prob:
                     if abs(fusion_prob - ehr_prob) < abs(fusion_prob - ret_prob):
-                        st.info("📋 **EHR data** is the primary risk driver")
+                        st.info(" **EHR data** is the primary risk driver")
                     else:
-                        st.info("👁️ **Retinal findings** are the primary risk driver")
+                        st.info(" **Retinal findings** are the primary risk driver")
                     
                     # Agreement check
                     if (ehr_prob > 0.5 and ret_prob > 0.5) or (ehr_prob < 0.5 and ret_prob < 0.5):
-                        st.success("✅ Both modalities **agree** on risk level")
+                        st.success(" Both modalities **agree** on risk level")
                     else:
-                        st.warning("⚠️ Modalities **disagree** - clinical review recommended")
+                        st.warning(" Modalities **disagree** - clinical review recommended")
                 
                 # Confidence
                 confidence = 1 - abs(ehr_prob - ret_prob) if (ehr_prob and ret_prob) else 0.5
@@ -1623,7 +1678,7 @@ Transform Pipeline:
             # --- Clinical Recommendations ---
             st.markdown("<br>", unsafe_allow_html=True)
             st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-            st.markdown("### Clinical Recommendations")
+            st.markdown("###  Clinical Recommendations")
             
             rec_col1, rec_col2 = st.columns(2)
             
@@ -1631,7 +1686,7 @@ Transform Pipeline:
                 st.markdown("#### Based on Risk Level:")
                 if fusion_prob >= 0.7:
                     st.error("""
-                    🚨 **HIGH RISK - Immediate Action Required**
+                     **HIGH RISK - Immediate Action Required**
                     - Urgent ophthalmology referral
                     - Intensive glycemic control review
                     - Consider anti-VEGF therapy evaluation
@@ -1639,7 +1694,7 @@ Transform Pipeline:
                     """)
                 elif fusion_prob >= 0.4:
                     st.warning("""
-                    ⚠️ **MODERATE RISK - Close Monitoring**
+                     **MODERATE RISK - Close Monitoring**
                     - Schedule ophthalmology within 1 month
                     - Optimize diabetes management
                     - Review blood pressure control
@@ -1647,7 +1702,7 @@ Transform Pipeline:
                     """)
                 else:
                     st.success("""
-                    ✅ **LOW RISK - Maintain Current Care**
+                     **LOW RISK - Maintain Current Care**
                     - Continue routine diabetes management
                     - Annual eye examination
                     - Lifestyle modifications as needed
