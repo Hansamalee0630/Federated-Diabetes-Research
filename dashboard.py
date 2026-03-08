@@ -573,184 +573,175 @@ def create_gauge(value, title, color):
     fig.update_layout(paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=280, margin=dict(t=50, b=10, l=30, r=30))
     return fig
 
-# --- TAB 1 CONTENT ---
-# --- CUSTOM CSS FOR THE "FEDERATED HUB" LOOK ---
-st.markdown("""
-    <style>
-    .metric-card {
-        background-color: rgba(30, 41, 59, 0.7);
-        padding: 20px;
-        border-radius: 12px;
-        border: 1px solid #334155;
-        text-align: center;
-        margin-bottom: 10px;
-    }
-    .metric-value { font-size: 1.8rem; font-weight: 800; color: #38bdf8; }
-    .metric-label { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
-    .reasoning-text {
-        font-size: 0.9rem; color: #cbd5e1; margin-top: 10px; text-align: center;
-        background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;
-        border-left: 4px solid #3b82f6; line-height: 1.4;
-    }
-    .status-box {
-        padding: 20px; border-radius: 12px; text-align: center; 
-        font-weight: 800; font-size: 1.2rem; margin: 20px 0;
-        letter-spacing: 1px; border: 1px solid;
-    }
-    .critical-box { background-color: rgba(239, 68, 68, 0.15); border-color: #ef4444; color: #f87171; }
-    .moderate-box { background-color: rgba(245, 158, 11, 0.15); border-color: #f59e0b; color: #fbbf24; }
-    .stable-box { background-color: rgba(16, 185, 129, 0.15); border-color: #10b981; color: #34d399; }
-    </style>
-""", unsafe_allow_html=True)
+# --- TAB 0 CONTAINER ---
+with tabs[0]:
+    # --- CUSTOM CSS FOR THE "FEDERATED HUB" LOOK ---
+    st.markdown("""
+        <style>
+        .metric-card {
+            background-color: rgba(30, 41, 59, 0.7);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #334155;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .metric-value { font-size: 1.8rem; font-weight: 800; color: #38bdf8; }
+        .metric-label { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+        .reasoning-text {
+            font-size: 0.9rem; color: #cbd5e1; margin-top: 10px; text-align: center;
+            background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;
+            border-left: 4px solid #3b82f6; line-height: 1.4;
+        }
+        .status-box {
+            padding: 20px; border-radius: 12px; text-align: center; 
+            font-weight: 800; font-size: 1.2rem; margin: 20px 0;
+            letter-spacing: 1px; border: 1px solid;
+        }
+        .critical-box { background-color: rgba(239, 68, 68, 0.15); border-color: #ef4444; color: #f87171; }
+        .moderate-box { background-color: rgba(245, 158, 11, 0.15); border-color: #f59e0b; color: #fbbf24; }
+        .stable-box { background-color: rgba(16, 185, 129, 0.15); border-color: #10b981; color: #34d399; }
+        </style>
+    """, unsafe_allow_html=True)
 
-# --- VIEW MODE SELECTION ---
-view_mode = st.radio(
-    "Select Dashboard View Mode:",
-    ["Dashboard View", "Research Metrics & Model Performace"],
-    horizontal=True
-)
+    # --- VIEW MODE SELECTION ---
+    # Key 'comp1_selector' ensures this radio doesn't conflict with other tabs
+    view_mode = st.radio(
+        "Select Dashboard View Mode:",
+        ["Dashboard View", "Research Metrics & Model Performance"],
+        horizontal=True,
+        key="comp1_selector"
+    )
 
-st.divider()
+    st.divider()
 
-# --- CLINICAL STAFF VIEW ---
-if view_mode == "Dashboard View":
-    st.title("Diabetes Related Complication Risk Assessment")
-    
-    # Load models (ensure this function is defined in your script)
-    neph_model, cvd_model = load_comp1_models()
+    # --- CLINICAL STAFF VIEW ---
+    if view_mode == "Dashboard View":
+        st.title("Diabetes Related Complication Risk Assessment")
+        
+        neph_model, cvd_model = load_comp1_models()
 
-    if neph_model:
-        with st.form("clinical_input_form"):
-            col1, col2 = st.columns(2)
-            with col1:
-                st.subheader("Renal Biomarkers")
-                age = st.number_input("Age", 18, 100, 60)
-                bmi = st.number_input("BMI (kg/m²)", 10.0, 60.0, 28.5)
-                hba1c = st.number_input("HbA1c (%)", 4.0, 18.0, 7.5)
-                cr = st.number_input("Creatinine (μmol/L)", 10.0, 500.0, 95.0)
-                urea = st.number_input("Urea (mmol/L)", 1.0, 60.0, 6.2)
-            
-            with col2:
-                st.subheader("Lipid Profile")
-                chol = st.number_input("Cholesterol (mmol/L)", 1.0, 15.0, 5.0)
-                hdl = st.number_input("HDL (mmol/L)", 0.1, 5.0, 1.2)
-                tg = st.number_input("Triglycerides (mmol/L)", 0.1, 15.0, 1.8)
-                st.info(" Tip: AIP is calculated automatically from TG and HDL.")
+        if neph_model:
+            with st.form("clinical_input_form"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.subheader("Renal Biomarkers")
+                    age = st.number_input("Age", 18, 100, 60)
+                    bmi = st.number_input("BMI (kg/m²)", 10.0, 60.0, 28.5)
+                    hba1c = st.number_input("HbA1c (%)", 4.0, 18.0, 7.5)
+                    cr = st.number_input("Creatinine (μmol/L)", 10.0, 500.0, 95.0)
+                    urea = st.number_input("Urea (mmol/L)", 1.0, 60.0, 6.2)
+                
+                with col2:
+                    st.subheader("Lipid Profile")
+                    chol = st.number_input("Cholesterol (mmol/L)", 1.0, 15.0, 5.0)
+                    hdl = st.number_input("HDL (mmol/L)", 0.1, 5.0, 1.2)
+                    tg = st.number_input("Triglycerides (mmol/L)", 0.1, 15.0, 1.8)
+                    st.info("Tip: AIP is calculated automatically from TG and HDL.")
 
-            submit = st.form_submit_button("RUN CLINICAL DIAGNOSTICS", use_container_width=True)
+                submit = st.form_submit_button("RUN CLINICAL DIAGNOSTICS", use_container_width=True)
 
-        if submit:
-            # --- STEP 1: NEPHROPATHY ANALYSIS ---
-            rule_n1 = (cr > 106.0 and hba1c > 8.0)
-            rule_n2 = (urea > 7.8 and age > 65 and bmi >= 30)
-            
-            n_input = torch.tensor([[age, bmi, hba1c, cr, urea]]).float()
-            with torch.no_grad():
-                n_prob = torch.sigmoid(neph_model(n_input)).item()
-            
-            # Smooth Safety Override
-            n_risk = max(n_prob, 0.85) if (rule_n1 or rule_n2) else n_prob
+            if submit:
+                # --- STEP 1: NEPHROPATHY ANALYSIS ---
+                rule_n1 = (cr > 106.0 and hba1c > 8.0)
+                rule_n2 = (urea > 7.8 and age > 65 and bmi >= 30)
+                
+                n_input = torch.tensor([[age, bmi, hba1c, cr, urea]]).float()
+                with torch.no_grad():
+                    n_prob = torch.sigmoid(neph_model(n_input)).item()
+                
+                n_risk = max(n_prob, 0.85) if (rule_n1 or rule_n2) else n_prob
 
-            # --- STEP 2: CVD ANALYSIS ---
-            aip = np.log10(tg / max(hdl, 0.5))
-            dyslipidemia = (chol >= 5.1 or tg >= 3.1 or hdl < 1.0)
-            
-            # CVD model uses Nephropathy risk (n_risk) as input
-            c_input = torch.tensor([[chol, tg, hdl, n_risk]]).float()
-            with torch.no_grad():
-                c_prob = torch.sigmoid(cvd_model(c_input)).item()
-            
-            # CVD Risk Escalation
-            if (aip > 0.24 and dyslipidemia) or (n_risk > 0.75): 
-                c_risk = max(c_prob, 0.92)
-            else:
-                c_risk = c_prob
+                # --- STEP 2: CVD ANALYSIS (Sequential Pipeline) ---
+                aip = np.log10(tg / max(hdl, 0.5))
+                dyslipidemia = (chol >= 5.1 or tg >= 3.1 or hdl < 1.0)
+                
+                c_input = torch.tensor([[chol, tg, hdl, n_risk]]).float()
+                with torch.no_grad():
+                    c_prob = torch.sigmoid(cvd_model(c_input)).item()
+                
+                c_risk = max(c_prob, 0.92) if ((aip > 0.24 and dyslipidemia) or (n_risk > 0.75)) else c_prob
 
-            # --- STEP 3: VISUAL RESULTS ---
-            res_c1, res_c2 = st.columns(2)
-            with res_c1:
-                n_color = "#ef4444" if n_risk > 0.5 else "#10b981"
-                st.plotly_chart(create_gauge(n_risk, "NEPHROPATHY RISK", n_color), use_container_width=True)
-                n_reason = " Critical: Thresholds exceeded." if rule_n1 else ("Warning: High-risk demographic." if rule_n2 else " Stable: Biomarkers within range.")
-                st.markdown(f'<div class="reasoning-text"><b>Assessment:</b> {n_reason}</div>', unsafe_allow_html=True)
+                # --- STEP 3: VISUAL RESULTS ---
+                res_c1, res_c2 = st.columns(2)
+                with res_c1:
+                    n_color = "#ef4444" if n_risk > 0.5 else "#10b981"
+                    st.plotly_chart(create_gauge(n_risk, "NEPHROPATHY RISK", n_color), use_container_width=True)
+                    n_reason = " Critical: Thresholds exceeded." if rule_n1 else ("Warning: High-risk demographic." if rule_n2 else " Stable: Biomarkers within range.")
+                    st.markdown(f'<div class="reasoning-text"><b>Assessment:</b> {n_reason}</div>', unsafe_allow_html=True)
 
-            with res_c2:
-                c_color = "#ef4444" if c_risk > 0.5 else "#10b981"
-                st.plotly_chart(create_gauge(c_risk, "CVD RISK", c_color), use_container_width=True)
-                c_reason = f"AIP Score: {aip:.2f}. Dyslipidemia: {'Detected' if dyslipidemia else 'None'}."
-                if n_risk > 0.7: c_reason += " Risk escalated by renal impairment."
-                st.markdown(f'<div class="reasoning-text"><b>Assessment:</b> {c_reason}</div>', unsafe_allow_html=True)
+                with res_c2:
+                    c_color = "#ef4444" if c_risk > 0.5 else "#10b981"
+                    st.plotly_chart(create_gauge(c_risk, "CVD RISK", c_color), use_container_width=True)
+                    c_reason = f"AIP Score: {aip:.2f}. Dyslipidemia: {'Detected' if dyslipidemia else 'None'}."
+                    if n_risk > 0.7: c_reason += " Risk escalated by renal impairment."
+                    st.markdown(f'<div class="reasoning-text"><b>Assessment:</b> {c_reason}</div>', unsafe_allow_html=True)
 
-            # --- STEP 4: CLINICAL SUMMARY BOX ---
-            st.divider()
-            max_risk_val = max(n_risk, c_risk)
-            if max_risk_val > 0.75: status_class, status_label, advice = "critical-box", "CRITICAL RISK", "Immediate clinical review required."
-            elif max_risk_val > 0.45: status_class, status_label, advice = "moderate-box", "MODERATE RISK", "Indications of emerging complications."
-            else: status_class, status_label, advice = "stable-box", "STABLE / LOW RISK", "Maintain current diabetic management plan."
+                # --- STEP 4: CLINICAL SUMMARY ---
+                st.divider()
+                max_risk_val = max(n_risk, c_risk)
+                if max_risk_val > 0.75: status_class, status_label, advice = "critical-box", "CRITICAL RISK", "Immediate clinical review required."
+                elif max_risk_val > 0.45: status_class, status_label, advice = "moderate-box", "MODERATE RISK", "Indications of emerging complications."
+                else: status_class, status_label, advice = "stable-box", "STABLE / LOW RISK", "Maintain current diabetic management plan."
 
-            st.markdown(f'<div class="status-box {status_class}">OVERALL STATUS: {status_label}</div>', unsafe_allow_html=True)
-            st.info(f"**Medical Recommendation:** {advice}")
+                st.markdown(f'<div class="status-box {status_class}">OVERALL STATUS: {status_label}</div>', unsafe_allow_html=True)
+                st.info(f"**Medical Recommendation:** {advice}")
 
-            # --- STEP 5: REPORT GENERATION ---
-            report_content = f"DIABETES REPORT\nGenerated: {datetime.now()}\nNephro Risk: {n_risk*100:.1f}%\nCVD Risk: {c_risk*100:.1f}%\nStatus: {status_label}"
-            st.download_button("DOWNLOAD FULL CLINICAL REPORT", data=report_content, file_name="Report.txt", use_container_width=True)
+                report_content = f"DIABETES REPORT\nGenerated: {datetime.now()}\nNephro Risk: {n_risk*100:.1f}%\nCVD Risk: {c_risk*100:.1f}%\nStatus: {status_label}"
+                st.download_button("DOWNLOAD FULL CLINICAL REPORT", data=report_content, file_name="Report.txt", use_container_width=True)
+        else:
+            st.error("Model Error: Neural network weights could not be loaded.")
 
+    # --- RESEARCH & ANALYTICS VIEW ---
     else:
-        st.error("Model Error: Neural network weights could not be loaded.")
-
-# --- RESEARCH & ANALYTICS VIEW ---
-else:
-    st.subheader("FEDERATED LEARNING EVALUATION METRICS")
-    st.caption("Technical performance and privacy analytics across the simulated federated network.")
-    
-    sub_tabs = st.tabs(["OverallPerformance","FedAvg Training","Privacy & DP"])
-    
-    with sub_tabs[0]:
-        st.markdown("Aggregated Global Model Metrics")
-        m1, m2, m3, m4 = st.columns(4)
-        # Using exact metrics from your terminal run
-        with m1: st.markdown('<div class="metric-card"><div class="metric-label">CVD Accuracy</div><div class="metric-value">87.5%</div></div>', unsafe_allow_html=True)
-        with m2: st.markdown('<div class="metric-card"><div class="metric-label">CVD AUC</div><div class="metric-value">0.9452</div></div>', unsafe_allow_html=True)
-        with m3: st.markdown('<div class="metric-card"><div class="metric-label">F1-Score (CVD)</div><div class="metric-value">0.8757</div></div>', unsafe_allow_html=True)
-        with m4: st.markdown('<div class="metric-card"><div class="metric-label">Nephro Accuracy</div><div class="metric-value">84.3%</div></div>', unsafe_allow_html=True)
-    
-    with sub_tabs[1]:
-        st.markdown("FedAvg Training Convergence")
-        # Aggregated Loss data from your Step 2 terminal output
-        neph_loss = [1.3336, 1.1285, 0.8829, 0.5754, 0.6858, 0.6271, 0.4881, 0.4917, 0.5002, 0.5169, 
-                     0.4027, 0.4564, 0.3141, 0.3782, 0.3569, 0.2906, 0.3244, 0.3199, 0.3151, 0.3413]
+        st.subheader("FEDERATED LEARNING EVALUATION METRICS")
+        st.caption("Technical performance and privacy analytics across the simulated federated network.")
         
-        cvd_loss = [0.6158, 0.5500, 0.5394, 0.5056, 0.4848, 0.4327, 0.3922, 0.3757, 0.3837, 0.3679, 
-                    0.3201, 0.3243, 0.3445, 0.3726, 0.3409, 0.3508, 0.3235] + [None]*3
+        # Sub-tabs for detailed research metrics
+        sub_tabs = st.tabs(["Overall Performance", "FedAvg Training", "Privacy & DP"])
         
-        convergence_df = pd.DataFrame({
-            "Round": range(1, 21),
-            "Nephropathy (Stage 1)": neph_loss,
-            "CVD Risk (Stage 2)": cvd_loss
-        }).set_index("Round")
+        with sub_tabs[0]:
+            st.markdown("### Aggregated Global Model Metrics")
+            m1, m2, m3, m4 = st.columns(4)
+            with m1: st.markdown('<div class="metric-card"><div class="metric-label">CVD Accuracy</div><div class="metric-value">87.5%</div></div>', unsafe_allow_html=True)
+            with m2: st.markdown('<div class="metric-card"><div class="metric-label">CVD AUC</div><div class="metric-value">0.9452</div></div>', unsafe_allow_html=True)
+            with m3: st.markdown('<div class="metric-card"><div class="metric-label">F1-Score (CVD)</div><div class="metric-value">0.8757</div></div>', unsafe_allow_html=True)
+            with m4: st.markdown('<div class="metric-card"><div class="metric-label">Nephro Accuracy</div><div class="metric-value">84.3%</div></div>', unsafe_allow_html=True)
 
-        
-        st.line_chart(convergence_df, color=["#38bdf8", "#a855f7"])
+        with sub_tabs[1]:
+            st.markdown("### FedAvg Training Convergence")
+            # Loss data from your recent training run
+            neph_loss = [1.3336, 1.1285, 0.8829, 0.5754, 0.6858, 0.6271, 0.4881, 0.4917, 0.5002, 0.5169, 
+                         0.4027, 0.4564, 0.3141, 0.3782, 0.3569, 0.2906, 0.3244, 0.3199, 0.3151, 0.3413]
+            cvd_loss = [0.6158, 0.5500, 0.5394, 0.5056, 0.4848, 0.4327, 0.3922, 0.3757, 0.3837, 0.3679, 
+                        0.3201, 0.3243, 0.3445, 0.3726, 0.3409, 0.3508, 0.3235] + [None]*3
+            
+            convergence_df = pd.DataFrame({
+                "Round": range(1, 21),
+                "Nephropathy (Stage 1)": neph_loss,
+                "CVD Risk (Stage 2)": cvd_loss
+            }).set_index("Round")
+            
+            st.line_chart(convergence_df, color=["#38bdf8", "#a855f7"])
+            
 
+        with sub_tabs[2]:
+            st.markdown("### Privacy Guardrails (Opacus Configuration)")
+            
+            b1, b2 = st.columns(2)
+            with b1:
+                st.markdown('<div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; padding: 10px; border-radius: 8px; text-align: center; color: #10b981; font-weight: bold;">✓ LOCAL TRAINING: ENCRYPTED</div>', unsafe_allow_html=True)
+            with b2:
+                st.markdown('<div style="background: rgba(56, 189, 248, 0.1); border: 1px solid #38bdf8; padding: 10px; border-radius: 8px; text-align: center; color: #38bdf8; font-weight: bold;">🛡️ DP-SGD: ACTIVE</div>', unsafe_allow_html=True)
 
-    with sub_tabs[2]:
-        st.markdown("Privacy Guardrails (Opacus Configuration)")
-        
-        # Privacy Status Badges
-        b1, b2 = st.columns(2)
-        with b1:
-            st.markdown('<div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; padding: 10px; border-radius: 8px; text-align: center; color: #10b981; font-weight: bold;">✓ LOCAL TRAINING: ENCRYPTED</div>', unsafe_allow_html=True)
-        with b2:
-            st.markdown('<div style="background: rgba(56, 189, 248, 0.1); border: 1px solid #38bdf8; padding: 10px; border-radius: 8px; text-align: center; color: #38bdf8; font-weight: bold;"> DP-SGD: ACTIVE</div>', unsafe_allow_html=True)
-
-        st.divider()
-        # Metrics from your client.py
-        p1, p2, p3 = st.columns(3)
-        with p1: st.metric("Noise Multiplier", "0.5", help="Value from your DiabetesClient setup.")
-        with p2: st.metric("Max Grad Norm", "1.0", help="Clipping threshold per-sample gradient.")
-        with p3: st.metric("Privacy Budget (ε)", "0.75", delta="Delta: 1e-5")
-        
-        #st.info("Note: Per-sample gradients are computed using BCEWithLogitsLoss with reduction='none' for secure DP-SGD.")
+            st.divider()
+            # Technical parameters from your DiabetesClient
+            p1, p2, p3 = st.columns(3)
+            with p1: st.metric("Noise Multiplier", "0.5", help="Added via PrivacyEngine.make_private")
+            with p2: st.metric("Max Grad Norm", "1.0", help="Gradient clipping for per-sample logic")
+            with p3: st.metric("Privacy Budget (ε)", "0.75", delta="Delta: 1e-5")
+            
+            #st.info("Technical Note: BCEWithLogitsLoss uses reduction='none' to satisfy Opacus per-sample gradient requirements.")
     
 # ============================================================================
 # TAB 2: READMISSION RISK PREDICTION (MAIN CLINICAL INTERFACE)
