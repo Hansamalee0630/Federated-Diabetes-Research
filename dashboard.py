@@ -1186,6 +1186,9 @@ with tabs[1]:
     render_readmission_tab()
 
 
+
+
+
 # --- TAB 3: MULTIMODAL FUSION ENGINE ---
 with tabs[2]:
     st.markdown("""
@@ -1211,7 +1214,7 @@ with tabs[2]:
     ])
 
     # ══════════════════════════════════════════════════════════════════
-    # SUB-TAB A: CLINICAL INFERENCE (wrap ALL existing content here)
+    # SUB-TAB A: CLINICAL INFERENCE
     # ══════════════════════════════════════════════════════════════════
     with subtab_fusion_clinical:
 
@@ -1223,7 +1226,7 @@ with tabs[2]:
 
         # --- LEFT COLUMN: EHR INPUTS ---
         with col_ehr:
-            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+            
             st.markdown("### Modality 1: Clinical EHR")
             st.caption("Enter patient clinical data for diabetes risk assessment")
 
@@ -1294,11 +1297,11 @@ with tabs[2]:
             completeness = filled_fields / 8
             st.progress(completeness, text=f" EHR Data Completeness: {completeness:.0%}")
 
-            st.markdown('</div>', unsafe_allow_html=True)
+            
 
         # --- RIGHT COLUMN: RETINAL IMAGE ---
         with col_img:
-            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+            
             st.markdown("###  Modality 2: Retinal Scan")
             st.caption("Upload fundus photography for diabetic retinopathy screening")
 
@@ -1347,7 +1350,7 @@ Transform Pipeline:
                 if sample_choice != "None":
                     st.info(f" Using: {sample_choice} (Demo Mode)")
 
-            st.markdown('</div>', unsafe_allow_html=True)
+            
 
         # ═══════════════════════════════════════════════════════════════
         # SECTION 2: INFERENCE CONTROLS
@@ -1355,7 +1358,7 @@ Transform Pipeline:
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        
         st.markdown("###  Run Inference")
 
         st.markdown(
@@ -1415,7 +1418,7 @@ Transform Pipeline:
             if not uploaded_file:
                 st.caption("Requires a retinal image (and clinical inputs) to run fusion.")
 
-        st.markdown('</div>', unsafe_allow_html=True)
+        
 
         if run_retinal and not uploaded_file:
             st.error(" Please upload a retinal scan first!")
@@ -1492,10 +1495,10 @@ Transform Pipeline:
                         st.warning("MODERATE RISK")
                     else:
                         st.error("HIGH RISK")
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    
 
                 elif ret_prob is not None:
-                    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+                    
                     color = "#4ade80" if ret_prob < 0.5 else "#ef4444"
                     st.plotly_chart(create_gauge_dark(ret_prob, "RETINAL RISK", color), use_container_width=True)
                     if ret_prob < 0.3:
@@ -1504,10 +1507,10 @@ Transform Pipeline:
                         st.warning("MODERATE RISK")
                     else:
                         st.error("HIGH RISK")
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    
 
                 elif ehr_prob is not None:
-                    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+                    
                     color = "#4ade80" if ehr_prob < 0.5 else "#ef4444"
                     st.plotly_chart(create_gauge_dark(ehr_prob, "EHR RISK", color), use_container_width=True)
                     if ehr_prob < 0.3:
@@ -1516,7 +1519,7 @@ Transform Pipeline:
                         st.warning("MODERATE RISK")
                     else:
                         st.error("HIGH RISK")
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    
 
                 # ═══════════════════════════════════════════════════════
                 # SECTION 5: CLINICAL INTERPRETATION (fusion only)
@@ -1525,7 +1528,7 @@ Transform Pipeline:
                 if fusion_prob is not None:
                     st.markdown("<br>", unsafe_allow_html=True)
 
-                    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+                    
                     st.markdown("###  Model Comparison")
 
                     compare_col1, compare_col2 = st.columns([2, 1])
@@ -1563,10 +1566,10 @@ Transform Pipeline:
                         confidence = 1 - abs(ehr_prob - ret_prob) if (ehr_prob and ret_prob) else 0.5
                         st.metric("Model Agreement", f"{confidence:.0%}")
 
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    
 
                     st.markdown("<br>", unsafe_allow_html=True)
-                    st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+                    
                     st.markdown("###  Clinical Recommendations")
 
                     rec_col1, rec_col2 = st.columns(2)
@@ -1602,7 +1605,7 @@ Transform Pipeline:
                         else:
                             st.success("No major modifiable risk factors identified")
 
-                    st.markdown('</div>', unsafe_allow_html=True)
+                    
 
                     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -1656,21 +1659,16 @@ Final diagnosis must be made by a licensed healthcare provider.
                         use_container_width=True
                     )
 
-                    st.markdown("<br>", unsafe_allow_html=True)
-                    st.warning("""
-                    **Clinical Disclaimer:** This AI-powered assessment is a decision-support tool only. 
-                    Results should be interpreted by qualified healthcare professionals in conjunction with 
-                    complete clinical evaluation. This system does not provide medical diagnosis.
-                    """)
+                
 
     # ══════════════════════════════════════════════════════════════════════
     # SUB-TAB B: RESEARCH METRICS & MODEL PERFORMANCE  (ALL NEW)
     # ══════════════════════════════════════════════════════════════════════
     with subtab_fusion_research:
-        st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+        
         st.markdown("### Multimodal Pipeline — Research Metrics & Model Performance")
         st.caption("Evaluation metrics across EHR, Retinal, and Fused architectures trained under federated constraints.")
-        st.markdown('</div>', unsafe_allow_html=True)
+        
 
         st.markdown("<br>", unsafe_allow_html=True)
 
@@ -1685,7 +1683,7 @@ Final diagnosis must be made by a licensed healthcare provider.
         # RESEARCH TAB 1: EHR
         # ═══════════════════════════════════════════════════════════════
         with research_ehr_tab:
-            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+            
 
             st.markdown("<br>", unsafe_allow_html=True)
 
@@ -1730,13 +1728,13 @@ Final diagnosis must be made by a licensed healthcare provider.
             # st.info("""
             # """)
 
-            st.markdown('</div>', unsafe_allow_html=True)
+            
 
         # ═══════════════════════════════════════════════════════════════
         # RESEARCH TAB 2: RETINAL
         # ═══════════════════════════════════════════════════════════════
         with research_ret_tab:
-            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+            
 
             st.markdown("<br>", unsafe_allow_html=True)
 
@@ -1826,13 +1824,13 @@ Final diagnosis must be made by a licensed healthcare provider.
             best balance for diabetic retinopathy detection from fundus images.
             """)
 
-            st.markdown('</div>', unsafe_allow_html=True)
+            
 
         # ═══════════════════════════════════════════════════════════════
         # RESEARCH TAB 3: GLOBAL FUSION MODEL
         # ═══════════════════════════════════════════════════════════════
         with research_global_tab:
-            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+            
             
             st.markdown("<br>", unsafe_allow_html=True)
 
@@ -1932,7 +1930,7 @@ Final diagnosis must be made by a licensed healthcare provider.
             st.plotly_chart(fig_auc, use_container_width=True)
             
 
-            st.markdown('</div>', unsafe_allow_html=True)
+            
 
 
 
