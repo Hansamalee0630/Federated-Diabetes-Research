@@ -1,159 +1,115 @@
 {
-  "dataset_type": "BALANCED",
-  "optimal_threshold": 0.1,
-  "overall_metrics": {
-    "accuracy": 1.0,
-    "recall": 1.0,
-    "precision": 1.0,
-    "f1_score": 1.0,
-    "specificity": 0.0
-  },
-  "gender_fairness_6metrics": {
-    "demographic_parity": {
-      "metric_name": "Demographic Parity",
-      "gap": 0.0,
-      "protected_group_rate": 1.0,
-      "other_group_rate": 1.0,
-      "fair": true,
-      "fair_threshold": 0.1,
-      "clinical_meaning": "Should recommend readmission prevention to both groups equally",
-      "fairness_level": "FAIR"
+    "dataset_type": "BALANCED",
+    "optimal_threshold": 0.515,
+    "overall_metrics": {
+        "accuracy": 0.6045946542964435,
+        "recall": 0.556095406360424,
+        "precision": 0.6159491193737769,
+        "f1_score": 0.5844939647168059,
+        "specificity": 0.6531153336279275
     },
-    "equal_opportunity": {
-      "metric_name": "Equal Opportunity (Sensitivity)",
-      "gap": 0.0,
-      "protected_group_sensitivity": 1.0,
-      "other_group_sensitivity": 1.0,
-      "fair": true,
-      "fair_threshold": 0.1,
-      "clinical_meaning": "[CRITICAL] Equal ability to detect true readmission cases",
-      "fairness_level": "FAIR",
-      "priority": "HIGHEST"
+    "gender_fairness_6metrics": {
+        "demographic_parity": {
+            "gap": 0.005710947955543999,
+            "fair": true
+        },
+        "equal_opportunity": {
+            "gap": 0.010495902856382244,
+            "fair": true
+        },
+        "predictive_parity": {
+            "gap": 0.008476403460174753,
+            "fair": true
+        },
+        "equalized_odds": {
+            "gap": 0.005570343633464009,
+            "fair": true
+        },
+        "disparate_impact": {
+            "ratio": 0.9874237094442918,
+            "fair": true
+        },
+        "calibration": {
+            "gap": 0.005202437542597416,
+            "fair": true
+        },
+        "overall_verdict": {
+            "passes": 6,
+            "total": 6,
+            "verdict": "FAIR"
+        }
     },
-    "predictive_parity": {
-      "metric_name": "Predictive Parity (Precision)",
-      "gap": 0.0,
-      "protected_group_precision": 1.0,
-      "other_group_precision": 1.0,
-      "fair": true,
-      "fair_threshold": 0.1,
-      "clinical_meaning": "When flagged as high-risk, both groups should actually be at risk",
-      "fairness_level": "FAIR"
+    "race_fairness_6metrics": {
+        "demographic_parity": {
+            "gap": 0.0049451807098991885,
+            "fair": true
+        },
+        "equal_opportunity": {
+            "gap": 0.004952913880169163,
+            "fair": true
+        },
+        "predictive_parity": {
+            "gap": 0.002301182111861255,
+            "fair": true
+        },
+        "equalized_odds": {
+            "gap": 0.008368292377374548,
+            "fair": true
+        },
+        "disparate_impact": {
+            "ratio": 0.9893420660018203,
+            "fair": true
+        },
+        "calibration": {
+            "gap": 0.008963661827003588,
+            "fair": true
+        },
+        "overall_verdict": {
+            "passes": 6,
+            "total": 6,
+            "verdict": "FAIR"
+        }
     },
-    "equalized_odds": {
-      "metric_name": "Equalized Odds",
-      "tpr_gap": 0.0,
-      "tnr_gap": 0.0,
-      "combined_gap": 0.0,
-      "protected_tpr": 1.0,
-      "protected_tnr": 0.0,
-      "other_tpr": 1.0,
-      "other_tnr": 0.0,
-      "fair": true,
-      "fair_threshold": 0.1,
-      "clinical_meaning": "Both error rates should be equal across groups",
-      "fairness_level": "FAIR"
-    },
-    "disparate_impact_ratio": {
-      "metric_name": "Disparate Impact Ratio (4/5 Rule)",
-      "ratio": 1.0,
-      "fair": true,
-      "fair_threshold": 0.8,
-      "legal_standard": "US EEOC (Equal Employment Opportunity Commission)",
-      "clinical_meaning": "Protected group selection rate >= 80% of majority group",
-      "fairness_level": "FAIR"
-    },
-    "calibration": {
-      "metric_name": "Calibration (Accuracy Balance)",
-      "gap": 0.0,
-      "protected_accuracy": 1.0,
-      "other_accuracy": 1.0,
-      "fair": true,
-      "fair_threshold": 0.05,
-      "clinical_meaning": "Model should be equally accurate for both groups overall",
-      "fairness_level": "FAIR",
-      "note": "Strictest threshold (0.05) for clinical decisions"
-    },
-    "overall_verdict": {
-      "metrics_passing": 6,
-      "total_metrics": 6,
-      "verdict": "FAIR - All metrics pass",
-      "primary_concern": null,
-      "recommendation": "Model ready for deployment"
+    "group_details": {
+        "gender": {
+            "Male": {
+                "acc": 0.6017526777020448,
+                "recall": 0.5503421309872922,
+                "prec": 0.6112920738327905,
+                "f1": 0.5792181069958847,
+                "sr": 0.44839337877312563,
+                "fpr": 0.3472356935014549,
+                "count": 2054
+            },
+            "Female": {
+                "acc": 0.6069551152446422,
+                "recall": 0.5608380338436745,
+                "prec": 0.6197684772929652,
+                "f1": 0.5888324873096447,
+                "sr": 0.4541043267286696,
+                "fpr": 0.3465909090909091,
+                "count": 2473
+            }
+        },
+        "race": {
+            "Caucasian": {
+                "acc": 0.6051856216853271,
+                "recall": 0.5641176470588235,
+                "prec": 0.6155327342747111,
+                "f1": 0.5887047268262738,
+                "sr": 0.4590453741897466,
+                "fpr": 0.35360094451003543,
+                "count": 3394
+            },
+            "AfricanAmerican": {
+                "acc": 0.5962219598583235,
+                "recall": 0.5591647331786543,
+                "prec": 0.6132315521628499,
+                "f1": 0.5849514563106796,
+                "sr": 0.4639905548996458,
+                "fpr": 0.36538461538461536,
+                "count": 847
+            }
+        }
     }
-  },
-  "race_fairness_6metrics": {
-    "demographic_parity": {
-      "metric_name": "Demographic Parity",
-      "gap": 0.0,
-      "protected_group_rate": 1.0,
-      "other_group_rate": 1.0,
-      "fair": true,
-      "fair_threshold": 0.1,
-      "clinical_meaning": "Should recommend readmission prevention to both groups equally",
-      "fairness_level": "FAIR"
-    },
-    "equal_opportunity": {
-      "metric_name": "Equal Opportunity (Sensitivity)",
-      "gap": 0.0,
-      "protected_group_sensitivity": 1.0,
-      "other_group_sensitivity": 1.0,
-      "fair": true,
-      "fair_threshold": 0.1,
-      "clinical_meaning": "[CRITICAL] Equal ability to detect true readmission cases",
-      "fairness_level": "FAIR",
-      "priority": "HIGHEST"
-    },
-    "predictive_parity": {
-      "metric_name": "Predictive Parity (Precision)",
-      "gap": 0.0,
-      "protected_group_precision": 1.0,
-      "other_group_precision": 1.0,
-      "fair": true,
-      "fair_threshold": 0.1,
-      "clinical_meaning": "When flagged as high-risk, both groups should actually be at risk",
-      "fairness_level": "FAIR"
-    },
-    "equalized_odds": {
-      "metric_name": "Equalized Odds",
-      "tpr_gap": 0.0,
-      "tnr_gap": 0.0,
-      "combined_gap": 0.0,
-      "protected_tpr": 1.0,
-      "protected_tnr": 0.0,
-      "other_tpr": 1.0,
-      "other_tnr": 0.0,
-      "fair": true,
-      "fair_threshold": 0.1,
-      "clinical_meaning": "Both error rates should be equal across groups",
-      "fairness_level": "FAIR"
-    },
-    "disparate_impact_ratio": {
-      "metric_name": "Disparate Impact Ratio (4/5 Rule)",
-      "ratio": 1.0,
-      "fair": true,
-      "fair_threshold": 0.8,
-      "legal_standard": "US EEOC (Equal Employment Opportunity Commission)",
-      "clinical_meaning": "Protected group selection rate >= 80% of majority group",
-      "fairness_level": "FAIR"
-    },
-    "calibration": {
-      "metric_name": "Calibration (Accuracy Balance)",
-      "gap": 0.0,
-      "protected_accuracy": 1.0,
-      "other_accuracy": 1.0,
-      "fair": true,
-      "fair_threshold": 0.05,
-      "clinical_meaning": "Model should be equally accurate for both groups overall",
-      "fairness_level": "FAIR",
-      "note": "Strictest threshold (0.05) for clinical decisions"
-    },
-    "overall_verdict": {
-      "metrics_passing": 6,
-      "total_metrics": 6,
-      "verdict": "FAIR - All metrics pass",
-      "primary_concern": null,
-      "recommendation": "Model ready for deployment"
-    }
-  }
 }
