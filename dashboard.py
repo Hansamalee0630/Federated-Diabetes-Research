@@ -674,8 +674,7 @@ def dark_chart_layout():
         plot_bgcolor='rgba(0,0,0,0)',
         font=dict(color='#cbd5e1', family="Inter"),
         xaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)', zeroline=False),
-        yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)', zeroline=False),
-        margin=dict(l=20, r=20, t=40, b=20)
+        yaxis=dict(showgrid=True, gridcolor='rgba(255,255,255,0.05)', zeroline=False)
     )
 
 def render_readmission_tab():
@@ -697,7 +696,7 @@ def render_readmission_tab():
     st.markdown('<div class="glass-card" style="text-align:center; padding: 15px;">', unsafe_allow_html=True)
     view_mode = st.radio(
         "Select Dashboard View Mode:", 
-        ["🩺 Clinical Staff (Doctors/Nurses)", "🔬 Research & Analytics (Data Science)"],
+        ["Clinical Staff (Doctors/Nurses)", "Research & Analytics (Data Science)"],
         horizontal=True
     )
     st.markdown('</div><br>', unsafe_allow_html=True)
@@ -705,7 +704,7 @@ def render_readmission_tab():
     # ========================================================================
     # VIEW 1: CLINICAL STAFF (DOCTORS & NURSES)
     # ========================================================================
-    if view_mode == "🩺 Clinical Staff (Doctors/Nurses)":
+    if view_mode == "Clinical Staff (Doctors/Nurses)":
         
         st.markdown('<div class="glass-card">', unsafe_allow_html=True)
         st.markdown("""
@@ -795,10 +794,10 @@ def render_readmission_tab():
             st.markdown('</div><br>', unsafe_allow_html=True)
 
             # ====================================================================
-            # DISPLAY: Risk Factors
+            # DISPLAY: Risk Factors (Patient Level)
             # ====================================================================
             st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-            st.markdown("###  Key Risk Drivers")
+            st.markdown("###  Key Risk Drivers (Patient Level)")
             
             risk_factors = []
             if num_medications > 15:
@@ -834,40 +833,70 @@ def render_readmission_tab():
             st.markdown("<br>", unsafe_allow_html=True)
 
             # ====================================================================
-            # DISPLAY: SHAP Hospital Feature Importance (WITH SAFE JSON PARSING)
+            # DISPLAY: SHAP Hospital vs Global Feature Importance
             # ====================================================================
-            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-            st.markdown("###  Primary Clinical Drivers for this Facility")
+            col_shap1, col_shap2 = st.columns(2)
             
             shap_data = all_results['shap_analysis'].get('hospital_stats', {})
             h_data = shap_data.get(str(hospital_id)) or shap_data.get(int(hospital_id))
+            global_data = all_results['shap_analysis'].get('global_stats', {})
             
-            if h_data and h_data.get('top_10_features'):
-                top_features = h_data['top_10_features'][:5]
+            with col_shap1:
+                st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+                st.markdown("###  Primary Clinical Drivers for this Facility")
                 
-                # SAFEGUARD: Support both Dictionary lists and Tuple lists
-                if isinstance(top_features[0], dict):
-                    features = [f['feature'].replace('_', ' ').title() for f in top_features[::-1]]
-                    importances = [f['importance'] for f in top_features[::-1]]
+                if h_data and h_data.get('top_10_features'):
+                    top_features = h_data['top_10_features'][:5]
+                    
+                    if isinstance(top_features[0], dict):
+                        features = [f['feature'].replace('_', ' ').title() for f in top_features[::-1]]
+                        importances = [f['importance'] for f in top_features[::-1]]
+                    else:
+                        features = [f[0].replace('_', ' ').title() for f in top_features[::-1]]
+                        importances = [f[1] for f in top_features[::-1]]
+                    
+                    fig = go.Figure(go.Bar(
+                        x=importances, y=features, orientation='h', 
+                        marker_color='#0ea5e9', text=[f"{val:.2f}" for val in importances], textposition='auto'
+                    ))
+                    fig.update_layout(title="Historical Readmission Triggers (Local)", height=300, **dark_chart_layout())
+                    st.plotly_chart(fig, use_container_width=True)
+                    
+                    validation = h_data.get('clinical_validation', {})
+                    align_score = validation.get('alignment_score', 0)
+                    interp = validation.get('interpretation', 'UNKNOWN')
+                    st.write(f"**Clinical Alignment:** {align_score*100:.0f}% | {interp}")
                 else:
-                    features = [f[0].replace('_', ' ').title() for f in top_features[::-1]]
-                    importances = [f[1] for f in top_features[::-1]]
+                    st.info("Historical clinical drivers not available for this facility type.")
+                st.markdown('</div>', unsafe_allow_html=True)
+
+            with col_shap2:
+                st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+                st.markdown("###  Global Federated Drivers (All Facilities)")
                 
-                fig = go.Figure(go.Bar(
-                    x=importances, y=features, orientation='h', 
-                    marker_color='#0ea5e9', text=[f"{val:.2f}" for val in importances], textposition='auto'
-                ))
-                fig.update_layout(title="Historical Readmission Triggers at this Facility", height=300, **dark_chart_layout())
-                st.plotly_chart(fig, use_container_width=True)
+                if global_data and global_data.get('top_10_features'):
+                    g_top_features = global_data['top_10_features'][:5]
+                    
+                    if isinstance(g_top_features[0], dict):
+                        g_features = [f['feature'].replace('_', ' ').title() for f in g_top_features[::-1]]
+                        g_importances = [f['importance'] for f in g_top_features[::-1]]
+                    else:
+                        g_features = [f[0].replace('_', ' ').title() for f in g_top_features[::-1]]
+                        g_importances = [f[1] for f in g_top_features[::-1]]
+                    
+                    fig2 = go.Figure(go.Bar(
+                        x=g_importances, y=g_features, orientation='h', 
+                        marker_color='#8b5cf6', text=[f"{val:.2f}" for val in g_importances], textposition='auto'
+                    ))
+                    fig2.update_layout(title="Historical Readmission Triggers (Global)", height=300, **dark_chart_layout())
+                    st.plotly_chart(fig2, use_container_width=True)
+                    
+                    st.write("**Validation:** Super-Model logic derived without seeing raw patient data.")
+                else:
+                    st.info("Global clinical drivers not available.")
+                st.markdown('</div>', unsafe_allow_html=True)
                 
-                # Clinical validation
-                validation = h_data.get('clinical_validation', {})
-                align_score = validation.get('alignment_score', 0)
-                interp = validation.get('interpretation', 'UNKNOWN')
-                st.write(f"**Clinical Alignment:** {align_score*100:.0f}% | {interp}")
-            else:
-                st.info("Historical clinical drivers not available for this facility type.")
-            st.markdown('</div><br>', unsafe_allow_html=True)
+            st.markdown('<br>', unsafe_allow_html=True)
             
             # Clinical Disclaimer
             st.warning("**IMPORTANT:** This AI score is a **decision-support tool only**, not a clinical diagnosis. Consider alongside complete clinical assessment.")
@@ -875,7 +904,7 @@ def render_readmission_tab():
     # ========================================================================
     # VIEW 2: RESEARCH & ANALYTICS (DATA SCIENCE)
     # ========================================================================
-    elif view_mode == "🔬 Research & Analytics (Data Science)":
+    elif view_mode == "Research & Analytics (Data Science)":
         
         st.markdown("""
         ### Federated Learning Evaluation Metrics
@@ -907,9 +936,19 @@ def render_readmission_tab():
                 
                 st.markdown("---")
                 st.markdown(f"**Optimal Decision Threshold:** `{all_results['fairness_metrics'].get('optimal_threshold', 0.5):.2f}`")
-                st.markdown(f"**Dataset Configuration:** `{all_results['fairness_metrics'].get('dataset_type', 'Unknown')}` (149 Features, No Leakage)")
+                st.markdown(f"**Dataset Configuration:** `{all_results['fairness_metrics'].get('dataset_type', 'Unknown')}` (131 Features, No Leakage)")
             else:
                 st.warning("Performance metrics not found. Please run the fairness audit script.")
+            st.markdown('</div><br>', unsafe_allow_html=True)
+            
+            # MOVED: Local vs Global SHAP Divergence
+            st.markdown('<div class="glass-card">', unsafe_allow_html=True)
+            st.markdown("#### Explainability Validation: Local vs Global SHAP Divergence")
+            shap_stats = all_results['shap_analysis'].get('consistency_analysis', {})
+            avg_cons = shap_stats.get('average_consistency', 0)
+            
+            st.write(f"**Cross-Hospital Consistency (Pearson):** {avg_cons:.4f} — *{shap_stats.get('interpretation', 'Stability validated')}*")
+            st.progress(avg_cons)
             st.markdown('</div>', unsafe_allow_html=True)
 
         # ----------------------------------------------------
@@ -994,14 +1033,6 @@ def render_readmission_tab():
                 nc3.metric("Covariate Shift Index (MFD)", f"{csi:.4f}")
                 st.markdown('</div><br>', unsafe_allow_html=True)
                 
-                st.markdown('<div class="glass-card">', unsafe_allow_html=True)
-                st.markdown("#### Local vs Global SHAP Divergence")
-                shap_stats = all_results['shap_analysis'].get('consistency_analysis', {})
-                avg_cons = shap_stats.get('average_consistency', 0)
-                
-                st.write(f"**Cross-Hospital Consistency (Pearson):** {avg_cons:.4f} — *{shap_stats.get('interpretation', '')}*")
-                st.progress(avg_cons)
-                st.markdown('</div>', unsafe_allow_html=True)
             else:
                 st.warning("Non-IID metrics unavailable.")
 

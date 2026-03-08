@@ -175,6 +175,38 @@ def compute_shap_with_stability_assessment(X_test, sens_test, feature_names, mod
         }
     return results
 
+def compute_global_shap(X_test, feature_names, model, sample_size=100):
+    """Calculate the global SHAP values across all data to populate the dashboard"""
+    print("\n--- Computing Global Federated SHAP ---")
+    from sklearn.cluster import MiniBatchKMeans
+    
+    bg_size = min(150, len(X_test))
+    kmeans = MiniBatchKMeans(n_clusters=bg_size, random_state=42, n_init=3)
+    kmeans.fit(X_test)
+    distances = np.linalg.norm(X_test[:, np.newaxis, :] - kmeans.cluster_centers_[np.newaxis, :, :], axis=2)
+    bg_indices = np.argmin(distances, axis=0)
+    X_background = X_test[bg_indices]
+    
+    sample_size_actual = min(sample_size, len(X_test))
+    sample_indices = np.random.choice(len(X_test), sample_size_actual, replace=False)
+    X_sample = X_test[sample_indices]
+    
+    explainer = shap.KernelExplainer(model.predict, X_background, link="logit")
+    shap_values = explainer.shap_values(X_sample, nsamples=150)
+    if isinstance(shap_values, list): shap_values = shap_values[0]
+    
+    importance = np.abs(shap_values).mean(axis=0)
+    importance = np.nan_to_num(np.squeeze(importance))
+    
+    top_indices = np.argsort(importance)[-10:][::-1]
+    
+    global_stats = {
+        'n_samples_used': int(sample_size_actual),
+        'top_10_features': [{'rank': r+1, 'feature': feature_names[i], 'importance': float(importance[i])} for r, i in enumerate(top_indices)]
+    }
+    print("✓ Global SHAP computed successfully.")
+    return global_stats
+
 def run_shap_analysis():
     print("\n" + "="*70)
     print("PHASE 6: SHAP EXPLAINABILITY ANALYSIS")
@@ -182,7 +214,12 @@ def run_shap_analysis():
     
     X_test, sens_test, feature_names, model, is_balanced = load_resources()
     
+    # 1. Compute Local Hospital SHAP
     hospital_stats = compute_shap_with_stability_assessment(X_test, sens_test, feature_names, model)
+    
+    # 2. Compute Global SHAP
+    global_stats = compute_global_shap(X_test, feature_names, model)
+    
     hospital_importance_vectors = {h_id: np.array(data['importance_vector']) for h_id, data in hospital_stats.items()}
     
     h1 = hospital_importance_vectors.get(1, np.zeros(len(feature_names)))
@@ -196,26 +233,15 @@ def run_shap_analysis():
     
     print(f"\nPearson Correlation (Cross-Hospital): {avg_consistency:.4f}")
     
-    from scipy.spatial.distance import jensenshannon
-    def compute_js(X1, X2):
-        js = []
-        for i in range(min(X1.shape[1], X2.shape[1])):
-            f1, f2 = X1[:, i], X2[:, i]
-            mn, mx = min(f1.min(), f2.min()), max(f1.max(), f2.max())
-            if mn == mx: continue
-            bins = np.linspace(mn, mx, 50)
-            p, _ = np.histogram(f1, bins=bins, density=True)
-            q, _ = np.histogram(f2, bins=bins, density=True)
-            js.append(jensenshannon(p / (p.sum()+1e-12), q / (q.sum()+1e-12)))
-        return np.mean(js)
-
-    h1_d, h2_d, h3_d = X_test[sens_test['hospital_id']==1], X_test[sens_test['hospital_id']==2], X_test[sens_test['hospital_id']==3]
-    avg_js = np.mean([compute_js(h1_d, h2_d), compute_js(h1_d, h3_d), compute_js(h2_d, h3_d)])
-    
     results = {
         'dataset_type': 'BALANCED' if is_balanced else 'UNBALANCED',
-        'consistency_analysis': {'corr_h1_h2': float(corr_12), 'average_consistency': float(avg_consistency)},
-        'hospital_stats': hospital_stats
+        'consistency_analysis': {
+            'corr_h1_h2': float(corr_12), 
+            'average_consistency': float(avg_consistency),
+            'interpretation': "Stability validated" if avg_consistency > 0.8 else "Warning: High heterogeneity"
+        },
+        'hospital_stats': hospital_stats,
+        'global_stats': global_stats  # <-- ADDED THIS!
     }
     
     with open('results/shap_analysis.json', 'w') as f: json.dump(results, f, indent=2)
