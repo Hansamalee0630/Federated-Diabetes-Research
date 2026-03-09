@@ -1942,7 +1942,7 @@ with tabs[3]:
     st.markdown("""
         <h2 style='text-align: center; color: #06b6d4;'>Personalized Multi-Task FL Engine</h2>
         <p style='text-align: center; color: #94a3b8;'>
-            Executing FedRep-based local adaptation for Hypertension, Heart Failure, and Comorbidity Clustering.
+            Executing Personalized local adaptation for Hypertension, Heart Failure, and Comorbidity Clustering.
         </p>
     """, unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
@@ -2017,7 +2017,7 @@ with tabs[3]:
 
         # INFERENCE
         if submit_comp4:
-            with st.spinner("Processing via local FedRep layers..."):
+            with st.spinner("Processing via local personalization layers..."):
                 progress_bar = st.progress(0)
                 for i in range(100):
                     time.sleep(0.002)
@@ -2065,12 +2065,12 @@ with tabs[3]:
                 if "Personalized" in model_mode:
                     c4_prob_htn = min(c4_prob_htn + 0.03, 0.98) if c4_prob_htn > 0.5 else max(c4_prob_htn - 0.03, 0.02)
                     c4_prob_hf  = min(c4_prob_hf  + 0.03, 0.98) if c4_prob_hf  > 0.5 else max(c4_prob_hf  - 0.03, 0.02)
-                    st.toast("FedRep layers activated: Adjusted for local demographics.")
+                    st.toast("Personalization activated: Adjusted for local demographics.")
 
                 c4_prob_htn = max(0.0, min(c4_prob_htn, 1.0))
                 c4_prob_hf  = max(0.0, min(c4_prob_hf,  1.0))
 
-            # 1. RISK ASSESSMENT RESULTS (Triggered safely inside the submit block)
+            # 1. RISK ASSESSMENT RESULTS
             
             # ARCHITECTURE PIPELINE VISUAL
             st.markdown("<p style='text-align:center; color:#94a3b8; font-size:0.9rem;'>Shared Feature Extractor with Multi-Task Heads</p>", unsafe_allow_html=True)
@@ -2131,7 +2131,7 @@ with tabs[3]:
             # 3. PERSONALIZATION DELTA & COHORTS
             if "Personalized" in model_mode and c4_prob_htn_global is not None:
                 st.markdown("---")
-                st.markdown("#### Personalization Delta (FedRep Influence)")
+                st.markdown("#### Personalization Delta (Local Fine-Tuning Influence)")
                 
                 pd1, pd2 = st.columns([1, 2])
                 with pd1:
