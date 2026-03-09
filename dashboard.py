@@ -8,8 +8,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-# import joblib
-# import gdown
 from datetime import datetime
 from PIL import Image
 import torchvision.transforms as T
@@ -57,7 +55,6 @@ def load_multimodal_system():
     
     device = torch.device("cpu")
     
-    # Option 1: RELATIVE PATHS (recommended - works when running from project root)
     MODEL_DIR = os.path.join("components", "component_3", "model")
     
     local_paths = {
@@ -66,14 +63,6 @@ def load_multimodal_system():
         "global": os.path.join(MODEL_DIR, "global_multimodal_fl_b3.pth"),
     }
     
-    # Option 2: ABSOLUTE PATHS (uncomment if relative paths don't work)
-    # local_paths = {
-    #     "ehr": r"E:\about IT\Y4S1\RP\comp3\Federated-Diabetes-Research - Copy\components\component_3\model\mlp_ehr_binary_diabetes.pth",
-    #     "retinal": r"E:\about IT\Y4S1\RP\comp3\Federated-Diabetes-Research - Copy\components\component_3\model\efficientnet_b3_binary_dr_twostage.pth",
-    #     "global": r"E:\about IT\Y4S1\RP\comp3\Federated-Diabetes-Research - Copy\components\component_3\model\global_multimodal_fl_b3.pth",
-    # }
-    
-    # ═══════════════════════════════════════════════════════════════════
     
     def get_model_state(ckpt):
         """Extract model state dict from checkpoint"""
@@ -95,8 +84,6 @@ def load_multimodal_system():
         if not os.path.exists(path):
             raise FileNotFoundError(f"Model file not found: {path}")
 
-        # Torch 2.6+ defaults to weights_only=True which refuses certain pickle globals.
-        # This project trusts the models in ./components/component_3/model.
         try:
             safe = getattr(torch.serialization, "safe_globals", None)
             if safe is not None:
@@ -139,7 +126,7 @@ def load_multimodal_system():
 def prepare_ehr_tensor(age, bmi, hba1c, glucose, gender, smoke, hypertension, heart_disease):
     """Convert UI inputs into the 8‑dim vector expected by the EHR model."""
 
-    # NOTE: This is an approximation; the original training pipeline may have used
+    # This is an approximation; the original training pipeline may have used
     # different normalization. This mapping keeps values in [0,1] for stability.
     gender_map = {"Female": 0.0, "Male": 1.0, "Other": 0.5}
     smoke_map = {"never": 0.0, "current": 1.0, "former": 0.5, "ever": 0.5, "No Info": 0.5}
@@ -170,14 +157,6 @@ def preprocess_retinal_image(uploaded_file, image_size=(300, 300)):
     ])
     return transform(img).unsqueeze(0)
 
-# def load_comp4_data():
-#     if os.path.exists("results/comp4_results/fl_results.json"):
-#         try:
-#             with open("results/comp4_results/fl_results.json", "r") as f:
-#                 return pd.DataFrame(json.load(f))
-#         except:
-#             return get_dummy_fl_data()
-#     return get_dummy_fl_data()
 
 def load_comp4_data():
     # Point directly to the final archived file from the accuracy sweep
@@ -219,14 +198,6 @@ def load_trained_model():
             sample_data = pd.read_csv(sample_data_path)
             input_dim = sample_data.shape[1]
             feature_names = list(sample_data.columns)
-        # else:
-        #     input_dim = 19 
-        #     feature_names = ['age', 'time_in_hospital', 'num_lab_procedures', 'num_procedures', 
-        #                      'num_medications', 'number_diagnoses', 'race_Asian', 'race_Caucasian', 
-        #                      'race_Hispanic', 'race_Other', 'gender_Male', 'A1Cresult_>8', 
-        #                      'A1Cresult_None', 'A1Cresult_Norm', 'insulin_No', 'insulin_Steady', 
-        #                      'insulin_Up', 'change_No', 'diabetesMed_Yes']
-
         else:
             input_dim = 22 
             feature_names = ['age', 'time_in_hospital', 'num_lab_procedures', 'num_procedures', 
@@ -283,86 +254,6 @@ def load_trained_cvd_model():
     except Exception as e:
         return None, f"Error loading model: {str(e)}"
     
-# def prepare_input_features(age, gender, meds, hba1c, bmi, feature_names):
-#     """
-#     Prepare input features with RISK PROXY LOGIC.
-#     Uses BMI and High Meds to boost hidden features (Diagnoses/Hospital Time)
-#     to override the 'Young Age' bias.
-#     """
-    
-#     # === STEP 1: Define Fallback Stats ===
-#     FALLBACK_MEANS = {
-#         'age': 6.5, 'time_in_hospital': 4.4, 'num_lab_procedures': 43.1,
-#         'num_procedures': 1.3, 'num_medications': 16.0, 'number_diagnoses': 7.4
-#     }
-#     FALLBACK_STDS = {
-#         'age': 2.0, 'time_in_hospital': 3.0, 'num_lab_procedures': 19.6,
-#         'num_procedures': 1.7, 'num_medications': 8.1, 'number_diagnoses': 1.9
-#     }
-
-#     # === STEP 2: CALCULATE RISK PROXIES ===
-#     sickness_score = 0.0
-    
-#     # Penalty for Obesity (Model doesn't see BMI, so we add it to sickness_score)
-#     if bmi > 40: sickness_score += 3.0  # Morbid Obesity
-#     elif bmi > 30: sickness_score += 1.5 # Obesity
-    
-#     # Penalty for Polypharmacy
-#     if meds > 25: sickness_score += 2.0
-#     elif meds > 15: sickness_score += 1.0
-    
-#     # Penalty for Uncontrolled Diabetes
-#     if hba1c > 8.0: sickness_score += 1.5
-
-#     # === STEP 3: Apply Sickness Score to Hidden Features ===
-#     hidden_diagnoses = 7.4 + (sickness_score * 2.0) # Base 7.4 + Boost
-#     hidden_hospital_time = 4.4 + (sickness_score * 1.5)
-#     hidden_procs = 1.3 + (sickness_score * 0.5)
-
-#     # === STEP 4: Create Raw Features ===
-#     raw_features = {
-#         'age': [age / 10], 
-#         'time_in_hospital': [hidden_hospital_time], # Injected Proxy
-#         'num_lab_procedures': [43.0 + (sickness_score * 5)], # Sick people have more labs
-#         'num_procedures': [hidden_procs], 
-#         'num_medications': [meds],
-#         'number_diagnoses': [hidden_diagnoses],     # Injected Proxy
-#         'race_Asian': [0], 'race_Caucasian': [1], 'race_Hispanic': [0], 'race_Other': [0],
-#         'gender_Male': [1 if gender == "Male" else 0],
-#         'A1Cresult_>8': [1 if hba1c > 8 else 0],
-#         'A1Cresult_None': [0],
-#         'A1Cresult_Norm': [1 if hba1c <= 7 else 0],
-#         'insulin_No': [1 if hba1c < 7 else 0],
-#         'insulin_Steady': [1 if 7 <= hba1c <= 8 else 0],
-#         'insulin_Up': [1 if hba1c > 8 else 0],
-#         'change_No': [1], 
-#         'diabetesMed_Yes': [1 if meds > 0 else 0],
-#     }
-    
-#     input_df = pd.DataFrame(raw_features)
-    
-#     # === STEP 5: Reorder ===
-#     aligned_data = {}
-#     for feature in feature_names:
-#         if feature in input_df.columns:
-#             aligned_data[feature] = input_df[feature].values
-#         else:
-#             aligned_data[feature] = [0.0]
-#     input_df = pd.DataFrame(aligned_data)
-    
-#     # === STEP 6: Apply Scaling ===
-#     numeric_cols = ['age', 'time_in_hospital', 'num_lab_procedures', 
-#                     'num_procedures', 'num_medications', 'number_diagnoses']
-    
-#     for col in input_df.columns:
-#         if col in numeric_cols:
-#             val = input_df[col].values[0]
-#             mean = FALLBACK_MEANS.get(col, 0)
-#             std = FALLBACK_STDS.get(col, 1)
-#             input_df[col] = (val - mean) / std
-
-#     # NOTE: Debug expander removed for cleaner UI
-#     return torch.tensor(input_df.values, dtype=torch.float32)
 
 def prepare_input_features(age, gender, meds, hba1c, bmi, time_in_hospital, num_diagnoses, num_lab_procedures, insulin_status, feature_names):
     """
@@ -431,17 +322,6 @@ def prepare_input_features(age, gender, meds, hba1c, bmi, time_in_hospital, num_
 
 
 # Bridge function for Tab 2
-# def prepare_fedavg_features(age, gender, num_medications, hba1c, bmi,
-#                           hospital_stay, num_comorbidities, num_inpatient,
-#                           num_emergency, num_lab_procedures, num_procedures,
-#                           feature_names):
-#     """
-#     Bridge function to map detailed clinical form inputs to the model inputs.
-#     We reuse the robust proxy logic from prepare_input_features.
-#     """
-#     # Note: We are abstracting hospital_stay into the proxy logic inside the helper
-#     return prepare_input_features(age, gender, num_medications, hba1c, bmi, feature_names)
-
 def prepare_fedavg_features(age, gender, num_medications, hba1c, bmi,
                           hospital_stay, num_comorbidities, num_inpatient,
                           num_emergency, num_lab_procedures, num_procedures,
@@ -566,7 +446,6 @@ with col1:
 with col2:
     st.image("assets/logo.svg", width=80)
 
-# st.markdown("<br>", unsafe_allow_html=True)
 
 # --- MAIN TABS ---
 tab_titles = ["Privacy Shield", "Readmission Analysis", "Multimodal Vision", "Personalization Engine"]
@@ -602,7 +481,6 @@ def create_gauge(value, title, color):
 
 # --- TAB 0 CONTAINER ---
 with tabs[0]:
-    # --- CUSTOM CSS FOR THE "FEDERATED HUB" LOOK ---
     st.markdown("""
         <style>
         .metric-card {
@@ -635,7 +513,6 @@ with tabs[0]:
     """, unsafe_allow_html=True)
 
     # --- VIEW MODE SELECTION ---
-    # Key 'comp1_selector' ensures this radio doesn't conflict with other tabs
     view_mode = st.radio(
         "Select Dashboard View Mode:",
         ["Dashboard View", "Research Metrics & Model Performance"],
@@ -750,7 +627,6 @@ with tabs[0]:
             go.Bar(name='AUC (Scaled x100)', x=categories, y=[94.52, 80.0], marker_color='#9d50bb')
             ])
 
-            # Styling to match your "Privacy Shield" Theme
             fig.update_layout(
             title="Model Performance Comparison",
             barmode='group',
@@ -862,7 +738,7 @@ with tabs[0]:
             st.plotly_chart(fig_eps, use_container_width=True)
 
 # ============================================================================
-# TAB 2: READMISSION RISK PREDICTION (MAIN CLINICAL INTERFACE)
+# TAB 2: READMISSION RISK PREDICTION
 # Complete integration of all 7-phase pipeline results
 # ============================================================================
 
@@ -1851,11 +1727,6 @@ Final diagnosis must be made by a licensed healthcare provider.
                 **dark_chart_layout()
             )
             st.plotly_chart(fig_ehr, use_container_width=True)
-
-            # ── Interpretation box ──
-            # st.markdown("<br>", unsafe_allow_html=True)
-            # st.info("""
-            # """)
 
             
 
