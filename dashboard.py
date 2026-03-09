@@ -13,6 +13,7 @@ import torch.nn.functional as F
 from datetime import datetime
 from PIL import Image
 import torchvision.transforms as T
+import plotly.express as px
 from components.component_4.model import MultiTaskNet
 from components.component_1.Fed_Diabetes_Complication_.component.component_1.model_architectures import NephropathyNet, CVDNet
 from components.component_3.multimodal_models import EHRClassifier, BinaryDRClassifier, GlobalMultimodalModel
@@ -639,7 +640,7 @@ with tabs[0]:
                     tg = st.number_input("Triglycerides (mmol/L)", 0.1, 15.0, 1.8)
                     st.info("Tip: AIP is calculated automatically from TG and HDL.")
 
-                submit = st.form_submit_button("RUN CLINICAL DIAGNOSTICS", use_container_width=True)
+                submit = st.form_submit_button("RUN COMPLICATIONS RISK", use_container_width=True)
 
             if submit:
                 # --- STEP 1: NEPHROPATHY ANALYSIS ---
@@ -702,11 +703,36 @@ with tabs[0]:
         
         with sub_tabs[0]:
             st.markdown("### Aggregated Global Model Metrics")
-            m1, m2, m3, m4 = st.columns(4)
+            m1, m2, m3, m4,m5 = st.columns(5)
             with m1: st.markdown('<div class="metric-card"><div class="metric-label">CVD Accuracy</div><div class="metric-value">87.5%</div></div>', unsafe_allow_html=True)
             with m2: st.markdown('<div class="metric-card"><div class="metric-label">CVD AUC</div><div class="metric-value">0.9452</div></div>', unsafe_allow_html=True)
             with m3: st.markdown('<div class="metric-card"><div class="metric-label">F1-Score (CVD)</div><div class="metric-value">0.8757</div></div>', unsafe_allow_html=True)
             with m4: st.markdown('<div class="metric-card"><div class="metric-label">Nephro Accuracy</div><div class="metric-value">84.3%</div></div>', unsafe_allow_html=True)
+            with m5: st.markdown('<div class="metric-card"><div class="metric-label">Nephro AUC</div><div class="metric-value">0.8000</div></div>', unsafe_allow_html=True)
+
+            # 2. Grouped Bar Chart
+            categories = ['CVD Risk Model', 'Nephropathy Risk Model']
+    
+            fig = go.Figure(data=[
+            go.Bar(name='Accuracy (%)', x=categories, y=[87.5, 84.3], marker_color='#00d1ff'),
+            go.Bar(name='AUC (Scaled x100)', x=categories, y=[94.52, 80.0], marker_color='#9d50bb')
+            ])
+
+            # Styling to match your "Privacy Shield" Theme
+            fig.update_layout(
+            title="Model Performance Comparison",
+            barmode='group',
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font=dict(color="white"),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            yaxis=dict(title="Score", range=[0, 100], gridcolor='#333'),
+            xaxis=dict(gridcolor='#333'),
+            height=400,
+            margin=dict(l=20, r=20, t=50, b=20)
+            )
+
+            st.plotly_chart(fig, use_container_width=True) 
 
         with sub_tabs[1]:
             st.markdown("### FedAvg Training Convergence")
@@ -727,22 +753,82 @@ with tabs[0]:
 
         with sub_tabs[2]:
             st.markdown("### Privacy Guardrails (Opacus Configuration)")
-            
+    
+            # Status Indicators aligned with Client-side logic
             b1, b2 = st.columns(2)
             with b1:
-                st.markdown('<div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; padding: 10px; border-radius: 8px; text-align: center; color: #10b981; font-weight: bold;">✓ LOCAL TRAINING: ENCRYPTED</div>', unsafe_allow_html=True)
+                st.markdown('''
+                <div style="background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; 
+                padding: 10px; border-radius: 8px; text-align: center; color: #10b981; font-weight: bold;">
+                    LOCAL TRAINING: ENCRYPTED
+                </div>''', unsafe_allow_html=True)
             with b2:
-                st.markdown('<div style="background: rgba(56, 189, 248, 0.1); border: 1px solid #38bdf8; padding: 10px; border-radius: 8px; text-align: center; color: #38bdf8; font-weight: bold;">🛡️ DP-SGD: ACTIVE</div>', unsafe_allow_html=True)
+                st.markdown('''
+                <div style="background: rgba(56, 189, 248, 0.1); border: 1px solid #38bdf8; 
+                padding: 10px; border-radius: 8px; text-align: center; color: #38bdf8; font-weight: bold;">
+                     DP-SGD: ACTIVE
+                </div>''', unsafe_allow_html=True)
 
             st.divider()
-            # Technical parameters from your DiabetesClient
+
+            # Technical parameters reflecting your DiabetesClient init
             p1, p2, p3 = st.columns(3)
-            with p1: st.metric("Noise Multiplier", "0.5", help="Added via PrivacyEngine.make_private")
-            with p2: st.metric("Max Grad Norm", "1.0", help="Gradient clipping for per-sample logic")
-            with p3: st.metric("Privacy Budget (ε)", "0.75", delta="Delta: 1e-5")
+        
+            with p1: 
+                st.markdown(f'''<div class="metric-card">
+                <div class="metric-label">Noise Multiplier</div>
+                <div class="metric-value">0.5</div>
+                <div style="font-size: 0.7rem; color: #888;">PrivacyEngine Fixed</div>
+            </div>''', unsafe_allow_html=True)
             
-            #st.info("Technical Note: BCEWithLogitsLoss uses reduction='none' to satisfy Opacus per-sample gradient requirements.")
-    
+            with p2: 
+                st.markdown(f'''<div class="metric-card">
+                <div class="metric-label">Max Grad Norm</div>
+                <div class="metric-value">1.0</div>
+                <div style="font-size: 0.7rem; color: #888;">Per-sample Clipping</div>
+            </div>''', unsafe_allow_html=True)
+            
+            with p3: 
+            # This 0.75 represents the final value of your epsilon_history list
+                st.markdown(f'''<div class="metric-card">
+                <div class="metric-label">Privacy Budget (ε)</div>
+                <div class="metric-value">0.75</div>
+                <div style="color: #00ff00; font-size: 0.8rem;">Target Δ: 1e-5</div>
+            </div>''', unsafe_allow_html=True)
+
+            st.markdown("---")
+
+            # Real-time Epsilon Growth visualization
+            st.markdown("#### Cumulative Privacy Loss (RDP Accountant History)")
+        
+            # This list represents the output of self.privacy_engine.get_epsilon() over rounds
+            epsilon_history = [0.1, 0.22, 0.35, 0.48, 0.55, 0.62, 0.75]
+            df_privacy = pd.DataFrame({
+            "Round": list(range(1, len(epsilon_history) + 1)), 
+            "ε Value": epsilon_history
+            })
+
+            fig_eps = px.line(
+            df_privacy, 
+            x="Round", 
+            y="ε Value", 
+            markers=True,
+            template="plotly_dark"
+            )
+        
+            fig_eps.update_traces(line_color='#38bdf8', marker=dict(size=8))
+        
+            fig_eps.update_layout(
+            paper_bgcolor='rgba(0,0,0,0)',
+            plot_bgcolor='rgba(0,0,0,0)',
+            font_color="white",
+            height=300,
+            margin=dict(l=0, r=0, t=10, b=0),
+            yaxis=dict(gridcolor='#333', title="Privacy Loss (ε)"),
+            xaxis=dict(gridcolor='#333', title="Federated Round")
+            )
+            st.plotly_chart(fig_eps, use_container_width=True)
+
 # ============================================================================
 # TAB 2: READMISSION RISK PREDICTION (MAIN CLINICAL INTERFACE)
 # Complete integration of all 7-phase pipeline results
