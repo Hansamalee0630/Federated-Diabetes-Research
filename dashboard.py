@@ -593,10 +593,38 @@ with tabs[0]:
                 st.markdown(f'<div class="status-box {status_class}">OVERALL STATUS: {status_label}</div>', unsafe_allow_html=True)
                 st.info(f"**Medical Recommendation:** {advice}")
 
-                report_content = f"DIABETES REPORT\nGenerated: {datetime.now()}\nNephro Risk: {n_risk*100:.1f}%\nCVD Risk: {c_risk*100:.1f}%\nStatus: {status_label}"
-                st.download_button("DOWNLOAD FULL CLINICAL REPORT", data=report_content, file_name="Report.txt", use_container_width=True)
+                # report_content = f"DIABETES REPORT\nGenerated: {datetime.now()}\nNephro Risk: {n_risk*100:.1f}%\nCVD Risk: {c_risk*100:.1f}%\nStatus: {status_label}"
+                # --- STEP 5: REPORT GENERATION ---
+                report_content = f"""
+                    DIABETES COMPLICATION CLINICAL REPORT
+                    Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+                    -------------------------------------------
+                    METRICS:
+                    Age: {age} | BMI: {bmi} | HbA1c: {hba1c}%
+                    CR: {cr} μmol/L | Urea: {urea} mmol/L
+                    Chol: {chol} | HDL: {hdl} | TG: {tg} | AIP: {aip:.2f}
+                    
+                    RESULTS:
+                    - Nephropathy Risk: {n_risk*100:.1f}%
+                    - CVD Risk: {c_risk*100:.1f}%
+                    
+                    CONCLUSION: {status_label}
+                    -------------------------------------------
+                    DISCLAIMER: For clinical decision support only. 
+                    Final diagnosis must be made by a licensed physician.
+                    """
+                    
+                st.download_button(
+                        label=" DOWNLOAD FULL CLINICAL REPORT",
+                        data=report_content,
+                        file_name=f"Clinical_Report_{datetime.now().strftime('%Y%m%d')}.txt",
+                        mime="text/plain",
+                        use_container_width=True
+                    )
         else:
-            st.error("Model Error: Neural network weights could not be loaded.")
+            st.error("Model Error: Neural network weights (.pth) could not be loaded. Check your paths.")
+                        
+
 
     # --- RESEARCH & ANALYTICS VIEW ---
     else:
