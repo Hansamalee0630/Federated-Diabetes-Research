@@ -8,8 +8,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-# import joblib
-# import gdown
 from datetime import datetime
 from PIL import Image
 import torchvision.transforms as T
@@ -57,7 +55,6 @@ def load_multimodal_system():
     
     device = torch.device("cpu")
     
-    # Option 1: RELATIVE PATHS (recommended - works when running from project root)
     MODEL_DIR = os.path.join("components", "component_3", "model")
     
     local_paths = {
@@ -66,14 +63,6 @@ def load_multimodal_system():
         "global": os.path.join(MODEL_DIR, "global_multimodal_fl_b3.pth"),
     }
     
-    # Option 2: ABSOLUTE PATHS (uncomment if relative paths don't work)
-    # local_paths = {
-    #     "ehr": r"E:\about IT\Y4S1\RP\comp3\Federated-Diabetes-Research - Copy\components\component_3\model\mlp_ehr_binary_diabetes.pth",
-    #     "retinal": r"E:\about IT\Y4S1\RP\comp3\Federated-Diabetes-Research - Copy\components\component_3\model\efficientnet_b3_binary_dr_twostage.pth",
-    #     "global": r"E:\about IT\Y4S1\RP\comp3\Federated-Diabetes-Research - Copy\components\component_3\model\global_multimodal_fl_b3.pth",
-    # }
-    
-    # ═══════════════════════════════════════════════════════════════════
     
     def get_model_state(ckpt):
         """Extract model state dict from checkpoint"""
@@ -90,13 +79,11 @@ def load_multimodal_system():
             )
         return path
 
-    # Helper to load a checkpoint with safe globals and weights_only=False (PyTorch 2.6+)
+
     def safe_load(path):
         if not os.path.exists(path):
             raise FileNotFoundError(f"Model file not found: {path}")
 
-        # Torch 2.6+ defaults to weights_only=True which refuses certain pickle globals.
-        # This project trusts the models in ./components/component_3/model.
         try:
             safe = getattr(torch.serialization, "safe_globals", None)
             if safe is not None:
@@ -139,8 +126,7 @@ def load_multimodal_system():
 def prepare_ehr_tensor(age, bmi, hba1c, glucose, gender, smoke, hypertension, heart_disease):
     """Convert UI inputs into the 8‑dim vector expected by the EHR model."""
 
-    # NOTE: This is an approximation; the original training pipeline may have used
-    # different normalization. This mapping keeps values in [0,1] for stability.
+    # This mapping keeps values in [0,1] for stability.
     gender_map = {"Female": 0.0, "Male": 1.0, "Other": 0.5}
     smoke_map = {"never": 0.0, "current": 1.0, "former": 0.5, "ever": 0.5, "No Info": 0.5}
 
@@ -170,17 +156,8 @@ def preprocess_retinal_image(uploaded_file, image_size=(300, 300)):
     ])
     return transform(img).unsqueeze(0)
 
-# def load_comp4_data():
-#     if os.path.exists("results/comp4_results/fl_results.json"):
-#         try:
-#             with open("results/comp4_results/fl_results.json", "r") as f:
-#                 return pd.DataFrame(json.load(f))
-#         except:
-#             return get_dummy_fl_data()
-#     return get_dummy_fl_data()
 
 def load_comp4_data():
-    # Point directly to the final archived file from the accuracy sweep
     file_path = "results/comp4_results/fl_results_multitask_10rounds.json"
     
     if os.path.exists(file_path):
@@ -193,7 +170,6 @@ def load_comp4_data():
             st.error(f"Error reading JSON: {e}")
             return get_dummy_fl_data()
     
-    # Fallback if the specific sweep file isn't there, check the generic one
     fallback_path = "results/comp4_results/fl_results.json"
     if os.path.exists(fallback_path):
         try:
@@ -219,14 +195,6 @@ def load_trained_model():
             sample_data = pd.read_csv(sample_data_path)
             input_dim = sample_data.shape[1]
             feature_names = list(sample_data.columns)
-        # else:
-        #     input_dim = 19 
-        #     feature_names = ['age', 'time_in_hospital', 'num_lab_procedures', 'num_procedures', 
-        #                      'num_medications', 'number_diagnoses', 'race_Asian', 'race_Caucasian', 
-        #                      'race_Hispanic', 'race_Other', 'gender_Male', 'A1Cresult_>8', 
-        #                      'A1Cresult_None', 'A1Cresult_Norm', 'insulin_No', 'insulin_Steady', 
-        #                      'insulin_Up', 'change_No', 'diabetesMed_Yes']
-
         else:
             input_dim = 22 
             feature_names = ['age', 'time_in_hospital', 'num_lab_procedures', 'num_procedures', 
@@ -283,86 +251,6 @@ def load_trained_cvd_model():
     except Exception as e:
         return None, f"Error loading model: {str(e)}"
     
-# def prepare_input_features(age, gender, meds, hba1c, bmi, feature_names):
-#     """
-#     Prepare input features with RISK PROXY LOGIC.
-#     Uses BMI and High Meds to boost hidden features (Diagnoses/Hospital Time)
-#     to override the 'Young Age' bias.
-#     """
-    
-#     # === STEP 1: Define Fallback Stats ===
-#     FALLBACK_MEANS = {
-#         'age': 6.5, 'time_in_hospital': 4.4, 'num_lab_procedures': 43.1,
-#         'num_procedures': 1.3, 'num_medications': 16.0, 'number_diagnoses': 7.4
-#     }
-#     FALLBACK_STDS = {
-#         'age': 2.0, 'time_in_hospital': 3.0, 'num_lab_procedures': 19.6,
-#         'num_procedures': 1.7, 'num_medications': 8.1, 'number_diagnoses': 1.9
-#     }
-
-#     # === STEP 2: CALCULATE RISK PROXIES ===
-#     sickness_score = 0.0
-    
-#     # Penalty for Obesity (Model doesn't see BMI, so we add it to sickness_score)
-#     if bmi > 40: sickness_score += 3.0  # Morbid Obesity
-#     elif bmi > 30: sickness_score += 1.5 # Obesity
-    
-#     # Penalty for Polypharmacy
-#     if meds > 25: sickness_score += 2.0
-#     elif meds > 15: sickness_score += 1.0
-    
-#     # Penalty for Uncontrolled Diabetes
-#     if hba1c > 8.0: sickness_score += 1.5
-
-#     # === STEP 3: Apply Sickness Score to Hidden Features ===
-#     hidden_diagnoses = 7.4 + (sickness_score * 2.0) # Base 7.4 + Boost
-#     hidden_hospital_time = 4.4 + (sickness_score * 1.5)
-#     hidden_procs = 1.3 + (sickness_score * 0.5)
-
-#     # === STEP 4: Create Raw Features ===
-#     raw_features = {
-#         'age': [age / 10], 
-#         'time_in_hospital': [hidden_hospital_time], # Injected Proxy
-#         'num_lab_procedures': [43.0 + (sickness_score * 5)], # Sick people have more labs
-#         'num_procedures': [hidden_procs], 
-#         'num_medications': [meds],
-#         'number_diagnoses': [hidden_diagnoses],     # Injected Proxy
-#         'race_Asian': [0], 'race_Caucasian': [1], 'race_Hispanic': [0], 'race_Other': [0],
-#         'gender_Male': [1 if gender == "Male" else 0],
-#         'A1Cresult_>8': [1 if hba1c > 8 else 0],
-#         'A1Cresult_None': [0],
-#         'A1Cresult_Norm': [1 if hba1c <= 7 else 0],
-#         'insulin_No': [1 if hba1c < 7 else 0],
-#         'insulin_Steady': [1 if 7 <= hba1c <= 8 else 0],
-#         'insulin_Up': [1 if hba1c > 8 else 0],
-#         'change_No': [1], 
-#         'diabetesMed_Yes': [1 if meds > 0 else 0],
-#     }
-    
-#     input_df = pd.DataFrame(raw_features)
-    
-#     # === STEP 5: Reorder ===
-#     aligned_data = {}
-#     for feature in feature_names:
-#         if feature in input_df.columns:
-#             aligned_data[feature] = input_df[feature].values
-#         else:
-#             aligned_data[feature] = [0.0]
-#     input_df = pd.DataFrame(aligned_data)
-    
-#     # === STEP 6: Apply Scaling ===
-#     numeric_cols = ['age', 'time_in_hospital', 'num_lab_procedures', 
-#                     'num_procedures', 'num_medications', 'number_diagnoses']
-    
-#     for col in input_df.columns:
-#         if col in numeric_cols:
-#             val = input_df[col].values[0]
-#             mean = FALLBACK_MEANS.get(col, 0)
-#             std = FALLBACK_STDS.get(col, 1)
-#             input_df[col] = (val - mean) / std
-
-#     # NOTE: Debug expander removed for cleaner UI
-#     return torch.tensor(input_df.values, dtype=torch.float32)
 
 def prepare_input_features(age, gender, meds, hba1c, bmi, time_in_hospital, num_diagnoses, num_lab_procedures, insulin_status, feature_names):
     """
@@ -431,22 +319,10 @@ def prepare_input_features(age, gender, meds, hba1c, bmi, time_in_hospital, num_
 
 
 # Bridge function for Tab 2
-# def prepare_fedavg_features(age, gender, num_medications, hba1c, bmi,
-#                           hospital_stay, num_comorbidities, num_inpatient,
-#                           num_emergency, num_lab_procedures, num_procedures,
-#                           feature_names):
-#     """
-#     Bridge function to map detailed clinical form inputs to the model inputs.
-#     We reuse the robust proxy logic from prepare_input_features.
-#     """
-#     # Note: We are abstracting hospital_stay into the proxy logic inside the helper
-#     return prepare_input_features(age, gender, num_medications, hba1c, bmi, feature_names)
-
 def prepare_fedavg_features(age, gender, num_medications, hba1c, bmi,
                           hospital_stay, num_comorbidities, num_inpatient,
                           num_emergency, num_lab_procedures, num_procedures,
                           feature_names):
-    # Pass defaults for the extra parameters to keep Tab 2 working smoothly
     return prepare_input_features(age, gender, num_medications, hba1c, bmi, 
                                   hospital_stay, num_comorbidities, num_lab_procedures, "Steady", 
                                   feature_names)
@@ -512,7 +388,7 @@ def stat_card(label, value, delta=None):
         </div>
     """, unsafe_allow_html=True)
 
-# --- HELPER: CUSTOM PLOTLY THEME ---
+
 def dark_chart_layout():
     return dict(
         paper_bgcolor='rgba(0,0,0,0)',
@@ -566,7 +442,6 @@ with col1:
 with col2:
     st.image("assets/logo.svg", width=80)
 
-# st.markdown("<br>", unsafe_allow_html=True)
 
 # --- MAIN TABS ---
 tab_titles = ["Privacy Shield", "Readmission Analysis", "Multimodal Vision", "Personalization Engine"]
@@ -602,7 +477,6 @@ def create_gauge(value, title, color):
 
 # --- TAB 0 CONTAINER ---
 with tabs[0]:
-    # --- CUSTOM CSS FOR THE "FEDERATED HUB" LOOK ---
     st.markdown("""
         <style>
         .metric-card {
@@ -626,13 +500,15 @@ with tabs[0]:
             letter-spacing: 1px; border: 1px solid;
         }
         .critical-box { background-color: rgba(239, 68, 68, 0.15); border-color: #ef4444; color: #f87171; }
+        .very-high-box { background-color: rgba(220, 38, 38, 0.15); border-color: #dc2626; color: #ef4444; }
+        .high-box { background-color: rgba(234, 88, 12, 0.15); border-color: #ea580c; color: #f97316; }
         .moderate-box { background-color: rgba(245, 158, 11, 0.15); border-color: #f59e0b; color: #fbbf24; }
-        .stable-box { background-color: rgba(16, 185, 129, 0.15); border-color: #10b981; color: #34d399; }
+        .low-box { background-color: rgba(34, 197, 94, 0.15); border-color: #22c55e; color: #4ade80; }
+        .very-low-box { background-color: rgba(16, 185, 129, 0.25); border-color: #16a34a; color: #22c55e; }
         </style>
     """, unsafe_allow_html=True)
 
     # --- VIEW MODE SELECTION ---
-    # Key 'comp1_selector' ensures this radio doesn't conflict with other tabs
     view_mode = st.radio(
         "Select Dashboard View Mode:",
         ["Dashboard View", "Research Metrics & Model Performance"],
@@ -707,9 +583,12 @@ with tabs[0]:
                 # --- STEP 4: CLINICAL SUMMARY ---
                 st.divider()
                 max_risk_val = max(n_risk, c_risk)
-                if max_risk_val > 0.75: status_class, status_label, advice = "critical-box", "CRITICAL RISK", "Immediate clinical review required."
-                elif max_risk_val > 0.45: status_class, status_label, advice = "moderate-box", "MODERATE RISK", "Indications of emerging complications."
-                else: status_class, status_label, advice = "stable-box", "STABLE / LOW RISK", "Maintain current diabetic management plan."
+                if max_risk_val > 0.8: status_class, status_label, advice = "critical-box", "CRITICAL RISK", "Immediate clinical review required."
+                elif max_risk_val > 0.65: status_class, status_label, advice = "very-high-box", "VERY HIGH RISK", "Urgent clinical attention needed."
+                elif max_risk_val > 0.5: status_class, status_label, advice = "high-box", "HIGH RISK", "Increased monitoring required."
+                elif max_risk_val > 0.35: status_class, status_label, advice = "moderate-box", "MODERATE RISK", "Indications of emerging complications."
+                elif max_risk_val > 0.2: status_class, status_label, advice = "low-box", "LOW RISK", "Some risk factors present."
+                else: status_class, status_label, advice = "very-low-box", "VERY LOW RISK", "Maintain current diabetic management plan."
 
                 st.markdown(f'<div class="status-box {status_class}">OVERALL STATUS: {status_label}</div>', unsafe_allow_html=True)
                 st.info(f"**Medical Recommendation:** {advice}")
@@ -744,7 +623,6 @@ with tabs[0]:
             go.Bar(name='AUC (Scaled x100)', x=categories, y=[94.52, 80.0], marker_color='#9d50bb')
             ])
 
-            # Styling to match your "Privacy Shield" Theme
             fig.update_layout(
             title="Model Performance Comparison",
             barmode='group',
@@ -825,7 +703,7 @@ with tabs[0]:
             st.markdown("---")
 
             # Real-time Epsilon Growth visualization
-            st.markdown("#### Cumulative Privacy Loss (RDP Accountant History)")
+            st.markdown("#### Cumulative Privacy Loss")
         
             # This list represents the output of self.privacy_engine.get_epsilon() over rounds
             epsilon_history = [0.1, 0.22, 0.35, 0.48, 0.55, 0.62, 0.75]
@@ -856,7 +734,7 @@ with tabs[0]:
             st.plotly_chart(fig_eps, use_container_width=True)
 
 # ============================================================================
-# TAB 2: READMISSION RISK PREDICTION (MAIN CLINICAL INTERFACE)
+# TAB 2: READMISSION RISK PREDICTION
 # Complete integration of all 7-phase pipeline results
 # ============================================================================
 
@@ -1332,9 +1210,6 @@ with tabs[2]:
         st.error(f"Model loading failed: {type(e).__name__}: {e}")
         st.stop()
 
-    # ══════════════════════════════════════════════════════════════════
-    # ADD SUB-TABS (NEW)
-    # ══════════════════════════════════════════════════════════════════
     subtab_fusion_clinical, subtab_fusion_research = st.tabs([
         "Multimodal Clinical Inference",
         "Research Metrics & Model Performance"
@@ -1613,7 +1488,6 @@ Transform Pipeline:
 
             with center_col:
                 if fusion_prob is not None:
-                    st.markdown('<div class="glass-card" style="border: 2px solid #06b6d4;">', unsafe_allow_html=True)
                     color = "#4ade80" if fusion_prob < 0.5 else "#ef4444"
                     st.plotly_chart(create_gauge_dark(fusion_prob, " FUSED RISK", color), use_container_width=True)
                     if fusion_prob < 0.3:
@@ -1850,11 +1724,6 @@ Final diagnosis must be made by a licensed healthcare provider.
             )
             st.plotly_chart(fig_ehr, use_container_width=True)
 
-            # ── Interpretation box ──
-            # st.markdown("<br>", unsafe_allow_html=True)
-            # st.info("""
-            # """)
-
             
 
         # ═══════════════════════════════════════════════════════════════
@@ -2073,7 +1942,7 @@ with tabs[3]:
     st.markdown("""
         <h2 style='text-align: center; color: #06b6d4;'>Personalized Multi-Task FL Engine</h2>
         <p style='text-align: center; color: #94a3b8;'>
-            Executing FedRep-based local adaptation for Hypertension, Heart Failure, and Comorbidity Clustering.
+            Executing Personalized local adaptation for Hypertension, Heart Failure, and Comorbidity Clustering.
         </p>
     """, unsafe_allow_html=True)
     st.markdown("<br>", unsafe_allow_html=True)
@@ -2082,14 +1951,14 @@ with tabs[3]:
     # ROLE SELECTOR
     view_mode_comp4 = st.radio(
         "Select Dashboard View Mode:", 
-        ["Clinical Staff (Doctors/Nurses)", "Research & Analytics (Data Science)"],
+        ["Clinical Staff", "Research & Analytics"],
         horizontal=True,
         key="comp4_selector"
     )
 
 
     # VIEW 1: CLINICAL STAFF (DOCTORS & NURSES)
-    if view_mode_comp4 == "Clinical Staff (Doctors/Nurses)":
+    if view_mode_comp4 == "Clinical Staff":
         
         # PRIVACY SHIELD INDICATOR
         st.markdown("""
@@ -2138,7 +2007,7 @@ with tabs[3]:
             with h2:
                 model_mode = st.radio(
                     "Federated Execution Mode",
-                    ["Global Model (Shared Baseline)", "Personalized Model (FedRep Fine-Tuned)"],
+                    ["Global Model", "Personalized Model"],
                     horizontal=True,
                     key="c4_mode"
                 )
@@ -2148,7 +2017,7 @@ with tabs[3]:
 
         # INFERENCE
         if submit_comp4:
-            with st.spinner("Processing via local FedRep layers..."):
+            with st.spinner("Processing via local personalization layers..."):
                 progress_bar = st.progress(0)
                 for i in range(100):
                     time.sleep(0.002)
@@ -2196,12 +2065,12 @@ with tabs[3]:
                 if "Personalized" in model_mode:
                     c4_prob_htn = min(c4_prob_htn + 0.03, 0.98) if c4_prob_htn > 0.5 else max(c4_prob_htn - 0.03, 0.02)
                     c4_prob_hf  = min(c4_prob_hf  + 0.03, 0.98) if c4_prob_hf  > 0.5 else max(c4_prob_hf  - 0.03, 0.02)
-                    st.toast("FedRep layers activated: Adjusted for local demographics.")
+                    st.toast("Personalization activated: Adjusted for local demographics.")
 
                 c4_prob_htn = max(0.0, min(c4_prob_htn, 1.0))
                 c4_prob_hf  = max(0.0, min(c4_prob_hf,  1.0))
 
-            # 1. RISK ASSESSMENT RESULTS (Triggered safely inside the submit block)
+            # 1. RISK ASSESSMENT RESULTS
             
             # ARCHITECTURE PIPELINE VISUAL
             st.markdown("<p style='text-align:center; color:#94a3b8; font-size:0.9rem;'>Shared Feature Extractor with Multi-Task Heads</p>", unsafe_allow_html=True)
@@ -2237,15 +2106,24 @@ with tabs[3]:
             # 2. OVERALL STATUS BANNER
             st.divider()
             max_risk = max(c4_prob_htn, c4_prob_hf)
-            if max_risk > 0.7:
+            if max_risk > 0.8:
                 status_class, status_label = "critical-box", "CRITICAL MULTI-MORBIDITY RISK"
                 advice = f"Immediate intervention required. High probability of {predicted_cluster.lower()} complications."
+            elif max_risk > 0.65:
+                status_class, status_label = "very-high-box", "VERY HIGH RISK"
+                advice = f"Urgent clinical attention needed. Significant risk of {predicted_cluster.lower()} complications."
             elif max_risk > 0.5:
+                status_class, status_label = "high-box", "HIGH RISK"
+                advice = f"Increased monitoring required. Elevated risk of {predicted_cluster.lower()} issues."
+            elif max_risk > 0.35:
                 status_class, status_label = "moderate-box", "MODERATE RISK"
                 advice = f"Patient shows emerging signs of {predicted_cluster.lower()} issues. Preventative care recommended."
+            elif max_risk > 0.2:
+                status_class, status_label = "low-box", "LOW RISK"
+                advice = f"Patient has some risk factors for {predicted_cluster.lower()} complications. Routine monitoring advised."
             else:
-                status_class, status_label = "stable-box", "STABLE / LOW RISK"
-                advice = "Patient is currently low risk for cardiovascular complications. Continue standard care."
+                status_class, status_label = "very-low-box", "VERY LOW RISK"
+                advice = "Patient is currently very low risk for cardiovascular complications. Continue standard care."
 
             st.markdown(f'<div class="status-box {status_class}">OVERALL STATUS: {status_label}</div>', unsafe_allow_html=True)
             st.info(f"**Clinical Recommendation:** {advice}")
@@ -2253,7 +2131,7 @@ with tabs[3]:
             # 3. PERSONALIZATION DELTA & COHORTS
             if "Personalized" in model_mode and c4_prob_htn_global is not None:
                 st.markdown("---")
-                st.markdown("#### Personalization Delta (FedRep Influence)")
+                st.markdown("#### Personalization Delta (Local Fine-Tuning Influence)")
                 
                 pd1, pd2 = st.columns([1, 2])
                 with pd1:
@@ -2267,7 +2145,7 @@ with tabs[3]:
                         <b>Mechanism:</b> The shared backbone remains frozen while task-specific heads fine-tune to <b>{hospital_type.split('(')[0]}</b> demographics.
                     </div>
                     """, unsafe_allow_html=True)
-                
+                st.markdown("<br>", unsafe_allow_html=True)
                 with pd2:
                     # Radar chart compressed
                     categories   = ['HTN Risk', 'HF Risk', 'Confidence', 'Local Weight']
@@ -2332,11 +2210,11 @@ with tabs[3]:
             st.download_button("DOWNLOAD MTFL CLINICAL REPORT", data=report_content, file_name=f"MTFL_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt", mime="text/plain", use_container_width=True)
             
             st.markdown("<br>", unsafe_allow_html=True)
-            st.warning("**Clinical Disclaimer:** This AI-powered assessment is a decision-support tool only. Results should be interpreted by qualified healthcare professionals. This system operates entirely on local node parameters; no raw patient data leaves this device.")
+            st.warning("**Clinical Disclaimer:** This AI-powered assessment is a decision-support tool only. Results should be interpreted by qualified healthcare professionals.")
 
 
     # VIEW 2: RESEARCH & ANALYTICS (DATA SCIENCE)
-    elif view_mode_comp4 == "Research & Analytics (Data Science)":
+    elif view_mode_comp4 == "Research & Analytics":
         st.markdown("### Federated Learning Evaluation Metrics")
         
         df = load_comp4_data()
@@ -2357,82 +2235,402 @@ with tabs[3]:
             with r_tab1:
                 st.markdown("#### Global vs Personalized Convergence")
                 c1, c2, c3 = st.columns(3)
-                with c1: stat_card("Current Round", int(curr['round']))
-                with c2: stat_card("Global Acc", f"{curr['global_overall_acc']:.1%}")
-                with c3: stat_card("Personalized Acc", f"{curr['pers_overall_acc']:.1%}", f"+{abs_gain:.2f}% Gain")
+                with c1:
+                    st.markdown(f"""
+                    <div style='background: linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(37,99,235,0.1) 100%);
+                                border: 1px solid rgba(59,130,246,0.3); border-radius: 12px; padding: 20px;
+                                text-align: center; height: 120px; display: flex; flex-direction: column; justify-content: center;'>
+                        <div style='font-size: 0.9rem; font-weight: 500; color: #60a5fa; margin-bottom: 8px;'>Current Round</div>
+                        <div style='font-size: 2.2rem; font-weight: 700; color: #e2e8f0;'>{int(curr['round'])}</div>
+                        <div style='font-size: 0.75rem; color: #94a3b8; margin-top: 4px;'>of 10 total rounds</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with c2:
+                    global_acc = curr['global_overall_acc']
+                    st.markdown(f"""
+                    <div style='background: linear-gradient(135deg, rgba(107,114,128,0.1) 0%, rgba(75,85,99,0.1) 100%);
+                                border: 1px solid rgba(107,114,128,0.3); border-radius: 12px; padding: 20px;
+                                text-align: center; height: 120px; display: flex; flex-direction: column; justify-content: center;'>
+                        <div style='font-size: 0.9rem; font-weight: 500; color: #9ca3af; margin-bottom: 8px;'>Global Accuracy</div>
+                        <div style='font-size: 2.2rem; font-weight: 700; color: #e2e8f0;'>{global_acc:.1%}</div>
+                        <div style='font-size: 0.75rem; color: #94a3b8; margin-top: 4px;'>Baseline performance</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with c3:
+                    pers_acc = curr['pers_overall_acc']
+                    gain_color = "#10b981" if abs_gain > 0 else "#f43f5e"
+                    st.markdown(f"""
+                    <div style='background: linear-gradient(135deg, rgba(6,182,212,0.1) 0%, rgba(14,116,144,0.1) 100%);
+                                border: 1px solid rgba(6,182,212,0.3); border-radius: 12px; padding: 20px;
+                                text-align: center; height: 120px; display: flex; flex-direction: column; justify-content: center;'>
+                        <div style='font-size: 0.9rem; font-weight: 500; color: #06b6d4; margin-bottom: 8px;'>Personalized Accuracy</div>
+                        <div style='font-size: 2.2rem; font-weight: 700; color: #e2e8f0;'>{pers_acc:.1%}</div>
+                        <div style='font-size: 0.75rem; color: {gain_color}; margin-top: 4px; font-weight: 600;'>+{abs_gain:.2f}% improvement</div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
-                st.markdown("<br>", unsafe_allow_html=True)
 
                 # COMPREHENSIVE EVALUATION METRICS
                 st.markdown("#### Final Personalized Model Evaluation (Round 10)")
-                
+
                 col_m1, col_m2, col_m3 = st.columns(3)
                 with col_m1:
-                    st.markdown("<div style='background: rgba(15, 23, 42, 0.4); padding: 15px; border-radius: 8px; border-left: 3px solid #f43f5e;'>", unsafe_allow_html=True)
-                    st.markdown("**Hypertension (Task 1)**")
-                    st.metric("HTN Accuracy", f"{curr.get('pers_htn_acc', 0):.1%}")
-                    st.metric("HTN AUROC", f"{curr.get('pers_htn_auroc', 0):.3f}")
-                    st.metric("HTN F1-Score", f"{curr.get('pers_htn_f1', 0):.3f}")
-                    st.markdown("</div>", unsafe_allow_html=True)
+                    htn_acc = curr.get('pers_htn_acc', 0)
+                    htn_auroc = curr.get('pers_htn_auroc', 0)
+                    htn_f1 = curr.get('pers_htn_f1', 0)
+                    st.markdown(f"""
+                    <div style='background: linear-gradient(135deg, rgba(244,63,94,0.1) 0%, rgba(190,18,60,0.1) 100%);
+                                border: 1px solid rgba(244,63,94,0.3); border-radius: 12px; padding: 20px; margin-bottom: 15px;'>
+                        <div style='text-align: center; margin-bottom: 15px;'>
+                            <div style='font-size: 1.1rem; font-weight: 600; color: #f43f5e;'>Hypertension (Task 1)</div>
+                        </div>
+                        <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;'>
+                            <span style='font-size: 0.9rem; color: #e2e8f0;'>Accuracy</span>
+                            <span style='font-size: 1rem; font-weight: 600; color: #e2e8f0;'>{htn_acc:.1%}</span>
+                        </div>
+                        <div style='width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-bottom: 15px;'>
+                            <div style='width: {htn_acc*100:.1f}%; height: 100%; background: linear-gradient(90deg, #f43f5e, #fb7185); border-radius: 3px;'></div>
+                        </div>
+                        <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;'>
+                            <span style='font-size: 0.9rem; color: #e2e8f0;'>AUROC</span>
+                            <span style='font-size: 1rem; font-weight: 600; color: #e2e8f0;'>{htn_auroc:.3f}</span>
+                        </div>
+                        <div style='width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-bottom: 15px;'>
+                            <div style='width: {htn_auroc*100:.1f}%; height: 100%; background: linear-gradient(90deg, #f43f5e, #fb7185); border-radius: 3px;'></div>
+                        </div>
+                        <div style='display: flex; justify-content: space-between; align-items: center;'>
+                            <span style='font-size: 0.9rem; color: #e2e8f0;'>F1-Score</span>
+                            <span style='font-size: 1rem; font-weight: 600; color: #e2e8f0;'>{htn_f1:.3f}</span>
+                        </div>
+                        <div style='width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-top: 5px;'>
+                            <div style='width: {htn_f1*100:.1f}%; height: 100%; background: linear-gradient(90deg, #f43f5e, #fb7185); border-radius: 3px;'></div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
                 with col_m2:
-                    st.markdown("<div style='background: rgba(15, 23, 42, 0.4); padding: 15px; border-radius: 8px; border-left: 3px solid #3b82f6;'>", unsafe_allow_html=True)
-                    st.markdown("**Heart Failure (Task 2)**")
-                    st.metric("HF Accuracy", f"{curr.get('pers_hf_acc', 0):.1%}")
-                    st.metric("HF AUROC", f"{curr.get('pers_hf_auroc', 0):.3f}")
-                    st.metric("HF F1-Score", f"{curr.get('pers_hf_f1', 0):.3f}")
-                    st.markdown("</div>", unsafe_allow_html=True)
+                    hf_acc = curr.get('pers_hf_acc', 0)
+                    hf_auroc = curr.get('pers_hf_auroc', 0)
+                    hf_f1 = curr.get('pers_hf_f1', 0)
+                    st.markdown(f"""
+                    <div style='background: linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(37,99,235,0.1) 100%);
+                                border: 1px solid rgba(59,130,246,0.3); border-radius: 12px; padding: 20px; margin-bottom: 15px;'>
+                        <div style='text-align: center; margin-bottom: 15px;'>
+                            <div style='font-size: 1.1rem; font-weight: 600; color: #3b82f6;'>Heart Failure (Task 2)</div>
+                        </div>
+                        <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;'>
+                            <span style='font-size: 0.9rem; color: #e2e8f0;'>Accuracy</span>
+                            <span style='font-size: 1rem; font-weight: 600; color: #e2e8f0;'>{hf_acc:.1%}</span>
+                        </div>
+                        <div style='width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-bottom: 15px;'>
+                            <div style='width: {hf_acc*100:.1f}%; height: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa); border-radius: 3px;'></div>
+                        </div>
+                        <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;'>
+                            <span style='font-size: 0.9rem; color: #e2e8f0;'>AUROC</span>
+                            <span style='font-size: 1rem; font-weight: 600; color: #e2e8f0;'>{hf_auroc:.3f}</span>
+                        </div>
+                        <div style='width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-bottom: 15px;'>
+                            <div style='width: {hf_auroc*100:.1f}%; height: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa); border-radius: 3px;'></div>
+                        </div>
+                        <div style='display: flex; justify-content: space-between; align-items: center;'>
+                            <span style='font-size: 0.9rem; color: #e2e8f0;'>F1-Score</span>
+                            <span style='font-size: 1rem; font-weight: 600; color: #e2e8f0;'>{hf_f1:.3f}</span>
+                        </div>
+                        <div style='width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-top: 5px;'>
+                            <div style='width: {hf_f1*100:.1f}%; height: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa); border-radius: 3px;'></div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
                 with col_m3:
-                    st.markdown("<div style='background: rgba(15, 23, 42, 0.4); padding: 15px; border-radius: 8px; border-left: 3px solid #8b5cf6;'>", unsafe_allow_html=True)
-                    st.markdown("**Comorbidity Cluster (Task 3)**")
-                    st.metric("Cluster Accuracy", f"{curr.get('pers_cluster_acc', 0):.1%}")
-                    st.metric("Cluster Macro-F1", f"{curr.get('pers_cluster_f1_macro', 0):.3f}")
-                    st.markdown("*(Multi-class classification)*")
-                    st.markdown("</div>", unsafe_allow_html=True)
+                    cluster_acc = curr.get('pers_cluster_acc', 0)
+                    cluster_f1 = curr.get('pers_cluster_f1_macro', 0)
+                    st.markdown(f"""
+                    <div style='background: linear-gradient(135deg, rgba(139,92,246,0.1) 0%, rgba(124,58,237,0.1) 100%);
+                                border: 1px solid rgba(139,92,246,0.3); border-radius: 12px; padding: 20px; margin-bottom: 15px;'>
+                        <div style='text-align: center; margin-bottom: 15px;'>
+                            <div style='font-size: 1.1rem; font-weight: 600; color: #8b5cf6;'>Comorbidity Cluster (Task 3)</div>
+                        </div>
+                        <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;'>
+                            <span style='font-size: 0.9rem; color: #e2e8f0;'>Accuracy</span>
+                            <span style='font-size: 1rem; font-weight: 600; color: #e2e8f0;'>{cluster_acc:.1%}</span>
+                        </div>
+                        <div style='width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-bottom: 15px;'>
+                            <div style='width: {cluster_acc*100:.1f}%; height: 100%; background: linear-gradient(90deg, #8b5cf6, #a78bfa); border-radius: 3px;'></div>
+                        </div>
+                        <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;'>
+                            <span style='font-size: 0.9rem; color: #e2e8f0;'>Macro F1</span>
+                            <span style='font-size: 1rem; font-weight: 600; color: #e2e8f0;'>{cluster_f1:.3f}</span>
+                        </div>
+                        <div style='width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-bottom: 15px;'>
+                            <div style='width: {cluster_f1*100:.1f}%; height: 100%; background: linear-gradient(90deg, #8b5cf6, #a78bfa); border-radius: 3px;'></div>
+                        </div>
+                        <div style='text-align: center; font-size: 0.8rem; color: #94a3b8; font-style: italic;'>
+                            Multi-class classification
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
                 st.markdown("<br>", unsafe_allow_html=True)
-                
+
                 st.markdown("#### Accuracy Evolution")
                 fig = go.Figure()
-                fig.add_trace(go.Scatter(x=df['round'], y=df['global_overall_acc'], name='Global', line=dict(color='#64748b', width=2, dash='dash')))
-                fig.add_trace(go.Scatter(x=df['round'], y=df['pers_overall_acc'], name='Personalized', line=dict(color='#06b6d4', width=4)))
-                fig.update_layout(**dark_chart_layout(), height=350, xaxis_title="Federated Round", yaxis_title="Accuracy", margin=dict(l=0, r=0, t=30, b=0))
+                fig.add_trace(go.Scatter(
+                    x=df['round'],
+                    y=df['global_overall_acc'],
+                    name='Global Model',
+                    line=dict(color='#64748b', width=3, dash='dash'),
+                    mode='lines+markers',
+                    marker=dict(size=6, color='#64748b')
+                ))
+                fig.add_trace(go.Scatter(
+                    x=df['round'],
+                    y=df['pers_overall_acc'],
+                    name='Personalized Model',
+                    line=dict(color='#06b6d4', width=4),
+                    mode='lines+markers',
+                    marker=dict(size=8, color='#06b6d4', symbol='diamond')
+                ))
+                fig.update_layout(
+                    **dark_chart_layout(),
+                    height=400,
+                    xaxis_title="Federated Learning Round",
+                    yaxis_title="Model Accuracy",
+                    margin=dict(l=0, r=0, t=30, b=0),
+                    legend=dict(
+                        orientation="h",
+                        y=-0.15,
+                        x=0.5,
+                        xanchor="center",
+                        bgcolor='rgba(0,0,0,0.5)',
+                        bordercolor='rgba(255,255,255,0.2)',
+                        borderwidth=1
+                    )
+                )
+                fig.update_yaxes(gridcolor='rgba(255,255,255,0.1)', tickformat='.1%')
                 st.plotly_chart(fig, use_container_width=True)
 
 
             # SUBTAB 2: ALGORITHMIC FAIRNESS
             with r_tab2:
-                st.markdown("#### Demographic Parity Assessment")
-                gap_val = curr['fairness_gap']
-                
-                f_col1, f_col2 = st.columns([1, 2])
-                with f_col1:
-                    stat_card("Fairness Gap", f"{gap_val:.4f}", "Target ≤ 0.05")
+                gap_val   = curr['fairness_gap']
+                is_fair   = gap_val <= 0.05
+                gap_pct   = gap_val * 100
+                threshold = 0.05
+
+                if gap_val <= 0.02:
+                    fair_label, fair_color, fair_bg, fair_icon = "EXCELLENT", "#10b981", "rgba(16,185,129,0.12)", "✦"
+                elif gap_val <= 0.05:
+                    fair_label, fair_color, fair_bg, fair_icon = "COMPLIANT", "#4ade80", "rgba(74,222,128,0.10)", "◈"
+                elif gap_val <= 0.10:
+                    fair_label, fair_color, fair_bg, fair_icon = "MARGINAL",  "#fbbf24", "rgba(251,191,36,0.10)",  "⚠"
+                else:
+                    fair_label, fair_color, fair_bg, fair_icon = "VIOLATION", "#f43f5e", "rgba(244,63,94,0.12)",  "✕"
+
+
+                st.markdown(f"""
+                <div style='display:flex; align-items:center; gap:12px; margin-bottom:20px;'>
+                    <div style='width:4px; height:36px; background:linear-gradient(180deg,#f43f5e,#fb923c); border-radius:2px;'></div>
+                    <div>
+                        <div style='font-size:1.25rem; font-weight:700; color:#e2e8f0; letter-spacing:0.02em;'>Algorithmic Fairness — Demographic Parity</div>
+                        <div style='font-size:0.8rem; color:#64748b; margin-top:2px;'>Disparity in predictive accuracy across demographic sub-groups over federated rounds</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                # Top KPI row
+                kpi1, kpi2, kpi3 = st.columns(3)
+
+                with kpi1:
+                    fill_w = min(gap_val / 0.15 * 100, 100)
+                    st.markdown(f"""
+                    <div style='background:linear-gradient(135deg,{fair_bg},{fair_bg.replace("0.12","0.05")});
+                                border:1px solid {fair_color}44; border-radius:14px; padding:22px 20px; position:relative; overflow:hidden;'>
+                        <div style='position:absolute; top:0; right:0; font-size:4rem; opacity:0.06; color:{fair_color}; line-height:1; padding:4px 10px;'>{fair_icon}</div>
+                        <div style='font-size:0.75rem; font-weight:600; color:{fair_color}; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:6px;'>Fairness Gap</div>
+                        <div style='font-size:2.6rem; font-weight:800; color:#e2e8f0; line-height:1;'>{gap_val:.4f}</div>
+                        <div style='margin-top:12px; width:100%; height:5px; background:rgba(255,255,255,0.08); border-radius:99px;'>
+                            <div style='width:{fill_w:.1f}%; height:100%; background:linear-gradient(90deg,{fair_color},{fair_color}aa); border-radius:99px; transition:width 0.5s;'></div>
+                        </div>
+                        <div style='display:flex; justify-content:space-between; margin-top:4px;'>
+                            <span style='font-size:0.7rem; color:#64748b;'>0.00</span>
+                            <span style='font-size:0.7rem; color:#64748b;'>0.15+</span>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                with kpi2:
+                    delta_from_threshold = threshold - gap_val
+                    delta_color = "#10b981" if delta_from_threshold >= 0 else "#f43f5e"
+                    delta_sign  = "−" if delta_from_threshold < 0 else "+"
+                    st.markdown(f"""
+                    <div style='background:linear-gradient(135deg,rgba(99,102,241,0.10),rgba(139,92,246,0.06));
+                                border:1px solid rgba(99,102,241,0.25); border-radius:14px; padding:22px 20px; position:relative; overflow:hidden;'>
+                        <div style='position:absolute; top:0; right:0; font-size:4rem; opacity:0.05; color:#818cf8; line-height:1; padding:4px 10px;'>Δ</div>
+                        <div style='font-size:0.75rem; font-weight:600; color:#818cf8; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:6px;'>Margin vs Threshold</div>
+                        <div style='font-size:2.6rem; font-weight:800; color:#e2e8f0; line-height:1;'>{delta_sign}{abs(delta_from_threshold):.4f}</div>
+                        <div style='margin-top:12px; font-size:0.78rem; color:#94a3b8;'>Threshold set at <span style='color:#e2e8f0; font-weight:600;'>0.05</span></div>
+                        <div style='margin-top:4px; font-size:0.78rem; color:{delta_color}; font-weight:600;'>
+                            {"Within acceptable bounds" if delta_from_threshold >= 0 else "Exceeds acceptable bounds"}
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                with kpi3:
+                    st.markdown(f"""
+                    <div style='background:linear-gradient(135deg,{fair_bg},{fair_bg.replace("0.12","0.04")});
+                                border:1px solid {fair_color}55; border-radius:14px; padding:22px 20px; text-align:center; position:relative; overflow:hidden;'>
+                        <div style='position:absolute; top:0; right:0; font-size:4rem; opacity:0.06; color:{fair_color}; line-height:1; padding:4px 10px;'>◎</div>
+                        <div style='font-size:0.75rem; font-weight:600; color:{fair_color}; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:10px;'>Overall Status</div>
+                        <div style='display:inline-block; background:{fair_color}22; border:1.5px solid {fair_color}66;
+                                    border-radius:8px; padding:8px 18px; margin-bottom:10px;'>
+                            <span style='font-size:1.4rem; font-weight:800; color:{fair_color}; letter-spacing:0.08em;'>{fair_label}</span>
+                        </div>
+                        <div style='font-size:0.78rem; color:#94a3b8; line-height:1.5;'>
+                            {"Bias well-controlled across groups" if is_fair else "Bias mitigation required"}
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
+
+                chart_col, info_col = st.columns([3, 1], gap="large")
+
+                with chart_col:
+                    fig2 = go.Figure()
+                    # Filled area
+                    fig2.add_trace(go.Scatter(
+                        x=df['round'], y=df['fairness_gap'],
+                        fill='tozeroy',
+                        fillcolor='rgba(244,63,94,0.12)',
+                        line=dict(color='#f43f5e', width=2.5),
+                        name="Fairness Gap",
+                        hovertemplate="<b>Round %{x}</b><br>Gap: %{y:.4f}<extra></extra>",
+                        mode='lines+markers',
+                        marker=dict(size=6, color='#f43f5e', symbol='circle',
+                                    line=dict(color='rgba(255,255,255,0.3)', width=1))
+                    ))
+                    # Threshold band
+                    fig2.add_hrect(y0=threshold, y1=max(df['fairness_gap'].max() * 1.3, 0.12),
+                                   fillcolor="rgba(244,63,94,0.05)", line_width=0)
+                    # Threshold line
+                    fig2.add_hline(
+                        y=threshold, line_dash="dot", line_color="#4ade80", line_width=1.8,
+                        annotation_text="  Acceptable Threshold (0.05)",
+                        annotation_font_size=11,
+                        annotation_font_color="#4ade80",
+                        annotation_position="top left"
+                    )
+                    # Current round marker
+                    curr_round = df['round'].iloc[-1]
+                    curr_gap   = df['fairness_gap'].iloc[-1]
+                    fig2.add_trace(go.Scatter(
+                        x=[curr_round], y=[curr_gap],
+                        mode='markers',
+                        marker=dict(size=12, color=fair_color, symbol='diamond',
+                                    line=dict(color='white', width=1.5)),
+                        name="Current Round",
+                        hovertemplate=f"<b>Current (Round {curr_round})</b><br>Gap: {curr_gap:.4f}<extra></extra>"
+                    ))
+                    fig2.update_layout(
+                        **dark_chart_layout(),
+                        height=320,
+                        xaxis_title="Federated Learning Round",
+                        yaxis_title="Disparity Gap",
+                        margin=dict(l=0, r=10, t=15, b=0),
+                        legend=dict(
+                            orientation="h", y=-0.18, x=0.5, xanchor="center",
+                            bgcolor='rgba(0,0,0,0)', borderwidth=0,
+                            font=dict(size=11, color='#94a3b8')
+                        ),
+                        hovermode='x unified'
+                    )
+                    fig2.update_yaxes(gridcolor='rgba(255,255,255,0.06)', tickformat='.3f')
+                    fig2.update_xaxes(gridcolor='rgba(255,255,255,0.04)', dtick=1)
+                    st.plotly_chart(fig2, use_container_width=True, key="fairness_gap_chart")
+
+                with info_col:
                     st.info("**Evaluation Context:**\nMeasures the disparity in predictive accuracy between demographic sub-groups (e.g., Gender). A gap near 0.00 indicates strong algorithmic fairness.")
                 
-                with f_col2:
-                    fig2 = go.Figure()
-                    fig2.add_trace(go.Scatter(x=df['round'], y=df['fairness_gap'], fill='tozeroy', line=dict(color='#f43f5e', width=2), name="Fairness Gap"))
-                    fig2.add_hline(y=0.05, line_dash="dash", line_color="#4ade80", annotation_text="Acceptable Threshold (0.05)")
-                    fig2.update_layout(**dark_chart_layout(), height=300, xaxis_title="Federated Round", yaxis_title="Disparity Gap", margin=dict(l=0, r=0, t=30, b=0))
-                    st.plotly_chart(fig2, use_container_width=True)
+
 
             # SUBTAB 3: ARCHITECTURE EFFICIENCY
             with r_tab3:
                 st.markdown("#### Multi-Task vs Single-Task Efficiency Profile")
-                eff_c1, eff_c2, eff_c3 = st.columns(3)
-                with eff_c1:
-                    st.info("**Model Transmission Size**\n\n### 0.30 MB\n\n*(vs 0.90 MB for 3 Single-Task Models)*")
-                with eff_c2:
-                    st.info("**Bandwidth Saved**\n\n### 66.6% Reduction\n\n*(Shared feature extractor efficiency)*")
-                with eff_c3:
-                    st.info("**Privacy Protocol**\n\n### Active\n\n*(DP Noise Injected + Secure Aggregation)*")
+                st.caption("Quantifying the architectural advantages of MTFL for federated deployment")
                 
                 st.markdown("<br>", unsafe_allow_html=True)
+                
+                # Enhanced KPI Cards with Icons and Better Styling
+                eff_c1, eff_c2, eff_c3 = st.columns(3)
+                
+                with eff_c1:
+                    st.markdown("""
+                    <div style='background: linear-gradient(135deg, rgba(6,182,212,0.1) 0%, rgba(59,130,246,0.1) 100%);
+                                border: 1px solid rgba(6,182,212,0.3); border-radius: 12px; padding: 20px;
+                                text-align: center; height: 180px; display: flex; flex-direction: column; justify-content: center;'>
+                        <div style='font-size: 1.2rem; font-weight: 600; color: #06b6d4; margin-bottom: 5px;'>Model Size</div>
+                        <div style='font-size: 2rem; font-weight: 700; color: #e2e8f0;'>0.30 MB</div>
+                        <div style='font-size: 0.85rem; color: #94a3b8; margin-top: 5px;'>vs 0.90 MB (3x Single-Task)</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                with eff_c2:
+                    st.markdown("""
+                    <div style='background: linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(34,197,94,0.1) 100%);
+                                border: 1px solid rgba(16,185,129,0.3); border-radius: 12px; padding: 20px;
+                                text-align: center; height: 180px; display: flex; flex-direction: column; justify-content: center;'>
+                        <div style='font-size: 1.2rem; font-weight: 600; color: #10b981; margin-bottom: 5px;'>Bandwidth Saved</div>
+                        <div style='font-size: 2rem; font-weight: 700; color: #e2e8f0;'>66.6%</div>
+                        <div style='font-size: 0.85rem; color: #94a3b8; margin-top: 5px;'>Reduction in FL Rounds</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                with eff_c3:
+                    st.markdown("""
+                    <div style='background: linear-gradient(135deg, rgba(139,92,246,0.1) 0%, rgba(168,85,247,0.1) 100%);
+                                border: 1px solid rgba(139,92,246,0.3); border-radius: 12px; padding: 20px;
+                                text-align: center; height: 180px; display: flex; flex-direction: column; justify-content: center;'>
+                        <div style='font-size: 1.2rem; font-weight: 600; color: #8b5cf6; margin-bottom: 5px;'>Privacy Protocol</div>
+                        <div style='font-size: 1.5rem; font-weight: 700; color: #e2e8f0;'>Active</div>
+                        <div style='font-size: 0.85rem; color: #94a3b8; margin-top: 5px;'>DP + Secure Aggregation</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+                # Efficiency Visualization
+                st.markdown("#### Efficiency Breakdown")
+                
+                # Progress bar for bandwidth savings
+                st.markdown("**Communication Efficiency**")
+                st.progress(0.666, text="66.6% Bandwidth Reduction")
+                
+                # Simple bar chart comparison
+                fig_eff = go.Figure()
+                fig_eff.add_trace(go.Bar(
+                    x=['Single-Task Models', 'Multi-Task Model'],
+                    y=[0.90, 0.30],
+                    marker_color=['#64748b', '#06b6d4'],
+                    text=['0.90 MB', '0.30 MB'],
+                    textposition='auto'
+                ))
+                fig_eff.update_layout(
+                    title="Model Transmission Size Comparison",
+                    yaxis_title="Size (MB)",
+                    height=250,
+                    **dark_chart_layout()
+                )
+                st.plotly_chart(fig_eff, use_container_width=True)
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                
                 st.markdown("""
-                **Architectural Advantage:** By utilizing a hard-parameter sharing approach (shared body with task-specific heads), the MTFL framework dramatically reduces the computational payload required for federated communication rounds. This enables edge deployment in resource-constrained hospital networks while maintaining strict data locality and differential privacy boundaries.
-                """)
+                <div style='background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; border-left: 4px solid #06b6d4;'>
+                    Shared backbone with task-specific heads minimizes federated communication cost, enabling efficient edge deployment while maintaining data privacy.
+                </div>
+                """, unsafe_allow_html=True)
+                
 
 # SIDEBAR
 with st.sidebar:
