@@ -79,7 +79,7 @@ def load_multimodal_system():
             )
         return path
 
-    # Helper to load a checkpoint with safe globals and weights_only=False (PyTorch 2.6+)
+
     def safe_load(path):
         if not os.path.exists(path):
             raise FileNotFoundError(f"Model file not found: {path}")
