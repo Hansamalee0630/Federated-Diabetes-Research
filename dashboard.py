@@ -831,7 +831,7 @@ with tabs[0]:
             st.markdown("---")
 
             # Real-time Epsilon Growth visualization
-            st.markdown("#### Cumulative Privacy Loss (RDP Accountant History)")
+            st.markdown("#### Cumulative Privacy Loss")
         
             # This list represents the output of self.privacy_engine.get_epsilon() over rounds
             epsilon_history = [0.1, 0.22, 0.35, 0.48, 0.55, 0.62, 0.75]
@@ -2402,7 +2402,6 @@ with tabs[3]:
                     </div>
                     """, unsafe_allow_html=True)
 
-                st.markdown("<br>", unsafe_allow_html=True)
 
                 # COMPREHENSIVE EVALUATION METRICS
                 st.markdown("#### Final Personalized Model Evaluation (Round 10)")
@@ -2547,25 +2546,149 @@ with tabs[3]:
 
             # SUBTAB 2: ALGORITHMIC FAIRNESS
             with r_tab2:
-                st.markdown("#### Demographic Parity Assessment")
-                gap_val = curr['fairness_gap']
-                
-                f_col1, f_col2 = st.columns([1, 2])
-                with f_col1:
-                    stat_card("Fairness Gap", f"{gap_val:.4f}", "Target ≤ 0.05")
-                    st.markdown("<br>", unsafe_allow_html=True)
+                gap_val   = curr['fairness_gap']
+                is_fair   = gap_val <= 0.05
+                gap_pct   = gap_val * 100
+                threshold = 0.05
+
+                if gap_val <= 0.02:
+                    fair_label, fair_color, fair_bg, fair_icon = "EXCELLENT", "#10b981", "rgba(16,185,129,0.12)", "✦"
+                elif gap_val <= 0.05:
+                    fair_label, fair_color, fair_bg, fair_icon = "COMPLIANT", "#4ade80", "rgba(74,222,128,0.10)", "◈"
+                elif gap_val <= 0.10:
+                    fair_label, fair_color, fair_bg, fair_icon = "MARGINAL",  "#fbbf24", "rgba(251,191,36,0.10)",  "⚠"
+                else:
+                    fair_label, fair_color, fair_bg, fair_icon = "VIOLATION", "#f43f5e", "rgba(244,63,94,0.12)",  "✕"
+
+
+                st.markdown(f"""
+                <div style='display:flex; align-items:center; gap:12px; margin-bottom:20px;'>
+                    <div style='width:4px; height:36px; background:linear-gradient(180deg,#f43f5e,#fb923c); border-radius:2px;'></div>
+                    <div>
+                        <div style='font-size:1.25rem; font-weight:700; color:#e2e8f0; letter-spacing:0.02em;'>Algorithmic Fairness — Demographic Parity</div>
+                        <div style='font-size:0.8rem; color:#64748b; margin-top:2px;'>Disparity in predictive accuracy across demographic sub-groups over federated rounds</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                # Top KPI row
+                kpi1, kpi2, kpi3 = st.columns(3)
+
+                with kpi1:
+                    fill_w = min(gap_val / 0.15 * 100, 100)
+                    st.markdown(f"""
+                    <div style='background:linear-gradient(135deg,{fair_bg},{fair_bg.replace("0.12","0.05")});
+                                border:1px solid {fair_color}44; border-radius:14px; padding:22px 20px; position:relative; overflow:hidden;'>
+                        <div style='position:absolute; top:0; right:0; font-size:4rem; opacity:0.06; color:{fair_color}; line-height:1; padding:4px 10px;'>{fair_icon}</div>
+                        <div style='font-size:0.75rem; font-weight:600; color:{fair_color}; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:6px;'>Fairness Gap</div>
+                        <div style='font-size:2.6rem; font-weight:800; color:#e2e8f0; line-height:1;'>{gap_val:.4f}</div>
+                        <div style='margin-top:12px; width:100%; height:5px; background:rgba(255,255,255,0.08); border-radius:99px;'>
+                            <div style='width:{fill_w:.1f}%; height:100%; background:linear-gradient(90deg,{fair_color},{fair_color}aa); border-radius:99px; transition:width 0.5s;'></div>
+                        </div>
+                        <div style='display:flex; justify-content:space-between; margin-top:4px;'>
+                            <span style='font-size:0.7rem; color:#64748b;'>0.00</span>
+                            <span style='font-size:0.7rem; color:#64748b;'>0.15+</span>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                with kpi2:
+                    delta_from_threshold = threshold - gap_val
+                    delta_color = "#10b981" if delta_from_threshold >= 0 else "#f43f5e"
+                    delta_sign  = "−" if delta_from_threshold < 0 else "+"
+                    st.markdown(f"""
+                    <div style='background:linear-gradient(135deg,rgba(99,102,241,0.10),rgba(139,92,246,0.06));
+                                border:1px solid rgba(99,102,241,0.25); border-radius:14px; padding:22px 20px; position:relative; overflow:hidden;'>
+                        <div style='position:absolute; top:0; right:0; font-size:4rem; opacity:0.05; color:#818cf8; line-height:1; padding:4px 10px;'>Δ</div>
+                        <div style='font-size:0.75rem; font-weight:600; color:#818cf8; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:6px;'>Margin vs Threshold</div>
+                        <div style='font-size:2.6rem; font-weight:800; color:#e2e8f0; line-height:1;'>{delta_sign}{abs(delta_from_threshold):.4f}</div>
+                        <div style='margin-top:12px; font-size:0.78rem; color:#94a3b8;'>Threshold set at <span style='color:#e2e8f0; font-weight:600;'>0.05</span></div>
+                        <div style='margin-top:4px; font-size:0.78rem; color:{delta_color}; font-weight:600;'>
+                            {"Within acceptable bounds" if delta_from_threshold >= 0 else "Exceeds acceptable bounds"}
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                with kpi3:
+                    st.markdown(f"""
+                    <div style='background:linear-gradient(135deg,{fair_bg},{fair_bg.replace("0.12","0.04")});
+                                border:1px solid {fair_color}55; border-radius:14px; padding:22px 20px; text-align:center; position:relative; overflow:hidden;'>
+                        <div style='position:absolute; top:0; right:0; font-size:4rem; opacity:0.06; color:{fair_color}; line-height:1; padding:4px 10px;'>◎</div>
+                        <div style='font-size:0.75rem; font-weight:600; color:{fair_color}; text-transform:uppercase; letter-spacing:0.1em; margin-bottom:10px;'>Overall Status</div>
+                        <div style='display:inline-block; background:{fair_color}22; border:1.5px solid {fair_color}66;
+                                    border-radius:8px; padding:8px 18px; margin-bottom:10px;'>
+                            <span style='font-size:1.4rem; font-weight:800; color:{fair_color}; letter-spacing:0.08em;'>{fair_label}</span>
+                        </div>
+                        <div style='font-size:0.78rem; color:#94a3b8; line-height:1.5;'>
+                            {"Bias well-controlled across groups" if is_fair else "Bias mitigation required"}
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                st.markdown("<div style='height:20px;'></div>", unsafe_allow_html=True)
+
+                chart_col, info_col = st.columns([3, 1], gap="large")
+
+                with chart_col:
+                    fig2 = go.Figure()
+                    # Filled area
+                    fig2.add_trace(go.Scatter(
+                        x=df['round'], y=df['fairness_gap'],
+                        fill='tozeroy',
+                        fillcolor='rgba(244,63,94,0.12)',
+                        line=dict(color='#f43f5e', width=2.5),
+                        name="Fairness Gap",
+                        hovertemplate="<b>Round %{x}</b><br>Gap: %{y:.4f}<extra></extra>",
+                        mode='lines+markers',
+                        marker=dict(size=6, color='#f43f5e', symbol='circle',
+                                    line=dict(color='rgba(255,255,255,0.3)', width=1))
+                    ))
+                    # Threshold band
+                    fig2.add_hrect(y0=threshold, y1=max(df['fairness_gap'].max() * 1.3, 0.12),
+                                   fillcolor="rgba(244,63,94,0.05)", line_width=0)
+                    # Threshold line
+                    fig2.add_hline(
+                        y=threshold, line_dash="dot", line_color="#4ade80", line_width=1.8,
+                        annotation_text="  Acceptable Threshold (0.05)",
+                        annotation_font_size=11,
+                        annotation_font_color="#4ade80",
+                        annotation_position="top left"
+                    )
+                    # Current round marker
+                    curr_round = df['round'].iloc[-1]
+                    curr_gap   = df['fairness_gap'].iloc[-1]
+                    fig2.add_trace(go.Scatter(
+                        x=[curr_round], y=[curr_gap],
+                        mode='markers',
+                        marker=dict(size=12, color=fair_color, symbol='diamond',
+                                    line=dict(color='white', width=1.5)),
+                        name="Current Round",
+                        hovertemplate=f"<b>Current (Round {curr_round})</b><br>Gap: {curr_gap:.4f}<extra></extra>"
+                    ))
+                    fig2.update_layout(
+                        **dark_chart_layout(),
+                        height=320,
+                        xaxis_title="Federated Learning Round",
+                        yaxis_title="Disparity Gap",
+                        margin=dict(l=0, r=10, t=15, b=0),
+                        legend=dict(
+                            orientation="h", y=-0.18, x=0.5, xanchor="center",
+                            bgcolor='rgba(0,0,0,0)', borderwidth=0,
+                            font=dict(size=11, color='#94a3b8')
+                        ),
+                        hovermode='x unified'
+                    )
+                    fig2.update_yaxes(gridcolor='rgba(255,255,255,0.06)', tickformat='.3f')
+                    fig2.update_xaxes(gridcolor='rgba(255,255,255,0.04)', dtick=1)
+                    st.plotly_chart(fig2, use_container_width=True, key="fairness_gap_chart")
+
+                with info_col:
                     st.info("**Evaluation Context:**\nMeasures the disparity in predictive accuracy between demographic sub-groups (e.g., Gender). A gap near 0.00 indicates strong algorithmic fairness.")
                 
-                with f_col2:
-                    fig2 = go.Figure()
-                    fig2.add_trace(go.Scatter(x=df['round'], y=df['fairness_gap'], fill='tozeroy', line=dict(color='#f43f5e', width=2), name="Fairness Gap"))
-                    fig2.add_hline(y=0.05, line_dash="dash", line_color="#4ade80", annotation_text="Acceptable Threshold (0.05)")
-                    fig2.update_layout(**dark_chart_layout(), height=300, xaxis_title="Federated Round", yaxis_title="Disparity Gap", margin=dict(l=0, r=0, t=30, b=0))
-                    st.plotly_chart(fig2, use_container_width=True)
+
 
             # SUBTAB 3: ARCHITECTURE EFFICIENCY
             with r_tab3:
-                st.markdown('<div class="glass-card">', unsafe_allow_html=True)
                 st.markdown("#### Multi-Task vs Single-Task Efficiency Profile")
                 st.caption("Quantifying the architectural advantages of MTFL for federated deployment")
                 
@@ -2635,14 +2758,12 @@ with tabs[3]:
                 
                 st.markdown("<br>", unsafe_allow_html=True)
                 
-                # Enhanced explanation
                 st.markdown("""
                 <div style='background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; border-left: 4px solid #06b6d4;'>
                     Shared backbone with task-specific heads minimizes federated communication cost, enabling efficient edge deployment while maintaining data privacy.
                 </div>
                 """, unsafe_allow_html=True)
                 
-                st.markdown('</div><br>', unsafe_allow_html=True)
 
 # SIDEBAR
 with st.sidebar:
