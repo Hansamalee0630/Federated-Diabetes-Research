@@ -158,7 +158,6 @@ def preprocess_retinal_image(uploaded_file, image_size=(300, 300)):
 
 
 def load_comp4_data():
-    # Point directly to the final archived file from the accuracy sweep
     file_path = "results/comp4_results/fl_results_multitask_10rounds.json"
     
     if os.path.exists(file_path):
@@ -171,7 +170,6 @@ def load_comp4_data():
             st.error(f"Error reading JSON: {e}")
             return get_dummy_fl_data()
     
-    # Fallback if the specific sweep file isn't there, check the generic one
     fallback_path = "results/comp4_results/fl_results.json"
     if os.path.exists(fallback_path):
         try:
@@ -325,7 +323,6 @@ def prepare_fedavg_features(age, gender, num_medications, hba1c, bmi,
                           hospital_stay, num_comorbidities, num_inpatient,
                           num_emergency, num_lab_procedures, num_procedures,
                           feature_names):
-    # Pass defaults for the extra parameters to keep Tab 2 working smoothly
     return prepare_input_features(age, gender, num_medications, hba1c, bmi, 
                                   hospital_stay, num_comorbidities, num_lab_procedures, "Steady", 
                                   feature_names)
@@ -391,7 +388,7 @@ def stat_card(label, value, delta=None):
         </div>
     """, unsafe_allow_html=True)
 
-# --- HELPER: CUSTOM PLOTLY THEME ---
+
 def dark_chart_layout():
     return dict(
         paper_bgcolor='rgba(0,0,0,0)',
