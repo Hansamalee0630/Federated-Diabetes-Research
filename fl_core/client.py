@@ -306,6 +306,7 @@ class FederatedClient:
             else: 
                 param.requires_grad = True
         
+        # L2 Regularization via a weight decay
         optimizer = torch.optim.Adam(
             filter(lambda p: p.requires_grad, personalized_model.parameters()), 
             lr=0.001, weight_decay = 1e-5
