@@ -626,8 +626,11 @@ with tabs[0]:
             letter-spacing: 1px; border: 1px solid;
         }
         .critical-box { background-color: rgba(239, 68, 68, 0.15); border-color: #ef4444; color: #f87171; }
+        .very-high-box { background-color: rgba(220, 38, 38, 0.15); border-color: #dc2626; color: #ef4444; }
+        .high-box { background-color: rgba(234, 88, 12, 0.15); border-color: #ea580c; color: #f97316; }
         .moderate-box { background-color: rgba(245, 158, 11, 0.15); border-color: #f59e0b; color: #fbbf24; }
-        .stable-box { background-color: rgba(16, 185, 129, 0.15); border-color: #10b981; color: #34d399; }
+        .low-box { background-color: rgba(34, 197, 94, 0.15); border-color: #22c55e; color: #4ade80; }
+        .very-low-box { background-color: rgba(16, 185, 129, 0.25); border-color: #16a34a; color: #22c55e; }
         </style>
     """, unsafe_allow_html=True)
 
@@ -707,9 +710,12 @@ with tabs[0]:
                 # --- STEP 4: CLINICAL SUMMARY ---
                 st.divider()
                 max_risk_val = max(n_risk, c_risk)
-                if max_risk_val > 0.75: status_class, status_label, advice = "critical-box", "CRITICAL RISK", "Immediate clinical review required."
-                elif max_risk_val > 0.45: status_class, status_label, advice = "moderate-box", "MODERATE RISK", "Indications of emerging complications."
-                else: status_class, status_label, advice = "stable-box", "STABLE / LOW RISK", "Maintain current diabetic management plan."
+                if max_risk_val > 0.8: status_class, status_label, advice = "critical-box", "CRITICAL RISK", "Immediate clinical review required."
+                elif max_risk_val > 0.65: status_class, status_label, advice = "very-high-box", "VERY HIGH RISK", "Urgent clinical attention needed."
+                elif max_risk_val > 0.5: status_class, status_label, advice = "high-box", "HIGH RISK", "Increased monitoring required."
+                elif max_risk_val > 0.35: status_class, status_label, advice = "moderate-box", "MODERATE RISK", "Indications of emerging complications."
+                elif max_risk_val > 0.2: status_class, status_label, advice = "low-box", "LOW RISK", "Some risk factors present."
+                else: status_class, status_label, advice = "very-low-box", "VERY LOW RISK", "Maintain current diabetic management plan."
 
                 st.markdown(f'<div class="status-box {status_class}">OVERALL STATUS: {status_label}</div>', unsafe_allow_html=True)
                 st.info(f"**Medical Recommendation:** {advice}")
@@ -1332,9 +1338,6 @@ with tabs[2]:
         st.error(f"Model loading failed: {type(e).__name__}: {e}")
         st.stop()
 
-    # ══════════════════════════════════════════════════════════════════
-    # ADD SUB-TABS (NEW)
-    # ══════════════════════════════════════════════════════════════════
     subtab_fusion_clinical, subtab_fusion_research = st.tabs([
         "Multimodal Clinical Inference",
         "Research Metrics & Model Performance"
@@ -1613,7 +1616,6 @@ Transform Pipeline:
 
             with center_col:
                 if fusion_prob is not None:
-                    st.markdown('<div class="glass-card" style="border: 2px solid #06b6d4;">', unsafe_allow_html=True)
                     color = "#4ade80" if fusion_prob < 0.5 else "#ef4444"
                     st.plotly_chart(create_gauge_dark(fusion_prob, " FUSED RISK", color), use_container_width=True)
                     if fusion_prob < 0.3:
@@ -2082,14 +2084,14 @@ with tabs[3]:
     # ROLE SELECTOR
     view_mode_comp4 = st.radio(
         "Select Dashboard View Mode:", 
-        ["Clinical Staff (Doctors/Nurses)", "Research & Analytics (Data Science)"],
+        ["Clinical Staff", "Research & Analytics"],
         horizontal=True,
         key="comp4_selector"
     )
 
 
     # VIEW 1: CLINICAL STAFF (DOCTORS & NURSES)
-    if view_mode_comp4 == "Clinical Staff (Doctors/Nurses)":
+    if view_mode_comp4 == "Clinical Staff":
         
         # PRIVACY SHIELD INDICATOR
         st.markdown("""
@@ -2138,7 +2140,7 @@ with tabs[3]:
             with h2:
                 model_mode = st.radio(
                     "Federated Execution Mode",
-                    ["Global Model (Shared Baseline)", "Personalized Model (FedRep Fine-Tuned)"],
+                    ["Global Model", "Personalized Model"],
                     horizontal=True,
                     key="c4_mode"
                 )
@@ -2237,15 +2239,24 @@ with tabs[3]:
             # 2. OVERALL STATUS BANNER
             st.divider()
             max_risk = max(c4_prob_htn, c4_prob_hf)
-            if max_risk > 0.7:
+            if max_risk > 0.8:
                 status_class, status_label = "critical-box", "CRITICAL MULTI-MORBIDITY RISK"
                 advice = f"Immediate intervention required. High probability of {predicted_cluster.lower()} complications."
+            elif max_risk > 0.65:
+                status_class, status_label = "very-high-box", "VERY HIGH RISK"
+                advice = f"Urgent clinical attention needed. Significant risk of {predicted_cluster.lower()} complications."
             elif max_risk > 0.5:
+                status_class, status_label = "high-box", "HIGH RISK"
+                advice = f"Increased monitoring required. Elevated risk of {predicted_cluster.lower()} issues."
+            elif max_risk > 0.35:
                 status_class, status_label = "moderate-box", "MODERATE RISK"
                 advice = f"Patient shows emerging signs of {predicted_cluster.lower()} issues. Preventative care recommended."
+            elif max_risk > 0.2:
+                status_class, status_label = "low-box", "LOW RISK"
+                advice = f"Patient has some risk factors for {predicted_cluster.lower()} complications. Routine monitoring advised."
             else:
-                status_class, status_label = "stable-box", "STABLE / LOW RISK"
-                advice = "Patient is currently low risk for cardiovascular complications. Continue standard care."
+                status_class, status_label = "very-low-box", "VERY LOW RISK"
+                advice = "Patient is currently very low risk for cardiovascular complications. Continue standard care."
 
             st.markdown(f'<div class="status-box {status_class}">OVERALL STATUS: {status_label}</div>', unsafe_allow_html=True)
             st.info(f"**Clinical Recommendation:** {advice}")
@@ -2267,7 +2278,7 @@ with tabs[3]:
                         <b>Mechanism:</b> The shared backbone remains frozen while task-specific heads fine-tune to <b>{hospital_type.split('(')[0]}</b> demographics.
                     </div>
                     """, unsafe_allow_html=True)
-                
+                st.markdown("<br>", unsafe_allow_html=True)
                 with pd2:
                     # Radar chart compressed
                     categories   = ['HTN Risk', 'HF Risk', 'Confidence', 'Local Weight']
@@ -2332,11 +2343,11 @@ with tabs[3]:
             st.download_button("DOWNLOAD MTFL CLINICAL REPORT", data=report_content, file_name=f"MTFL_Report_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt", mime="text/plain", use_container_width=True)
             
             st.markdown("<br>", unsafe_allow_html=True)
-            st.warning("**Clinical Disclaimer:** This AI-powered assessment is a decision-support tool only. Results should be interpreted by qualified healthcare professionals. This system operates entirely on local node parameters; no raw patient data leaves this device.")
+            st.warning("**Clinical Disclaimer:** This AI-powered assessment is a decision-support tool only. Results should be interpreted by qualified healthcare professionals.")
 
 
     # VIEW 2: RESEARCH & ANALYTICS (DATA SCIENCE)
-    elif view_mode_comp4 == "Research & Analytics (Data Science)":
+    elif view_mode_comp4 == "Research & Analytics":
         st.markdown("### Federated Learning Evaluation Metrics")
         
         df = load_comp4_data()
@@ -2357,47 +2368,180 @@ with tabs[3]:
             with r_tab1:
                 st.markdown("#### Global vs Personalized Convergence")
                 c1, c2, c3 = st.columns(3)
-                with c1: stat_card("Current Round", int(curr['round']))
-                with c2: stat_card("Global Acc", f"{curr['global_overall_acc']:.1%}")
-                with c3: stat_card("Personalized Acc", f"{curr['pers_overall_acc']:.1%}", f"+{abs_gain:.2f}% Gain")
+                with c1:
+                    st.markdown(f"""
+                    <div style='background: linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(37,99,235,0.1) 100%);
+                                border: 1px solid rgba(59,130,246,0.3); border-radius: 12px; padding: 20px;
+                                text-align: center; height: 120px; display: flex; flex-direction: column; justify-content: center;'>
+                        <div style='font-size: 0.9rem; font-weight: 500; color: #60a5fa; margin-bottom: 8px;'>Current Round</div>
+                        <div style='font-size: 2.2rem; font-weight: 700; color: #e2e8f0;'>{int(curr['round'])}</div>
+                        <div style='font-size: 0.75rem; color: #94a3b8; margin-top: 4px;'>of 10 total rounds</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with c2:
+                    global_acc = curr['global_overall_acc']
+                    st.markdown(f"""
+                    <div style='background: linear-gradient(135deg, rgba(107,114,128,0.1) 0%, rgba(75,85,99,0.1) 100%);
+                                border: 1px solid rgba(107,114,128,0.3); border-radius: 12px; padding: 20px;
+                                text-align: center; height: 120px; display: flex; flex-direction: column; justify-content: center;'>
+                        <div style='font-size: 0.9rem; font-weight: 500; color: #9ca3af; margin-bottom: 8px;'>Global Accuracy</div>
+                        <div style='font-size: 2.2rem; font-weight: 700; color: #e2e8f0;'>{global_acc:.1%}</div>
+                        <div style='font-size: 0.75rem; color: #94a3b8; margin-top: 4px;'>Baseline performance</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with c3:
+                    pers_acc = curr['pers_overall_acc']
+                    gain_color = "#10b981" if abs_gain > 0 else "#f43f5e"
+                    st.markdown(f"""
+                    <div style='background: linear-gradient(135deg, rgba(6,182,212,0.1) 0%, rgba(14,116,144,0.1) 100%);
+                                border: 1px solid rgba(6,182,212,0.3); border-radius: 12px; padding: 20px;
+                                text-align: center; height: 120px; display: flex; flex-direction: column; justify-content: center;'>
+                        <div style='font-size: 0.9rem; font-weight: 500; color: #06b6d4; margin-bottom: 8px;'>Personalized Accuracy</div>
+                        <div style='font-size: 2.2rem; font-weight: 700; color: #e2e8f0;'>{pers_acc:.1%}</div>
+                        <div style='font-size: 0.75rem; color: {gain_color}; margin-top: 4px; font-weight: 600;'>+{abs_gain:.2f}% improvement</div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
                 st.markdown("<br>", unsafe_allow_html=True)
 
                 # COMPREHENSIVE EVALUATION METRICS
                 st.markdown("#### Final Personalized Model Evaluation (Round 10)")
-                
+
                 col_m1, col_m2, col_m3 = st.columns(3)
                 with col_m1:
-                    st.markdown("<div style='background: rgba(15, 23, 42, 0.4); padding: 15px; border-radius: 8px; border-left: 3px solid #f43f5e;'>", unsafe_allow_html=True)
-                    st.markdown("**Hypertension (Task 1)**")
-                    st.metric("HTN Accuracy", f"{curr.get('pers_htn_acc', 0):.1%}")
-                    st.metric("HTN AUROC", f"{curr.get('pers_htn_auroc', 0):.3f}")
-                    st.metric("HTN F1-Score", f"{curr.get('pers_htn_f1', 0):.3f}")
-                    st.markdown("</div>", unsafe_allow_html=True)
+                    htn_acc = curr.get('pers_htn_acc', 0)
+                    htn_auroc = curr.get('pers_htn_auroc', 0)
+                    htn_f1 = curr.get('pers_htn_f1', 0)
+                    st.markdown(f"""
+                    <div style='background: linear-gradient(135deg, rgba(244,63,94,0.1) 0%, rgba(190,18,60,0.1) 100%);
+                                border: 1px solid rgba(244,63,94,0.3); border-radius: 12px; padding: 20px; margin-bottom: 15px;'>
+                        <div style='text-align: center; margin-bottom: 15px;'>
+                            <div style='font-size: 1.1rem; font-weight: 600; color: #f43f5e;'>Hypertension (Task 1)</div>
+                        </div>
+                        <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;'>
+                            <span style='font-size: 0.9rem; color: #e2e8f0;'>Accuracy</span>
+                            <span style='font-size: 1rem; font-weight: 600; color: #e2e8f0;'>{htn_acc:.1%}</span>
+                        </div>
+                        <div style='width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-bottom: 15px;'>
+                            <div style='width: {htn_acc*100:.1f}%; height: 100%; background: linear-gradient(90deg, #f43f5e, #fb7185); border-radius: 3px;'></div>
+                        </div>
+                        <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;'>
+                            <span style='font-size: 0.9rem; color: #e2e8f0;'>AUROC</span>
+                            <span style='font-size: 1rem; font-weight: 600; color: #e2e8f0;'>{htn_auroc:.3f}</span>
+                        </div>
+                        <div style='width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-bottom: 15px;'>
+                            <div style='width: {htn_auroc*100:.1f}%; height: 100%; background: linear-gradient(90deg, #f43f5e, #fb7185); border-radius: 3px;'></div>
+                        </div>
+                        <div style='display: flex; justify-content: space-between; align-items: center;'>
+                            <span style='font-size: 0.9rem; color: #e2e8f0;'>F1-Score</span>
+                            <span style='font-size: 1rem; font-weight: 600; color: #e2e8f0;'>{htn_f1:.3f}</span>
+                        </div>
+                        <div style='width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-top: 5px;'>
+                            <div style='width: {htn_f1*100:.1f}%; height: 100%; background: linear-gradient(90deg, #f43f5e, #fb7185); border-radius: 3px;'></div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
                 with col_m2:
-                    st.markdown("<div style='background: rgba(15, 23, 42, 0.4); padding: 15px; border-radius: 8px; border-left: 3px solid #3b82f6;'>", unsafe_allow_html=True)
-                    st.markdown("**Heart Failure (Task 2)**")
-                    st.metric("HF Accuracy", f"{curr.get('pers_hf_acc', 0):.1%}")
-                    st.metric("HF AUROC", f"{curr.get('pers_hf_auroc', 0):.3f}")
-                    st.metric("HF F1-Score", f"{curr.get('pers_hf_f1', 0):.3f}")
-                    st.markdown("</div>", unsafe_allow_html=True)
+                    hf_acc = curr.get('pers_hf_acc', 0)
+                    hf_auroc = curr.get('pers_hf_auroc', 0)
+                    hf_f1 = curr.get('pers_hf_f1', 0)
+                    st.markdown(f"""
+                    <div style='background: linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(37,99,235,0.1) 100%);
+                                border: 1px solid rgba(59,130,246,0.3); border-radius: 12px; padding: 20px; margin-bottom: 15px;'>
+                        <div style='text-align: center; margin-bottom: 15px;'>
+                            <div style='font-size: 1.1rem; font-weight: 600; color: #3b82f6;'>Heart Failure (Task 2)</div>
+                        </div>
+                        <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;'>
+                            <span style='font-size: 0.9rem; color: #e2e8f0;'>Accuracy</span>
+                            <span style='font-size: 1rem; font-weight: 600; color: #e2e8f0;'>{hf_acc:.1%}</span>
+                        </div>
+                        <div style='width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-bottom: 15px;'>
+                            <div style='width: {hf_acc*100:.1f}%; height: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa); border-radius: 3px;'></div>
+                        </div>
+                        <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;'>
+                            <span style='font-size: 0.9rem; color: #e2e8f0;'>AUROC</span>
+                            <span style='font-size: 1rem; font-weight: 600; color: #e2e8f0;'>{hf_auroc:.3f}</span>
+                        </div>
+                        <div style='width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-bottom: 15px;'>
+                            <div style='width: {hf_auroc*100:.1f}%; height: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa); border-radius: 3px;'></div>
+                        </div>
+                        <div style='display: flex; justify-content: space-between; align-items: center;'>
+                            <span style='font-size: 0.9rem; color: #e2e8f0;'>F1-Score</span>
+                            <span style='font-size: 1rem; font-weight: 600; color: #e2e8f0;'>{hf_f1:.3f}</span>
+                        </div>
+                        <div style='width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-top: 5px;'>
+                            <div style='width: {hf_f1*100:.1f}%; height: 100%; background: linear-gradient(90deg, #3b82f6, #60a5fa); border-radius: 3px;'></div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
                 with col_m3:
-                    st.markdown("<div style='background: rgba(15, 23, 42, 0.4); padding: 15px; border-radius: 8px; border-left: 3px solid #8b5cf6;'>", unsafe_allow_html=True)
-                    st.markdown("**Comorbidity Cluster (Task 3)**")
-                    st.metric("Cluster Accuracy", f"{curr.get('pers_cluster_acc', 0):.1%}")
-                    st.metric("Cluster Macro-F1", f"{curr.get('pers_cluster_f1_macro', 0):.3f}")
-                    st.markdown("*(Multi-class classification)*")
-                    st.markdown("</div>", unsafe_allow_html=True)
+                    cluster_acc = curr.get('pers_cluster_acc', 0)
+                    cluster_f1 = curr.get('pers_cluster_f1_macro', 0)
+                    st.markdown(f"""
+                    <div style='background: linear-gradient(135deg, rgba(139,92,246,0.1) 0%, rgba(124,58,237,0.1) 100%);
+                                border: 1px solid rgba(139,92,246,0.3); border-radius: 12px; padding: 20px; margin-bottom: 15px;'>
+                        <div style='text-align: center; margin-bottom: 15px;'>
+                            <div style='font-size: 1.1rem; font-weight: 600; color: #8b5cf6;'>Comorbidity Cluster (Task 3)</div>
+                        </div>
+                        <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;'>
+                            <span style='font-size: 0.9rem; color: #e2e8f0;'>Accuracy</span>
+                            <span style='font-size: 1rem; font-weight: 600; color: #e2e8f0;'>{cluster_acc:.1%}</span>
+                        </div>
+                        <div style='width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-bottom: 15px;'>
+                            <div style='width: {cluster_acc*100:.1f}%; height: 100%; background: linear-gradient(90deg, #8b5cf6, #a78bfa); border-radius: 3px;'></div>
+                        </div>
+                        <div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;'>
+                            <span style='font-size: 0.9rem; color: #e2e8f0;'>Macro F1</span>
+                            <span style='font-size: 1rem; font-weight: 600; color: #e2e8f0;'>{cluster_f1:.3f}</span>
+                        </div>
+                        <div style='width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; margin-bottom: 15px;'>
+                            <div style='width: {cluster_f1*100:.1f}%; height: 100%; background: linear-gradient(90deg, #8b5cf6, #a78bfa); border-radius: 3px;'></div>
+                        </div>
+                        <div style='text-align: center; font-size: 0.8rem; color: #94a3b8; font-style: italic;'>
+                            Multi-class classification
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
 
                 st.markdown("<br>", unsafe_allow_html=True)
-                
+
                 st.markdown("#### Accuracy Evolution")
                 fig = go.Figure()
-                fig.add_trace(go.Scatter(x=df['round'], y=df['global_overall_acc'], name='Global', line=dict(color='#64748b', width=2, dash='dash')))
-                fig.add_trace(go.Scatter(x=df['round'], y=df['pers_overall_acc'], name='Personalized', line=dict(color='#06b6d4', width=4)))
-                fig.update_layout(**dark_chart_layout(), height=350, xaxis_title="Federated Round", yaxis_title="Accuracy", margin=dict(l=0, r=0, t=30, b=0))
+                fig.add_trace(go.Scatter(
+                    x=df['round'],
+                    y=df['global_overall_acc'],
+                    name='Global Model',
+                    line=dict(color='#64748b', width=3, dash='dash'),
+                    mode='lines+markers',
+                    marker=dict(size=6, color='#64748b')
+                ))
+                fig.add_trace(go.Scatter(
+                    x=df['round'],
+                    y=df['pers_overall_acc'],
+                    name='Personalized Model',
+                    line=dict(color='#06b6d4', width=4),
+                    mode='lines+markers',
+                    marker=dict(size=8, color='#06b6d4', symbol='diamond')
+                ))
+                fig.update_layout(
+                    **dark_chart_layout(),
+                    height=400,
+                    xaxis_title="Federated Learning Round",
+                    yaxis_title="Model Accuracy",
+                    margin=dict(l=0, r=0, t=30, b=0),
+                    legend=dict(
+                        orientation="h",
+                        y=-0.15,
+                        x=0.5,
+                        xanchor="center",
+                        bgcolor='rgba(0,0,0,0.5)',
+                        bordercolor='rgba(255,255,255,0.2)',
+                        borderwidth=1
+                    )
+                )
+                fig.update_yaxes(gridcolor='rgba(255,255,255,0.1)', tickformat='.1%')
                 st.plotly_chart(fig, use_container_width=True)
 
 
@@ -2409,6 +2553,7 @@ with tabs[3]:
                 f_col1, f_col2 = st.columns([1, 2])
                 with f_col1:
                     stat_card("Fairness Gap", f"{gap_val:.4f}", "Target ≤ 0.05")
+                    st.markdown("<br>", unsafe_allow_html=True)
                     st.info("**Evaluation Context:**\nMeasures the disparity in predictive accuracy between demographic sub-groups (e.g., Gender). A gap near 0.00 indicates strong algorithmic fairness.")
                 
                 with f_col2:
@@ -2420,19 +2565,84 @@ with tabs[3]:
 
             # SUBTAB 3: ARCHITECTURE EFFICIENCY
             with r_tab3:
+                st.markdown('<div class="glass-card">', unsafe_allow_html=True)
                 st.markdown("#### Multi-Task vs Single-Task Efficiency Profile")
-                eff_c1, eff_c2, eff_c3 = st.columns(3)
-                with eff_c1:
-                    st.info("**Model Transmission Size**\n\n### 0.30 MB\n\n*(vs 0.90 MB for 3 Single-Task Models)*")
-                with eff_c2:
-                    st.info("**Bandwidth Saved**\n\n### 66.6% Reduction\n\n*(Shared feature extractor efficiency)*")
-                with eff_c3:
-                    st.info("**Privacy Protocol**\n\n### Active\n\n*(DP Noise Injected + Secure Aggregation)*")
+                st.caption("Quantifying the architectural advantages of MTFL for federated deployment")
                 
                 st.markdown("<br>", unsafe_allow_html=True)
+                
+                # Enhanced KPI Cards with Icons and Better Styling
+                eff_c1, eff_c2, eff_c3 = st.columns(3)
+                
+                with eff_c1:
+                    st.markdown("""
+                    <div style='background: linear-gradient(135deg, rgba(6,182,212,0.1) 0%, rgba(59,130,246,0.1) 100%);
+                                border: 1px solid rgba(6,182,212,0.3); border-radius: 12px; padding: 20px;
+                                text-align: center; height: 180px; display: flex; flex-direction: column; justify-content: center;'>
+                        <div style='font-size: 1.2rem; font-weight: 600; color: #06b6d4; margin-bottom: 5px;'>Model Size</div>
+                        <div style='font-size: 2rem; font-weight: 700; color: #e2e8f0;'>0.30 MB</div>
+                        <div style='font-size: 0.85rem; color: #94a3b8; margin-top: 5px;'>vs 0.90 MB (3x Single-Task)</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                with eff_c2:
+                    st.markdown("""
+                    <div style='background: linear-gradient(135deg, rgba(16,185,129,0.1) 0%, rgba(34,197,94,0.1) 100%);
+                                border: 1px solid rgba(16,185,129,0.3); border-radius: 12px; padding: 20px;
+                                text-align: center; height: 180px; display: flex; flex-direction: column; justify-content: center;'>
+                        <div style='font-size: 1.2rem; font-weight: 600; color: #10b981; margin-bottom: 5px;'>Bandwidth Saved</div>
+                        <div style='font-size: 2rem; font-weight: 700; color: #e2e8f0;'>66.6%</div>
+                        <div style='font-size: 0.85rem; color: #94a3b8; margin-top: 5px;'>Reduction in FL Rounds</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                with eff_c3:
+                    st.markdown("""
+                    <div style='background: linear-gradient(135deg, rgba(139,92,246,0.1) 0%, rgba(168,85,247,0.1) 100%);
+                                border: 1px solid rgba(139,92,246,0.3); border-radius: 12px; padding: 20px;
+                                text-align: center; height: 180px; display: flex; flex-direction: column; justify-content: center;'>
+                        <div style='font-size: 1.2rem; font-weight: 600; color: #8b5cf6; margin-bottom: 5px;'>Privacy Protocol</div>
+                        <div style='font-size: 1.5rem; font-weight: 700; color: #e2e8f0;'>Active</div>
+                        <div style='font-size: 0.85rem; color: #94a3b8; margin-top: 5px;'>DP + Secure Aggregation</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+                # Efficiency Visualization
+                st.markdown("#### Efficiency Breakdown")
+                
+                # Progress bar for bandwidth savings
+                st.markdown("**Communication Efficiency**")
+                st.progress(0.666, text="66.6% Bandwidth Reduction")
+                
+                # Simple bar chart comparison
+                fig_eff = go.Figure()
+                fig_eff.add_trace(go.Bar(
+                    x=['Single-Task Models', 'Multi-Task Model'],
+                    y=[0.90, 0.30],
+                    marker_color=['#64748b', '#06b6d4'],
+                    text=['0.90 MB', '0.30 MB'],
+                    textposition='auto'
+                ))
+                fig_eff.update_layout(
+                    title="Model Transmission Size Comparison",
+                    yaxis_title="Size (MB)",
+                    height=250,
+                    **dark_chart_layout()
+                )
+                st.plotly_chart(fig_eff, use_container_width=True)
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+                # Enhanced explanation
                 st.markdown("""
-                **Architectural Advantage:** By utilizing a hard-parameter sharing approach (shared body with task-specific heads), the MTFL framework dramatically reduces the computational payload required for federated communication rounds. This enables edge deployment in resource-constrained hospital networks while maintaining strict data locality and differential privacy boundaries.
-                """)
+                <div style='background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; border-left: 4px solid #06b6d4;'>
+                    Shared backbone with task-specific heads minimizes federated communication cost, enabling efficient edge deployment while maintaining data privacy.
+                </div>
+                """, unsafe_allow_html=True)
+                
+                st.markdown('</div><br>', unsafe_allow_html=True)
 
 # SIDEBAR
 with st.sidebar:
