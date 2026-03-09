@@ -126,8 +126,7 @@ def load_multimodal_system():
 def prepare_ehr_tensor(age, bmi, hba1c, glucose, gender, smoke, hypertension, heart_disease):
     """Convert UI inputs into the 8‑dim vector expected by the EHR model."""
 
-    # This is an approximation; the original training pipeline may have used
-    # different normalization. This mapping keeps values in [0,1] for stability.
+    # This mapping keeps values in [0,1] for stability.
     gender_map = {"Female": 0.0, "Male": 1.0, "Other": 0.5}
     smoke_map = {"never": 0.0, "current": 1.0, "former": 0.5, "ever": 0.5, "No Info": 0.5}
 
