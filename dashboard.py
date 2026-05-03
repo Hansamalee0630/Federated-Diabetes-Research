@@ -975,7 +975,7 @@ def render_readmission_tab():
             global_data = all_results['shap_analysis'].get('global_stats', {})
             
             with col_shap1:
-                st.markdown("###  Primary Clinical Drivers for this Facility")
+                st.markdown("###  Primary Clinical Drivers")
                 
                 if h_data and h_data.get('top_10_features'):
                     top_features = h_data['top_10_features'][:5]
@@ -1001,7 +1001,7 @@ def render_readmission_tab():
                     st.info("Historical clinical drivers not available for this facility type.")
 
             with col_shap2:
-                st.markdown("###  Global Federated Drivers (All Facilities)")
+                st.markdown("###  Global Clinical Drivers")
                 
                 if global_data and global_data.get('top_10_features'):
                     g_top_features = global_data['top_10_features'][:5]
@@ -1054,23 +1054,37 @@ def render_readmission_tab():
             
             if metrics:
                 c1, c2, c3, c4 = st.columns(4)
-                c1.metric("Global Accuracy", f"{metrics.get('accuracy', 0)*100:.1f}%")
+                c1.metric("Accuracy", f"{metrics.get('accuracy', 0)*100:.1f}%")
                 c2.metric("Recall (Sensitivity)", f"{metrics.get('recall', 0)*100:.1f}%")
                 c3.metric("Precision", f"{metrics.get('precision', 0)*100:.1f}%")
                 c4.metric("F1-Score", f"{metrics.get('f1_score', 0):.4f}")
-                
-                st.markdown("---")
-                st.markdown(f"**Dataset Configuration:** `{all_results['fairness_metrics'].get('dataset_type', 'Unknown')}`")
             else:
                 st.warning("Performance metrics not found. Please run the fairness audit script.")
             
-            # MOVED: Local vs Global SHAP Divergence
+            st.markdown("---")
+            
+            # UPDATED: Explainability Validation UX
             st.markdown("#### Explainability Validation: Local vs Global SHAP Divergence")
+            st.caption("This measures if the AI uses the same medical logic across different hospitals. A high score means the global model is stable and hasn't memorized local hospital quirks (Client Drift).")
+            
             shap_stats = all_results['shap_analysis'].get('consistency_analysis', {})
             avg_cons = shap_stats.get('average_consistency', 0)
+            interpretation = shap_stats.get('interpretation', 'Unknown')
             
-            st.write(f"**Cross-Hospital Consistency (Pearson):** {avg_cons:.4f} — *{shap_stats.get('interpretation', 'Stability validated')}*")
-            st.progress(avg_cons)
+            # 1. Use st.metric for the hover tooltip and dynamic color
+            st.metric(
+                label="Cross-Hospital Consistency (Pearson)",
+                value=f"{avg_cons:.4f}",
+                delta=f"Status: {interpretation}",
+                delta_color="normal" if avg_cons >= 0.80 else "inverse",
+                help="Target: > 0.80. Measures the Pearson Correlation of feature importance across all hospitals. 1.0 means identical clinical logic."
+            )
+            
+            # 2. Keep the progress bar for a quick visual cue
+            st.progress(float(avg_cons))
+            
+            # 3. Add the explicit scale reference box
+            st.info("**Consistency Scale:** `Poor (< 0.50)` ➔ `Moderate (0.50 - 0.79)` ➔ `Stable/Excellent (≥ 0.80)`")
 
         # ----------------------------------------------------
         # SUBTAB 2: FAIRNESS AUDIT
@@ -1099,14 +1113,11 @@ def render_readmission_tab():
                 status_color2 = "normal" if dp_gap < 0.10 else "inverse"
                 fc2.metric("Demographic Parity Gap", f"{dp_gap*100:.1f}%", "-Passes Threshold" if dp_gap < 0.1 else "+Fails Threshold", delta_color=status_color2)
                 
-                # Overall Verdict
-                verdict_str = gender_fairness.get('overall_verdict', {}).get('verdict', 'Unknown')
-                fc3.info(f"**Verdict:** {verdict_str}")
                 
                 
                 # Explainability Fairness (WITH SAFE JSON PARSING)
                 st.markdown("#### SHAP Explainability Bias Check")
-                st.write("Ensuring feature importance rankings do not inherently bias against protected groups.")
+                st.write("Ensuring feature importance rankings do not inherently bias against groups.")
                 
                 fair_exps = all_results['fairness_explanations'].get('gender', {})
                 if fair_exps:
@@ -1139,17 +1150,22 @@ def render_readmission_tab():
             
             if niid:
                 st.markdown("#### Heterogeneity Quantification (5-Metric Framework)")
+                st.caption("Lower scores indicate data is more identically distributed (IID) across hospitals. 'Moderate' heterogeneity is ideal to prove the Federated model works in realistic conditions.")
                 
                 comp_score = niid.get('composite_non_iid_score', 0)
                 severity = niid.get('severity_assessment', {}).get('level', 'Unknown')
                 
                 st.markdown(f"""
-                <div style='text-align: center; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px; border: 1px solid #4ade80; margin-bottom: 20px;'>
+                <div style='text-align: center; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px; border: 1px solid #4ade80; margin-bottom: 10px;'>
                     <h3 style='color: #cbd5e1; margin:0;'>Composite Non-IID Score</h3>
                     <h1 style='color: #4ade80; margin:0;'>{comp_score:.4f}</h1>
                     <h4 style='color: #cbd5e1; margin:0;'>Severity: {severity}</h4>
                 </div>
                 """, unsafe_allow_html=True)
+                
+                # NEW: Context Box for the Severity Scale
+                st.info("**Severity Scale:** `Minimal (< 0.15)` ➔ `Low (0.15 - 0.30)` ➔ `Moderate (0.30 - 0.50)` ➔ `High (> 0.50)`")
+                st.markdown("<br>", unsafe_allow_html=True)
                 
                 # Row 1 (3 Metrics)
                 nc1, nc2, nc3 = st.columns(3)
@@ -1158,21 +1174,27 @@ def render_readmission_tab():
                 nc1.metric(
                     "1. Label Heterogeneity (JSD)", 
                     f"{js_div:.4f}", 
-                    help="Checks if one hospital has significantly more readmitted patients. (Should be low due to balancing)."
+                    delta="Ideal: < 0.05",
+                    delta_color="off", # 'off' makes the text gray instead of green/red
+                    help="Target: < 0.05. Checks if one hospital has significantly more readmitted patients. (Should be low due to balancing)."
                 )
                 
                 corr_het = niid.get('correlation_heterogeneity', {}).get('average', 0)
                 nc2.metric(
                     "2. Correlation Heterogeneity", 
                     f"{corr_het:.4f}", 
-                    help="Measures how feature relationships change using the Frobenius norm of correlation matrices."
+                    delta="Ideal: < 10.0",
+                    delta_color="off",
+                    help="Target: < 10.0. Measures how feature relationships change using correlation matrices."
                 )
 
                 class_imb = niid.get('class_imbalance_heterogeneity', {}).get('max_diff', 0)
                 nc3.metric(
                     "3. Class Imbalance Diff", 
                     f"{class_imb*100:.2f}%", 
-                    help="A simple check to ensure no single hospital is hoarding all the positive or negative cases."
+                    delta="Ideal: < 5.0%",
+                    delta_color="off",
+                    help="Target: < 5.0%. A simple check to ensure no single hospital is hoarding all the positive or negative cases."
                 )
 
                 st.markdown("<br>", unsafe_allow_html=True)
@@ -1184,19 +1206,22 @@ def render_readmission_tab():
                 nc4.metric(
                     "4. Covariate Shift Index (MFD)", 
                     f"{csi:.4f}", 
-                    help="Measures the mathematical distance between the 'average patient' at Hospital 1 vs Hospital 2 using linear algebra."
+                    delta="Ideal: < 2.0",
+                    delta_color="off",
+                    help="Target: < 2.0. Measures the mathematical distance between the 'average patient' at Hospital 1 vs Hospital 2 using linear algebra."
                 )
 
                 wd = niid.get('wasserstein_distance', {}).get('average', 0)
                 nc5.metric(
                     "5. Wasserstein Distance", 
                     f"{wd:.4f}", 
-                    help="Earth Mover's Distance. Calculates the 'effort' needed to transform one hospital's data distribution to look like another's."
+                    delta="Ideal: < 0.05",
+                    delta_color="off",
+                    help="Target: < 0.05. The Wasserstein Distance calculates the minimum 'effort' required to make the readmission rates perfectly match."
                 )
                 
             else:
                 st.warning("Non-IID metrics unavailable.")
-
         # ----------------------------------------------------
         # SUBTAB 4: FEDAVG TRAINING
         # ----------------------------------------------------
