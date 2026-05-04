@@ -2621,7 +2621,7 @@ with tabs[3]:
                                 text-align: center; height: 180px; display: flex; flex-direction: column; justify-content: center;'>
                         <div style='font-size: 1.2rem; font-weight: 600; color: #8b5cf6; margin-bottom: 5px;'>Privacy Protocol</div>
                         <div style='font-size: 1.5rem; font-weight: 700; color: #e2e8f0;'>Active</div>
-                        <div style='font-size: 0.85rem; color: #94a3b8; margin-top: 5px;'>DP + Secure Aggregation</div>
+                        <div style='font-size: 0.85rem; color: #94a3b8; margin-top: 5px;'>Local Differential Privacy (LDP)</div>
                     </div>
                     """, unsafe_allow_html=True)
                 
