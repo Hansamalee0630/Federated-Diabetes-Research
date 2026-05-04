@@ -64,7 +64,7 @@ class DiabetesClient:
             
             epoch_avg = np.mean(batch_losses) if batch_losses else 0
             all_epoch_losses.append(epoch_avg)
-            # print(f"Client {self.client_id} | Epoch {epoch+1}/{epochs} | Loss: {epoch_avg:.4f}")
+            print(f"Client {self.client_id} | Epoch {epoch+1}/{epochs} | Loss: {epoch_avg:.4f}")
 
         # 3. Cleanup and Return
         avg_loss = np.mean(all_epoch_losses)
