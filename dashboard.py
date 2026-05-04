@@ -2023,6 +2023,7 @@ with tabs[3]:
         </div>
         """, unsafe_allow_html=True)
         
+        # FOR Clinicians form_inputs
         with st.form("prediction_form_comp4"):
             st.markdown("#### Patient Demographics & Vitals")
             c1, c2, c3 = st.columns(3)
@@ -2081,6 +2082,7 @@ with tabs[3]:
                 norm_hba1c = (hba1c - 4) / 11
                 norm_bmi   = (bmi  - 15) / 35
 
+                # When hits button => Loads experiments/comp4_experiments/final_multi_task_model.pth
                 model, model_info = load_trained_model()
                 c4_prob_htn_global = None
                 c4_prob_hf_global  = None

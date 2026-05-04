@@ -300,6 +300,7 @@ class FederatedClient:
         baseline_metrics = self._evaluate_metrics(self.model)
         personalized_model = copy.deepcopy(self.model)
         
+        # Freezing the Shared Layers
         for name, param in personalized_model.named_parameters():
             if "shared" in name or "bn" in name: 
                 param.requires_grad = False
@@ -318,6 +319,8 @@ class FederatedClient:
         criterion_hf = torch.nn.BCEWithLogitsLoss(pos_weight=torch.tensor([self.hf_weight]))
 
         personalized_model.train()
+
+        # Local Fine-Tuning Loop
         for epoch in range(epochs):
             for batch_X, batch_y in self.train_loader:
                 optimizer.zero_grad()
@@ -331,7 +334,8 @@ class FederatedClient:
                     logits = personalized_model(batch_X)
                     criterion = criterion_htn if "htn" in self.component else criterion_hf
                     loss = criterion(logits, batch_y.view(-1, 1))
-                    
+                
+                # Backpropagation
                 loss.backward()
                 optimizer.step()
                 
@@ -342,6 +346,8 @@ class FederatedClient:
         
         return baseline_metrics, personalized_metrics
 
+
+    # Accuracy Calculation
     def _calculate_accuracy(self):
         if not self.train_loader or len(self.train_loader) == 0: return 0.0
         correct = 0; total = 0
@@ -385,6 +391,7 @@ class FederatedClient:
         group_a = None # Females
         group_b = None # Males
 
+        # Gender-based group separation
         if 'gender_Female' in df.columns: # If One-Hot encoded
             group_a = df[df['gender_Female'] == 1] 
             group_b = df[df['gender_Female'] == 0] 
@@ -394,6 +401,7 @@ class FederatedClient:
         else:
             return 0.0
 
+        # Helper function to calculate accuracy for a given demographic
         def get_acc(subset_X, subset_indices):
             if len(subset_X) == 0: return 0.0
             subset_y = y.iloc[subset_indices]
@@ -403,7 +411,7 @@ class FederatedClient:
             with torch.no_grad():
                 if self.component == "comp4_multitask":
                     logits_htn, _, _ = self.model(t_X)
-                    p_htn = torch.sigmoid(logits_htn)
+                    p_htn = torch.sigmoid(logits_htn) # Sigmoid activation(Prob) for binary classification
                     preds = (p_htn > 0.5).float().numpy()
                     targets = subset_y['target_hypertension'].values.reshape(-1, 1)
                 else:
