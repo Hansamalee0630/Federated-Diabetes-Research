@@ -1,9 +1,3 @@
-"""
-PHASE 5: FAIRNESS & BIAS AUDIT (COMPREHENSIVE 6-METRIC FRAMEWORK)
-Evaluates the trained federated model across protected demographic groups.
-Optimized for Accuracy-focused thresholding and JSON compatibility.
-"""
-
 import numpy as np
 import pandas as pd
 import tensorflow as tf
