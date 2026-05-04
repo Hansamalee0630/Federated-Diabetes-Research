@@ -1,15 +1,3 @@
-"""
-FAST OPTIMIZED Federated Learning Training (FedAvg) with Gender-Fairness
-UPDATED FOR BALANCED DATASET (131 Features)
-============================================================================
-KEY CHANGES FOR HIGHER ACCURACY:
-1. Strict 2-Hidden-Layer Architecture (prevents tabular overfitting)
-2. Lowered Learning Rate (5e-4) for stable FedAvg convergence
-3. Threshold Optimization prioritizes Accuracy over Recall
-4. Standard BCE Loss with relaxed fairness constraints
-============================================================================
-"""
-
 import numpy as np
 import pandas as pd
 import tensorflow as tf
@@ -67,7 +55,7 @@ def load_data():
     data_dir = Path("data/processed_data_balanced")
     
     if not (data_dir / "X_train_balanced.npy").exists():
-        print("\n⚠️  WARNING: Balanced dataset not found!")
+        print("\n  WARNING: Balanced dataset not found!")
         print("   Falling back to unbalanced dataset...")
         data_dir = Path("data/processed_data")
         X_train = np.load(data_dir / "X_train_unbalanced.npy").astype(np.float32)
@@ -147,14 +135,10 @@ def compute_fairness_loss(preds, batch_y, batch_prot, batch_weights, fairness_th
     return fairness_lambda * fairness_penalty
 
 # ============================================================================
-# MODEL ARCHITECTURE (Strict 2-Hidden-Layer Design)
+# MODEL ARCHITECTURE 
 # ============================================================================
 
 def create_model(input_dim):
-    """
-    Strict 2-Hidden-Layer architecture. 
-    Prevents the network from 'memorizing' noisy tabular data.
-    """
     model = tf.keras.Sequential([
         tf.keras.layers.Input(shape=(input_dim,)),
         
